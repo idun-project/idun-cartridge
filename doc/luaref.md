@@ -17,7 +17,7 @@ Included with Idun is an [idun-handler](#idun-handler) Lua object that makes it 
 
 3. Write a "native" idun application in a combination of Lua and 6502 assembler.
 
-Finally, Idun supports creating application in Lua in which the C128 is mainly the frontend for rendering graphics, playing sound, and receiving user inputs. In theory, all of the application logic and data processing can be done in Lua. 
+Finally, Idun supports creating application in Lua in which the C128 is mainly the front-end for rendering graphics, playing sound, and receiving user inputs. In theory, all of the application logic and data processing can be done in Lua. 
 
 To communicate, messages are passed to the C128 using a "mailbox" interface, and these messages can be of arbitrary size and content. Even streaming data as fast as the C128 can handle it is possible. Likewise, there is an "event" interface that allows asynchronous events, like user input, to be forwarded to the Lua script. The two best, though simple, examples of this are e:mandelbrot.app and e:cube.app. These Lua/6502 assembler hybrid apps will even work in the idun-vice emulator.
 
@@ -32,7 +32,7 @@ In the simplest case, the normal way of outputting text to `stdout` and inputtin
 - Instead of `print(str)` or `io.write(str)`, you use `minisock.write(redirect.stdout, str)`.
 - Instead of `io.read()`, you use `key = minisock.read(redirect.stdin, 10000)`. The number is a timeout value given in milliseconds; so, 10 seconds for this example. This is just the maximum time you want your script to block waiting on a keystroke from the user. It can be 0 ms to make it non-blocking, or a very big number if you want to block "forever". More practically, place it in a loop that polls for other things or does other work.
 
-Minisock can of course be used in a more structured way, such as for passing pre-defined requests and responses between assmebler and Lua code. This is where idun-handler provides a helpful and simple solution.
+Minisock can of course be used in a more structured way, such as for passing pre-defined requests and responses between assembler and Lua code. This is where idun-handler provides a helpful and simple solution.
 
 ### idun handler
 
@@ -81,13 +81,13 @@ __UNDER CONSTRUCTION__
 
 `m8.waitevent` is the standard API for receiving input events from assembler in Lua.
 
-`m8.writeln` is for outputing lines of text to the display for a full-screen Lua application. For console applications in Lua, you can just use [minisock](#minisock) or the Lua `print()` function.
+`m8.writeln` is for outputting lines of text to the display for a full-screen Lua application. For console applications in Lua, you can just use [minisock](#minisock) or the Lua `print()` function.
 
 `m8.file.load_prg` is for loading/starting a native program from a Lua script.
 
 ### m8x extensions
 
-m8x ("mate extensions") is the standard way to add application-dependent functionality to Lua apps. These extensions become part of the callable code in the m8 namespace created by the applications. So, it allows new functionality tobe invoked on the assembler side. For an example, see: [cube.app.d](../samples/cube.app.d/) and [mandelbrot.app.d](../samples/mandelbrot.app.d/).
+m8x ("mate extensions") is the standard way to add application-dependent functionality to Lua apps. These extensions become part of the callable code in the m8 namespace created by the applications. So, it allows new functionality to be invoked on the assembler side. For an example, see: [cube.app.d](../samples/cube.app.d/) and [mandelbrot.app.d](../samples/mandelbrot.app.d/).
 
 ### System (sys.) functions
 
