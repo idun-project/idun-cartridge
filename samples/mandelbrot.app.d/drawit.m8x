@@ -1,0 +1,45 @@
+.copyPageCtr !byte 0
+m8_drawit_handler = *
+   lda #0
+   sta .copyPageCtr
+   lda #<.copyVdcPage
+   ldy #>.copyVdcPage
+   jsr aceMapperProcmsg
+   lda #0
+   jsr __m8_mailbox_reset
+   jmp xPointerEnable
+
+   .copyVdcPage = *
+   cmp #0
+   beq +
+   rts      ;should always receive 256 bytes
++  lda .copyPageCtr
+   inc .copyPageCtr
+   cmp #$20
+   bcc +
+   ;copy attr rows
+   sbc #$20
+   jsr .set_copy_params
+   jmp xGrAttr
+   ;copy bitmap rows
++  jsr .set_copy_params
+   jmp xGrOp
+   .set_copy_params = *
+   asl
+   asl
+   asl
+   sta syswork+0
+   lda #0
+   sta syswork+1
+   sta syswork+3
+   sta syswork+4
+   lda #8
+   sta syswork+2
+   lda #<mailboxB
+   ldy #>mailboxB
+   sta syswork+6
+   sty syswork+7
+   ldx #0
+   ldy #$20
+   lda #$40
+   rts

@@ -1,0 +1,5 @@
+build/*
+test/*.prg
+*.sym
+rom/sys/*
+resc/*.rom

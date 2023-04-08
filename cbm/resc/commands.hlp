@@ -1,0 +1,123 @@
+basic
+exit to basic prompt
+On the C128, the ${green}basic${white} command launches the excellent BASIC 7.80 extension, which enhances BASIC 7's graphics functions to work with the 80-column display too.
+blanker
+simple screensaver
+${green}blanker${white} is a simple screensaver that draws a black background.
+browse
+directory/file browser
+The ${green}browse${white} command provides a more convenient way to navigate the directory tree, and can also mount disk images or launch applications. Input is done with cursor keys + ${bold}ENTER${normal} to select, or you can use a joystick. When a sub-directory is selected, the next column of the display is populated with the contents. To go back up the tree, press LEFT. If you highlight an application or disk image, then selection will cause a menu to appear with the possible actions.
+cd
+change current drive/directory
+Use the ${green}cd${white} command with a drive letter, such as 'cd a:' to switch to a different drive. If the drive has sub-directories, then you can switch to them by entering the name of the sub-directory. You can also use '..' to change to the parent directory. With no arguments, the command takes you to your home directory.
+cls
+clear the screen
+Clears the screen and presents the shell prompt at the home cursor position.
+copy
+copy file(s) between drives
+${bold}Usage:${normal} copy [/h] [/f] <src> <dest> -or- copy <src1..srcN> <dev:> -- The ${green}copy${white} command copies files between drives. You can use it to copy a single file, or multiple files all to the same destination drive. Use the '/h' switch to ensure a Commodore PRG file that is copied retains the 2-byte header; otherwise, it will not load properly. Use the '/f' switch to force over-writing an existing destination file.
+date
+show current date/time
+Shows the current date & time, which should be accurate, since the clock is set from the Internet each time you boot the idun kernel.
+del
+delete file(s)
+Delete one or more files from the current drive/directory.
+dir
+show files on drive/directory
+${bold}Usage:${normal} dir [/w] [/p] <dev:> -- The ${green}dir${white} command with no arguments will show the detailed listing of all files in the currently selected drive/directory. You can also specify a drive letter, such as 'dir d:' to see files in another drive without first switch to it using ${green}cd${white}. The '/w' switch formats the output into multiple columns showing only the name of each file. The '/p' switch is used to pause the output for each screen of filenames.
+diskcopy
+duplicate a disk/image
+${bold}Usage:${normal} diskcopy [/f] <src:> <dst:> -- The ${green}diskcopy${white} command is used to duplicate a disk to a compatible device. This works with, and is perhaps most useful for duplicating between disk images in .D64 or .D71 format and actual floppy disks. To use a disk image as the source or destination device, you must first use the ${green}mount${white} command to mount the image. If it will be a destination disk, then be sure to mount it writable (/w switch). Include the '/f' option to explicity format the destination disk.
+echo
+print text to screen
+${green}echo${white} sends whatever text follows it to the screen. This is useful for providing output from batch files.
+edit
+edit text files
+The ${green}edit${white} command accesses a sophisticated editor (known as 'ZED' in its standalone form) that can be used to edit large PETSCII files. You can include the name of the file you want to edit on the command-line. To view the keyboard shortcuts available, see the help for ${green}editor${white}.
+editor
+edit command keyboard shortcuts
+<editor.hlp
+exec
+run a batch file
+The ${green}exec${white} command executes the commands within a batch (.bat) file that is passed to it on the command-line. To see an example, ${green}type z:autoexec.bat${white}.
+exit
+exit shell/reset computer
+The ${green}exit${white} command performs a software reset of the Commodore, returning it to the BASIC 'READY' prompt.
+funkey
+set function key shortcut
+${bold}Usage:${normal} funkey <key> "string" -- The ${green}funkey${white} command maps a string to a command key so that it can be quickly input as a shell command. The <key> parameter is the hexadecimal code. Only the keycodes $80-$8f may be used with the `funkey` command. This includes F1-F12 codes, plus SH-HELP, SH-RUN, SH-RETURN. The code for CO-1 ($81) is specifically excluded by `funkey` and is available as an application command key instead.
+go64
+enter C-64 mode
+${bold}Usage:${normal} go64 [image] -- The ${green}go64${white} command changes the C128 into C64 mode. If the optional 'image' parameter is given, then a disk (.d64) or tape (.t64) image file specified will be mounted before switching modes. Thus, a C64 program on the image can be loaded and run using the idun cartridge from C64 mode. If no image file is provided, then any C64 program files in the current directory will be available to run from C64 mode.
+help
+show shell command help
+${bold}Usage:${normal} help [command] -- View help for all commands. If the optional 'command' parameter is given, then it will jump directly to the full help for that command; otherwise, the list of available commands with brief description is shown.
+info
+show disks/devices available
+${bold}Usage:${normal} info [/d] -- The ${green}info${white} command is used to show the available disks/devices that have been configured in the idun kernel. If the otional '/d' switch is used, then only real and virtual disk devices are shown; otherwise, all devices are included.
+joys
+test joystick(s)
+${green}joys${white} is a simple tool for testing joystick inputs. Connect a joystick to either controller port, and ${green}joys${white} will detect and show direction and fire button inputs on the screen.
+keys
+test keyboard
+${green}keys${white} is a simple tool for viewing the active character set and its keycode mapping. Use the arrow keys to select any character from the set, and press ENTER to see its keycode. To exit the ${green}keys${white} tool, press STOP.
+liner
+VDC graphics screensaver
+${green}liner${white} is a screensaver that draws animated lines using the hi-res VDC graphics mode.
+linux
+run Linux CLI command
+The ${green}linux${white} command provides a convenient way to open a terminal window and launch a paricular command. Any output will be shown in the terminal window and will continue until the linux program exits. Then, you can press any key to return to the idun shell.
+load
+load/run a C128 program
+Normal C128 programs not designed to run from the shell can be started using the ${green}load${white} command. This will load the program into memory, probably overwriting the idun kernel, and then jump to the start. One limitation is that any virtual disks or images you mounted won't be available to the C128 program after it starts execution. If the program needs to access virtual disks, then use ${green}reboot${white} instead.
+lua
+run a Lua script
+The ${green}lua${white} command provides a convenient way to launch a Lua script. Any output will be shown in the terminal window and will continue until the program exits. Then, you can press any key to return to the idun shell.
+mem
+show memory total/available
+${bold}Usage:${normal} mem [/s] -- The ${green}mem${white} command shows how much total and available memory the system can access. If you include the '/s' switch, then that is all it shows. However, with no parameters, it will also show the size of the application code area, as well as the total dynamic memory available to applications at run-time.
+mode
+set video text/graphics mode
+${bold}Usage:${normal} mode [40|80] [vdc 0-7|vic 0-4] [X Y] [std|cbm|ans] [debug] -- The ${green}mode${white} command takes many optional parameters. With no parameters, it will display the current text display mode such as ${bold}'VDC 80x26 active'${normal}. To easily switch between the 40 and 80-columns display, use the optional '40' -or- '80' parameters. The vdc -or- vic parameters allow you to set text or graphics mode number (0-7 for VDC, 0-4 for VIC-II), and optionally draw something on the screen in the new mode, when you also include 'debug'. Mode '0' is text. The 'X Y' parameters are for changing the columns x rows of the display, and works in both text and graphics modes. So, you could enable interlace text display with 47 rows on the VDC with a command like ${bold}'mode vdc 0 80 47'${normal}. Finally, the 'std' -or- 'cbm' -or- 'ans' parameters load the specified character sets. If you use the 'debug' option to test a graphics mode, just press 'STOP' to exit the mode command.
+more
+print text file w/ paging
+The ${green}more${white} command shows the contents of a PETSCII file on the screen. Unlike the ${green}type${white} command, it will pause after each full screen of text so that you can use it to read long files.
+mount
+mount a disk image file
+${bold}Usage:${normal} mount <imgfile> [/w] [/dev:] -- The ${green}mount${white} command is for mounting Commodore disk and tape image files. It supports .D64, .D71, and .T64 files. The default behavior is read-only, but the optional '/w' switch allows you to mount a disk image as writable. By default, all images are mounted to device d:, but you can specify a different device by including a switch such as '/f:', assuming 'f:' is configured for virtual disks (it is not by default!). Note: The ${green}go64${white} command mounts disk & tape images to device '^:' so as to not conflict with the mount command.
+mousetest
+test mouse
+This is a simple program to test the cursor, mouse movement, and button presses. Idun's API supports the Commodore 1351 and compatible mouse controllers. View the 'cmd/mousetest.asm' source code file to see how to access the mouse, or look at the source in 'apps/mandelbrot.app' to see how to use the mouse in a Lua application.
+nix
+same as "linux"
+This is just a shortcut for the ${green}linux${white} command, and does exactly the same thing.
+path
+show disks in search path
+The ${green}path${white} command will show the disk devices in the order they are searched when you type a command into the shell. This is configured at boot, and removing devices from the path can have unexepcted results. Normally, the current device is searched, so the recommended approach is to switch to the drive using the ${green}cd${white} command, or to prefix the name in the shell such as 'a:my_command'.
+reboot
+reboot computer
+This will restart the computer, but with the idun cartridge activated within BASIC. So, you will be able to select an idun virtual drive and use it to launch C128 programs. This will also work with many programs that need to access a (virtual) disk after they begin, usually for loading data files. As long as the program in question does not overwrite the memory at $0e00-$0eff in BANK 0, it should be able to use the kernal to read files from the virtual disk.
+rename
+rename disk file(s)
+${bold}Usage:${normal} rename <old> <new> ... -- This command will rename one (or more) files. Simply repeat the parameters multiple times to rename multiple files in one go.
+resident
+keep a tool RAM-resident
+The ${green}resident${white} command pre-loads a tool into dynamic memory, allowing it to be started faster when used repeatedly. The default 'z:autoexec.bat' file uses this to pre-load the ${green}tty${white} command.
+showvdc
+display image files
+The ${green}showvdc${white} command displays hi-res monochrome and color images using the VDC bitmap display modes. It can handle image files up to 60Kb and 800x600 resolution. Most modes require a C128 with 64Kb of VRAM. The files may be in '.vdc' format for color or monochrome images, or '.pbm' format for monochrome only. When displaying multiple image files, press SPACE to display the next image. To exit, press 'Q' or STOP.
+showzx
+display ZX Spectrum images
+The ${green}showzx${white} command displays color images in ZX Spectrum (.scr file) format using the VDC bitmap display. Only 16kB of video memory is required for these images. When displaying multiple image files, press any key to display the next image. To exit, press STOP.
+sidplay
+play SID tune(s)
+The ${green}sidplay${white} command allows you to listen to SID files on the C128 using a shell command. This works by communicating with a Linux process through a Lua script to dynamically remap the SID so it can load to a different address. You can include multiple files, then use SPACE to advance to the next file. To select one of multiple 'tunes' in a single .sid file, use the <Left> and <Right> arrow keys. Press STOP to exit the player.
+tr
+translate text file format
+${bold}Usage:${normal} tr <from2to> <file> -- where from/to is 'p' (PETSCII), 'a' (ASCII), 's' (Speedscript), or 'u' (Linux) format. The translated output is displayed to the screen.
+tty
+ANSI terminal emulator
+This is a fairly capable terminal mainly used for connecting to Linux running on the Raspberry Pi on your idun cartridge. It supports ANSI control codes, and can even be used for old-school ANSI graphics, such as you'll find on modern BBS's accessed via telnet. If you want to use graphics, you should switch to the ANSI character set using the command ${green}mode ans${white}. Also, you can directly connect to a telnet BBS from the command line using the 'm:' device. Such a command would be similar to 'tty m:blackflag.acid.org'.
+type
+print text file to screen
+The ${green}type${white} command displays the contents of a PETSCII file to the screen.

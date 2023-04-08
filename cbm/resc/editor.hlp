@@ -1,0 +1,76 @@
+${green}Edit Command Keyboard Shortcuts${white}
+
+${bold}Main Command Keys${normal}
+
+KEY      ACTION
+-------  -------
+CT-@     Exchange cursor position with mark position
+CT-A     Alter case of letter under cursor
+CT-B     Go on to next buffer
+CT-SH-B  Go on to previous buffer
+CT-C     Copy range
+CT-D     Delete range
+CT-E     Exit with save
+CT-F     Find next occurrence of hunt string
+CT-SH-F  Find previous occurrence of hunt string
+CT-G     Go to given line number
+CT-SH-G  Go to given _physical_ line number
+CT-H     Set Hunt string
+CT-I     Insert new file into current one
+CT-J     Juggle the lines of a paragraph, keep separate
+CT-K     Kill current line
+CT-L     Load file
+CT-M     Set Mark for range operations
+CT-N     Set Name of current file (to "noname", for now)
+CT-O     Set Options: input/output translation/tab-expansion, etc.
+CT-P     Print range of current file
+CT-Q     Quit without save
+CT-R     Recall text from the Kill buffer
+CT-SH-R  Recall text from the Rub buffer
+CT-S     Save file
+CT-T     Tie together multiple lines into one big line (paragraph)
+CT-U     Undo the last change made to the document
+CT-V     Verify file
+CT-W     Write range with new name
+CT-X     Extract the individual lines from a paragraph
+CT-Y     Replace (all the other letters were taken!)
+CT-Z     <unassigned>
+CT-[     Toggle insert mode
+CT-\     Toggle modified flag
+CT-]     Toggle indent mode
+CT-^     Change the current working directory
+CT-_     Compose ISO-8859-1 character
+
+${bold}Other Command Keys${normal}
+
+KEY          ACTION
+---          ------
+UP           Cursor up
+DOWN         Cursor down
+LEFT         Cursor left
+RIGHT        Cursor right
+SH-LEFT      Word left
+SH-RIGHT     Word right
+CT-UP        Page up
+CT-DOWN      Page down
+CT-LEFT      Page left
+CT-RIGHT     Page right
+CO-UP        Goto top of document
+CO-DOWN      Goto bottom of document
+CO-LEFT      Goto beginning of line
+CO-RIGHT     Goto end of line
+RETURN       Split current line (indent not yet implemented)
+SH-RETURN    Go to next paragraph
+CT-RETURN    Go up one paragraph
+TAB          Tab
+SH-TAB       Backtab
+CT-TAB       Insert to next tab stop
+DEL          Delete character
+CO-DEL       Rubout
+INST         Insert one space
+HOME         Twice--go to bottom of screen, Thrice--go to middle
+CLR          Cursor home
+HELP         Bring up help window
+SH-HELP      Display help screen
+ESCAPE       Redisplay screen
+STOP         <stop some operations>

@@ -1,0 +1,73 @@
+m8_nframe_handler = *
+    ;clear drawing area
+    lda #0
+    sta syswork+5
+    sta syswork+3
+    sta syswork+1
+    lda #48
+    sta syswork+0
+    lda #160
+    sta syswork+2
+    ldy #30
+    ldx #5
+    lda #$10
+    jsr xGrOp
+    ;process new frame data
+    lda #<.nframe_callback
+    ldy #>.nframe_callback
+    jsr aceMapperProcmsg
+    ;swap buffers
+    jsr xGrBufswap
+    lda #0
+    jmp __m8_mailbox_reset
+.nframe_callback = *
+    lda #<mailboxB
+    ldy #>mailboxB
+    sta .verts+0
+    sty .verts+1
+    ;draw 1st polygon quad
+    ldx #4
+    sec
+    jsr xVdcPolygon
+    ;draw 2nd polygon quad
+    ldy #16
+    jsr .next_vert
+    ldx #4
+    sec
+    jsr xVdcPolygon
+    ;draw 4 connecting lines
+    ldy #16
+    jsr .next_vert
+    ldx #2
+    sec
+    jsr xVdcPlot
+    ldy #8
+    jsr .next_vert
+    ldx #2
+    sec
+    jsr xVdcPlot
+    ldy #8
+    jsr .next_vert
+    ldx #2
+    sec
+    jsr xVdcPlot
+    ldy #8
+    jsr .next_vert
+    ldx #2
+    sec
+    jsr xVdcPlot
+    rts
+.next_vert = *
+    sty .incr
+    lda .verts+0
+    clc
+    .incr = *+1
+    adc #0
+    sta .verts+0
+    lda .verts+1
+    adc #0
+    sta .verts+1
+    tay
+    lda .verts+0
+    rts
+.verts !byte 0,0
