@@ -8,7 +8,7 @@ What does it do? Hopefully a [demo](https://www.youtube.com/watch?v=X_DMMz55Tpo)
 
 The idun-cartridge uses a Propeller 1 micro-controller to provide a fast hardware interface between the C128 and a Raspberry Pi ("RPi") that runs a customized Linux OS. The cartridge is designed to work and fit best with the Raspberry Pi Zero 2. However, any recent Raspberry Pi can be made to work.
 
-The first set of phots show the idun-cartridge with RPi Zero 2 fitted. As you can see, a standard-sized C64/128 cartridge case can be hacked to cover the board, but leave the RPi, ports, and button accessible.
+The first set of photos show the idun-cartridge with RPi Zero 2 fitted. As you can see, a standard-sized C64/128 cartridge case can be hacked to cover the board, but leave the RPi, ports, and button accessible.
 
 ![cart-zero-1](doc/330_112856.jpg)
 ![cart-sero-2](doc/330_112927.jpg)
@@ -59,7 +59,7 @@ This will update the `sys` directory with newly built software. See the [Makefil
 
 If you intend to modify or add your own command-line tools, start by cloning and building this repository as described above. Then, your best resource is the code in the [cmd](cbm/cmd/) sub-directory, along with the documentation files [apiref.md](doc/apiref.md) and [toolbox.md](doc/toolbox.md). This covers most everything used by the included commands, notwithstanding the new API's that are still under construction.
 
-If you are interested in the Lua integration, then begin by reading [luaref.md](doc/luaref.md). Again, there is sample source code in [samples](samples/) and the [Makefile](samples/Makefile) can serve as a template for adding your own applications. __NOTE: There is a forthcoming Lua tool called `idunc` that will generate a new application template and built it automatically.__
+If you are interested in the Lua integration, then begin by reading [luaref.md](doc/luaref.md). Again, there is sample source code in [samples](samples/) and the [Makefile](samples/Makefile) can serve as a template for adding your own applications. _NOTE: There is a forthcoming Lua tool called `idunc` that will generate a new application template and built it automatically._
 
 ### Trivia
 
