@@ -35,6 +35,10 @@ You can download the customized Arch Linux OS image and flash it to a microSD ca
 
 Your microSD is now ready to use with your idun-cartridge. To expand the file system or setup networking, follow the additional instructions in [setup-rpi.md](doc/setup-rpi.md).
 
+The idun-cartridge has a single button, but dual use. Press and release immediately to Reset everything, including rebooting your C128. Press and hold for at least 3 seconds to shutdown your cartridge, which is necessary before powering down.
+
+It is recommended that you power the RPi externally from a USB power supply. The jumper (JP1) that allows power to come from the C128 is not installed by default, and only suited for the RPi Zero 2. Even then, it makes it too easy to turn off the C128 and Raspberry Pi without first shutting it down via the button. Plus, it is nice to be able to access the cartridge using the web filebrowser, emulation, or `ssh` while the C128 is switched off.
+
 You can also run [idun-vice](https://github.com/idun-project/idun-vice) to experiment with the idun-cartridge software WITHOUT any actual cartridge; just running everything off of the Raspberry Pi.
 
 ### Configuration
