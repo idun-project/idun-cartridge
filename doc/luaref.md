@@ -17,7 +17,7 @@ Included with Idun is an [idun-handler](#idun-handler) Lua object that makes it 
 
 3. Write a "native" idun application in a combination of Lua and 6502 assembler.
 
-Finally, Idun supports creating application in Lua in which the C128 is mainly the front-end for rendering graphics, playing sound, and receiving user inputs. In theory, all of the application logic and data processing can be done in Lua. 
+Finally, Idun supports creating applications in Lua in which the C128 is mainly the front-end for rendering graphics, playing sound, and receiving user inputs. In theory, all of the application logic and data processing can be done in Lua. 
 
 To communicate, messages are passed to the C128 using a "mailbox" interface, and these messages can be of arbitrary size and content. Even streaming data as fast as the C128 can handle it is possible. Likewise, there is an "event" interface that allows asynchronous events, like user input, to be forwarded to the Lua script. The two best, though simple, examples of this are e:mandelbrot.app and e:cube.app. These Lua/6502 assembler hybrid apps will even work in the idun-vice emulator.
 

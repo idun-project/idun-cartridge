@@ -63,7 +63,7 @@ This will update the `sys` directory with newly built software. See the [Makefil
 
 If you intend to modify or add your own command-line tools, start by cloning and building this repository as described above. Then, your best resource is the code in the [cmd](cbm/cmd/) sub-directory, along with the documentation files [apiref.md](doc/apiref.md) and [toolbox.md](doc/toolbox.md). This covers most everything used by the included commands, notwithstanding the new API's that are still under construction.
 
-If you are interested in the Lua integration, then begin by reading [luaref.md](doc/luaref.md). Again, there is sample source code in [samples](samples/) and the [Makefile](samples/Makefile) can serve as a template for adding your own applications. _NOTE: There is a forthcoming Lua tool called `idunc` that will generate a new application template and built it automatically._
+If you are interested in the Lua integration, then begin by reading [luaref.md](doc/luaref.md). Again, there is sample source code in [samples](samples/) and the [Makefile](samples/Makefile) can serve as a template for adding your own applications. _NOTE: There is a forthcoming Lua tool called `idunc` that will generate a new application template and build it automatically._
 
 ### Trivia
 

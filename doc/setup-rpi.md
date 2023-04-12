@@ -37,8 +37,8 @@ Use connmanctl CLI command to configure wi-fi
 
 ### Download (or `git clone`) open source code
 
-1. `wget idun-cartridge-latest.tar.gz` -or- `git clone https://github.com/idun-project/idun-cartridge`
-2. `tar xvfz idun-cartridge-latest`, if you downloaded the archive.
+1. `wget https://github.com/idun-project/idun-cartridge/archive/refs/tags/latest.tar.gz` -or- `git clone https://github.com/idun-project/idun-cartridge`
+2. `tar xvfz latest.tar.gz`, if you downloaded the archive.
 3. `cd idun-cartridge && ./build.sh`
 
 ### (Optional)

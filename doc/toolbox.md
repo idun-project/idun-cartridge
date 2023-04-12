@@ -1,7 +1,7 @@
 ## Toolbox APIs
 ---
 
-The Toolbox is a small set of reusable ML routines (~4 KiB) that are available alongside the Idun Kernel routines to make it easier to develop text-based tools in assembly language. These tools are launched from Idun Dos, and return the user to Dos when complete. By utilizing the Toolbox, tools can provide a simpler and more consistent user and programming experinece. There are 7 APIs for the following purposes:
+The Toolbox is a small set of reusable ML routines (~4 KiB) that are available alongside the Idun Kernel routines to make it easier to develop text-based tools in assembly language. These tools are launched from Idun Dos, and return the user to Dos when complete. By utilizing the Toolbox, tools can provide a simpler and more consistent user and programming experience. There are 7 APIs for the following purposes:
 
 1. [user](#tooluser): An API for UI and decorative text
 2. [win](#toolwin): An API for defining window areas managed by tools that take over the screen.
@@ -12,7 +12,7 @@ The Toolbox is a small set of reusable ML routines (~4 KiB) that are available a
 7. [sys](#toolsys): An API for calling System utilities
 
 ### toolUser
-This API works for console and fullscreen tools. For console tools, it is mainly useful for creating text that stands out against the more mundane console output through the use of colors, lines, or borders. When used for a fullscreen tool, it can also provide "popup" dialogs, menus, or help.
+This API works for console and full-screen tools. For console tools, it is mainly useful for creating text that stands out against the more mundane console output through the use of colors, lines, or borders. When used for a full-screen tool, it can also provide "popup" dialogs, menus, or help.
 
 The interface to the user API is designed so it can be data-driven. Therefore, the parameters to each function are embedded in the code, immediately following the `jsr` for the function.
 
@@ -23,7 +23,7 @@ The interface to the user API is designed so it can be data-driven. Therefore, t
     + h = horizontal (0=vertical)
     + r = retained (0=not retained)
     + o = overlayed (0=not overlayed)
-- width-or-height = number of characters wide or high, depeending on if it is to be layed out vertically or horizontally.
+- width-or-height = number of characters wide or high, depending on if it is to be layed out vertically or horizontally.
 
 `toolUserNode/End` start/end a text area definition
 
@@ -83,7 +83,7 @@ This API is for manipulating the top line of the display, which is consistently 
 `toolStatAlert` temporarily replace status line text with alert message
 
 ### toolKeys
-This API is for deifining the tool's command keys and their handlers.
+This API is for defining the tool's command keys and their handlers.
 
 `toolKeysSet` set up a command key handler
 
@@ -95,7 +95,7 @@ This API is for deifining the tool's command keys and their handlers.
 
 Any key code can be used by the tool. However, reusing key codes already defined by the user as described below will override the user-defined function. Therefore, most tools should only use key codes outside the range $80-$8f for command keys.
 
-In addition to command keys, up to 16 user-defined function key macro definitions may be creatied by the user with the `funkey` shell command. These user-defined keys are used to inject a macro string (up to 32 chars) any time the key is pressed from within any tool, including in the DOS shell itself.
+In addition to command keys, up to 16 user-defined function key macro definitions may be created by the user with the `funkey` shell command. These user-defined keys are used to inject a macro string (up to 32 chars) any time the key is pressed from within any tool, including in the DOS shell itself.
 
 Only the keycodes $80-$8f may be used with the `funkey` command. This includes F1-F12 codes, plus SH-HELP, SH-RUN, SH-RETURN. The code for CO-1 ($81) is specifically excluded by `funkey` and is available as an application command key instead.
 
@@ -127,6 +127,6 @@ This API provides two functions for setting a countdown timer and invoking a cal
 
 ### toolSys
 
-This API allows the tool to call other system tools by executing a subprocess with arguments.
+This API allows the tool to call other system tools by executing a sub-process with arguments.
 
-`toolSyscall` invoke a subprocess
+`toolSyscall` invoke a sub-process
