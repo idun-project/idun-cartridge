@@ -1,3 +1,11 @@
+### Logging in to the Raspberry Pi
+
+From the idun-shell, you can access Linux to setup networking and other services. You will be logged in as user `idun` automatically, and you will have `sudo` ability. The default password is "idun", and the default root password is "Commodore".
+
+The idun-cartridge ships with `ssh` and the idun-filebrowser enabled. You should attach the cartridge to your network using wired Ethernet and/or setup the WiFi connection.
+
+If your network supports `.local` host names, then your cartridge should appear on the network as host "idunpi" or "idunpi.local". If not, then use the Linux prompt to discover the cartridge ip address. Then, use `ssh` or browse to port 8080 for the idun-filebrowser.
+
 ### Resize file system / extend root partition
 
 After imaging the minimal image, use one of:
