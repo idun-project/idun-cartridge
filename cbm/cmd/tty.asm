@@ -1119,15 +1119,24 @@ escAnsiRawDispatch:
 +  +cmpASCII "B"
    bne +
    jmp escCursorDown
++  +cmpASCII "b"
+   bne +
+   jmp escBlankspace
 +  +cmpASCII "C"
    bne +
    jmp escCursorRight
 +  +cmpASCII "D"
    bne +
    jmp escCursorLeft
++  +cmpASCII "d"
+   bne +
+   jmp escCursorPos
 +  +cmpASCII "H"
    bne +
    jmp escCursorPos
++  +cmpASCII "G"
+   bne +
+   jmp escCursorHorizPos
 +  +cmpASCII "f"
    bne +
    jmp escCursorPos
@@ -1270,6 +1279,11 @@ ActIndex = *  ;cursor down and scroll screen if necessary
 ActRvsIndex = *  ;cursor up and scroll screen if necessary
    jmp escCursorUpScroll
 
+escCursorHorizPos = *   ;ESC [col G
+   lda escParmData+0
+   sta escParmData+1
+   jsr aceConGetpos
+   sta escParmData+0
 escCursorPos = *  ;ESC [ row ; col H    //   ESC [ row ; col f
    ;** get coordinates
    ldx #1
@@ -1342,6 +1356,10 @@ escCursorDown = *  ;ESC [ count B  //   ESC D
    lda #$11
    jmp escCursorRep
 
+escBlankspace = *   ;ESC [ count b
+   lda #$20
+   jmp escCursorRep
+   
 escCursorRight = *  ;ESC [ count C
    lda #$1d
    jmp escCursorRep
