@@ -546,7 +546,7 @@ RETURNS:  <none>
 ALTERS :  .A, .X, .Y
 ```
 
-TThis call "clears" the current window by filling it with the character/ color/attributes you specify.  You can use the char/color/attr to limit what gets cleared.
+This call "clears" the current window by filling it with the character/ color/attributes you specify.  You can use the char/color/attr to limit what gets cleared.
 
 ```
 NAME   :  aceWinPos

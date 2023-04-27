@@ -1171,9 +1171,13 @@ escAnsiRawDispatch:
    bne +
    jmp escEraseLine
 +  +cmpASCII "J"
+   bne ++
+   lda escParmData+0
    bne +
-   jmp escEraseScreen
-+  +cmpASCII "r"
+   lda #2
+   sta escParmData+0
++  jmp escEraseScreen
+++ +cmpASCII "r"
    bne +
    jmp escScrollRegion
 +  +cmpASCII "i"
@@ -1418,7 +1422,7 @@ escEraseScreen = *  ;ESC [ cmd J
    lda #$e0
    ldx escParmData+0
    beq +
-   lda #$ef
+   lda #$fe
    dec escParmData+0
    bne ++
 +  ldx #1
