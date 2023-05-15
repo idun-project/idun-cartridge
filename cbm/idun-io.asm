@@ -48,41 +48,46 @@ pidInitNmi = *
 
 !if romsize=0 {
 rom_sig !pet "CBM"
-nmiMmap = *
+nmiMmap = *             ;33 cycles (in kernal)
   ; Exrom access needs 1MHz
-  bit winDriver
-  bpl +
-  jsr winClockSlow
-+ lda #bkExtrom
-  sta bkSelect
+  bit winDriver         ;4
+  bpl +                 ;2
+  jsr winClockSlow      ;30
++ lda #bkExtrom         ;2
+  sta bkSelect          ;4
   ;Check for ROM preamble
-  ldx #2
-- lda rom_sig,x
-  cmp $8004,x
-  bne +
-  dex
-  bpl -
-+ cpx #255
-  bne nmiDone  ;No preamble; must be different NMI source
+  ldx #2                ;2
+- lda rom_sig,x         ;4
+  cmp $8004,x           ;4
+  bne +                 ;2
+  dex                   ;2
+  bpl -                 ;24
++ cpx #255              ;2
+  bne nmiOther          ;2
   ;If preamble, check next character for "8" or "1",
   ;and then make appropriate JMP or JSR.
-  lda #"8"
-  cmp $8007
-  bne +
+  lda #"8"              ;2
+  cmp $8007             ;4
+  bne +                 ;3
   jmp ($8002)
-+ jsr $8009
++ jsr $8009             ;6+
   ;FIXME return value in .A to MemMapper process
   ;
   ;soft-switch disable ROM
-  lda #0
-  sta $de7e
-  lda $81ff
-  nmiDone = *
+  lda #0                ;2
+  sta $de7e             ;4
+  lda $81ff             ;4
   ; Restore 2MHz
-  bit winDriver
-  bpl +
-  jsr winClockFast
-+ jmp nmiContinue
+  bit winDriver         ;4
+  bpl +                 ;2
+  jsr winClockFast      ;28
++ jmp nmiExit
+  nmiOther = *
+  ; Restore 2MHz
+  bit winDriver         ;4
+  bpl +                 ;2
+  jsr winClockFast      ;28
++ jmp nmiContinue       ;48
 }
 
 ; .A=char

@@ -570,12 +570,12 @@ nmiHandler = *
    jmp nmiContinue
 }
 nmiContinue = *
-   cld
+   cld               ;2
 !if useC128 {
-   lda #$7f
-   sta $dd0d
-   ldy $dd0d
-   bmi +
+   lda #$7f          ;2
+   sta $dd0d         ;4
+   ldy $dd0d         ;4
+   bmi +             ;3
    lda #$7f
    sta $dc00
    lda $ff
@@ -618,14 +618,14 @@ nmiContinue = *
 
 !if useC64 {
 nmiExit = *
-   pla
-   sta bkSelect
-   pla
-   tay
-   pla
-   tax
-   pla
-   rti
+   pla            ;4
+   sta bkSelect   ;4
+   pla            ;4
+   tay            ;2
+   pla            ;4
+   tax            ;2
+   pla            ;4
+   rti            ;6
 }
 
 ;C128 NMI overhead=76 cycles: int=7, maxLatency=6, ROMenter=33, ROMexit=30

@@ -148,10 +148,11 @@ ToolwinInit = *
    ldy #>tbIrqHandler
    jmp aceIrqHook
 
-
-conInitErr: !pet "console: window too small",13,0
-
 toolWinRestore = *
+   ; Restore toolbox handling interrupts
+   lda #<tbIrqHandler
+   ldy #>tbIrqHandler
+   jsr aceIrqHook
 ToolwinInit1 = *
    ;** fetch color palette
    jsr aceWinPalette
