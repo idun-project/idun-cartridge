@@ -16,9 +16,15 @@ jmp main
 
 main = *
   jsr ScreenSave
+  ; Disable toolbox IRQ
+  lda #<doNothing
+  ldy #>doNothing
+  jsr aceIrqHook
   ; Wait on keypress
   jsr aceConGetkey
   jsr ScreenUnsave
+  jsr toolWinRestore
+doNothing = *
   rts
 
 ScreenSave = *

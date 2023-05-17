@@ -52,7 +52,8 @@ nmiMmap = *             ;33 cycles (in kernal)
   ; Exrom access needs 1MHz
   bit winDriver         ;4
   bpl +                 ;2
-  jsr winClockSlow      ;30
+  lda #$00              ;2
+  sta $d030             ;4
 + lda #bkExtrom         ;2
   sta bkSelect          ;4
   ;Check for ROM preamble
@@ -80,7 +81,8 @@ nmiMmap = *             ;33 cycles (in kernal)
   ; Restore 2MHz
   bit winDriver         ;4
   bpl +                 ;2
-  jsr winClockFast      ;28
+  lda #$01              ;2
+  sta $d030             ;4
 + jmp nmiExit
   nmiOther = *
   ; Restore 2MHz
