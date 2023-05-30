@@ -8,11 +8,19 @@
     useC64  = 0
     LOADADDR = $1300
     RAMR = $0e00    ; kernel hooks page
+    CHRGET = $0380
+    CHRGOT = $0386
+    CURLIN = $3b
+    TXTPTR = $3d
 } else {
     useC128 = 0
     useC64  = 1
     LOADADDR = $c000
     RAMR = $cf00    ; kernel hooks page
+    CHRGET = $73
+    CHRGOT = $79
+    CURLIN = $39
+    TXTPTR = $7a
 }
 ; Local vars stored at the end of RAM-resident block
 RAMVAR      = RAMR+$f8
@@ -63,7 +71,7 @@ kFnaddr     = $bb ; address of the filename
     kFnbank             = $c7 ; bank of the filename stored probably 1
 
     kernelINDFET        = $ff74
-    kernelSTA           = $f7bf
+    kernelINDSTA        = $ff77
     kernelSetbnk        = $ff68
     basicPrompt         = $4d37
     basicRun            = $af99
@@ -76,6 +84,20 @@ kFnaddr     = $bb ; address of the filename
     basicPrompt         = $a474
     basicError          = $e38b     ;$a43a
     basicAddr           = $801
+}
+
+;Handy macros
+!macro incTXTPTR {
+    inc TXTPTR
+    bne +
+    inc TXTPTR+1
++   nop
+}
+!macro decTXTPTR {
+    lda TXTPTR
+    bne +
+    dec TXTPTR+1
++   dec TXTPTR
 }
 
 * = LOADADDR
@@ -148,32 +170,157 @@ talk = *
     inc $6c
     rts
 ChDir = *
+    ;bank in I/O
+    lda bkSelect
+    pha
+    lda #bkExtrom
+    sta bkSelect
+    ;(TXTPTR),y points to dirname
+    sty dirNameOffset
+    lda (TXTPTR),y
+    cmp #"."
+    bne +
+    ;back to configured drive?
+    lda configDrv
+    cmp IdunDrive
+    beq ++
+    sta IdunDrive
+    jmp ReturnBasic
++   cmp #"/"
+    bne +
+    ;first, ChDir to root
+    lda #0
+    sta (TXTPTR),y
+    jsr idunChDir
+    inc dirNameOffset
+    jmp ++
++   cmp #":"
+    bne ++
+    inc dirNameOffset
+    jsr idunMount
+    jmp ReturnBasic
+++  jsr idunChDir
+    ;fall-through
+ReturnBasic = *
+    ;restore bank
+    pla
+    sta bkSelect
+    ;set status to Ok
+    lda #$40
+    sta kStatus
+    clc
+    jmp basicPrompt
+idunChDir = *
+    jsr idunCmdOpen
+    beq +
+    jmp idunCmdError
++   lda #"/"
+    jsr idunCmdSend
+    beq +
+    jmp idunCmdError
++   rts
+idunMount = *
+    ;set kernel filename=image file
+    ldy dirNameOffset
+-   lda (TXTPTR),y
+    beq +
+    cmp #$22
+    beq +
+    iny
+    jmp -
++   tya
+    sec
+    sbc dirNameOffset
+    pha
+    lda TXTPTR
+    clc
+    adc dirNameOffset
+    tax
+    lda TXTPTR+1
+    adc #0
+    tay 
+    pla
+    jsr kernelSetnam
+    ;open image file
+    lda #"R"
+    ldx #hookOpen
+    jsr romcall
+    beq +
+    jmp idunCmdError
+    ;mount image file
++   lda IdunDrive
+    sta configDrv
+    lda #4
+    sta IdunDrive   ;^: device
+    jsr idunCmdOpen
+    beq +
+    jmp idunCmdError
++   lda IdunDrive
+    ora #$20
+    jsr idunChOut
+    lda #$7f    ;Lfn=31
+    jsr idunChOut
+    lda #"%"
+    jsr idunChOut
+    lda configDrv
+    clc
+    adc #"@"
+    jsr idunChOut
+    lda #0
+    jsr idunChOut
+    lda #$3F
+    jsr idunChOut
+    ;Get errno
+-   jsr idunChIn
+    bcs -
+    pha
+    ;Close command channel
+    ldx #hookClose
+    jsr romcall
+    ;close image file
+    lda IdunDrive
+    pha
+    lda configDrv
+    sta IdunDrive
+    ldx #hookClose
+    jsr romcall
+    pla
+    sta IdunDrive
+    pla
+    beq +
+    jmp idunCmdError
++   rts
+idunCmdOpen = *
     ;send OPEN
     lda IdunDrive
     ora #$20
     jsr idunChOut
     lda #$bf    ;Lfn=31
     jsr idunChOut
-    ldy #1
     jsr sendDirname
     lda #$3F
     jsr idunChOut
     ; Get errno
 -   jsr idunChIn
     bcs -
-    ;send "/" COMMAND
+    rts
+idunCmdSend = *
+    ;send COMMAND
+    pha
     lda IdunDrive
     ora #$20
     jsr idunChOut
     lda #$7f    ;Lfn=31
     jsr idunChOut
-    ldy #0
+    pla
+    jsr idunChOut
     jsr sendDirname
     lda #$3F
     jsr idunChOut
     ; Get errno
 -   jsr idunChIn
     bcs -
+    pha
     ;send CLOSE
     lda #$5f
     jsr idunChOut
@@ -184,24 +331,35 @@ ChDir = *
     jsr idunChOut
     lda #$3F
     jsr idunChOut
-    lda #$40
-    sta kStatus
-    clc
+    pla
     rts
+idunCmdError = *
+    pha
+    ldx #0
+-   lda errorMessage,x
+    jsr kernelChrout
+    inx
+    cpx #(sendDirname-errorMessage)
+    bne -
+    pla
+    clc
+    adc #$30
+    jsr kernelChrout
+    lda #13
+    jsr kernelChrout
+    lda configDrv
+    sta IdunDrive
+    rts
+errorMessage !pet "I/O error #"
 sendDirname = *
-    cpy kFnlen
+    ldy dirNameOffset
+-   lda (TXTPTR),y
     beq +
-!if useC128 {
-    ldx kFnbank
-    lda #kFnaddr
-    jsr kernelINDFET
-} else {
-    lda (kFnaddr),y
-}
+    cmp #$22
     beq +
     jsr idunChOut
     iny
-    jmp sendDirname
+    jmp -
 +   lda #$2c    ; ","
     jsr idunChOut
     lda #"R"
@@ -209,6 +367,8 @@ sendDirname = *
     lda #0
     jsr idunChOut
     rts
+dirNameOffset !byte 0
+
 idDataport = $de00
 idRxBufLen = $de01
 idunChIn = *
@@ -224,6 +384,215 @@ idunChOut = *
     sta idDataport
     clc
     rts
+
+;BASIC extensions handled via Wedge (use '@' prefix)
+idunWedge = *
+    +incTXTPTR
+    ;direct/immediate mode?
+    lda CURLIN+1
+    cmp #$ff
+    bne wedgeOut
+    ;is direct mode, check for "@"
+    ldy #0
+    lda (TXTPTR),y
+    cmp #"@"
+    bne wedgeOut
+    ;might be a wedge command
+    +incTXTPTR
+    lda (TXTPTR),y
+    cmp #"$"
+    beq wedgeDir
+    cmp #"@"
+    bcc wedgeOut
+    cmp #"_"
+    bcs wedgeOut
+    sec
+    sbc #"@"
+    ;check if valid virtual disk
+    tay
+    asl
+    asl
+    tax
+    lda RAM_START,x
+    cmp #4
+    beq ++
+    cmp #7
+    beq ++
+    ;not a valid virtual disk
+    ldx #0
+-   lda invdiskMsg,x
+    beq +
+    jsr kernelChrout
+    inx
+    jmp -
++   jmp basicPrompt
+    ;reset current & configured drive
+++  tya
+    sta configDrv
+    sta IdunDrive
+    jmp basicPrompt
+wedgeOut = *
+    jmp CHRGOT
+wedgeDir = *
+    ldx #<dirSymbol
+    ldy #>dirSymbol
+    lda #1
+    jsr kernelSetnam
+    jsr Catalog
+    jmp basicPrompt
+dirSymbol !pet "$"
+invdiskMsg !pet "?not a virtual disk",13,0
+
+;BASIC extensions handled via IError trap
+OnSyntaxErr = *
+    ldy #0
+    lda (TXTPTR),y
+    cmp #$22    ;a quote
+    bne ++
+    ;check for "CD" cmd
+    ldx #0
+-   inx
+    +decTXTPTR
+    lda (TXTPTR),y
+    cmp #$20    ;skip spaces
+    beq -
+    cmp #"D"
+    beq +
+    jmp basicError
++   inx
+    +decTXTPTR
+    lda (TXTPTR),y
+    cmp #"C"
+    beq +
+    jmp basicError
++   inx
+    txa
+    tay
+    jmp ChDir
+!if useC128 {
+++  cmp #"S"
+    bne +
+    +decTXTPTR
+    lda (TXTPTR),y
+    cmp #$eb    ;"DOS"
+    bne +
+    jmp OnStartDos
++   jmp basicError
+} else {
+++  ldy #0
+    +decTXTPTR
+    lda (TXTPTR),y
+    cmp #"S"
+    bne +
+    +decTXTPTR
+    lda (TXTPTR),y
+    cmp #"O"
+    bne +
+    +decTXTPTR
+    lda (TXTPTR),y
+    cmp #"D"    ;DOS
+    beq OnStartDos
++   jmp basicError
+}
+OnStartDos = *
+    lda $eb
+    sta $200
+    jmp loadIdun
+
+OnUndefErr = *
+!if useC64 {
+    ldy #0
+-   +decTXTPTR
+    lda (TXTPTR),y
+    cmp #$20    ;skip spaces
+    beq -
+    cmp #$8a    ;RUN
+    bne +
+    jmp runProg
+}
++   jmp basicError
+
+Basic = *
+    ;** copy basic startup code
+    ldy #0
+    lda #<basicStart    ;from
+    sta kFileaddr+0
+    lda #>basicStart
+    sta kFileaddr+1
+    lda #<basicAddr     ;to
+    sta kCurraddr+0
+    lda #>basicAddr
+    sta kCurraddr+1
+-   beq +
+    lda (kFileaddr),y
+    sta (kCurraddr),y
+    iny
+    jmp -
++   inc kFileaddr+1
+    inc kCurraddr+1
+    dec basicLength+1
+    beq +
+    jmp -
++   lda basicLength+0
+    pha
+-   beq +
+    lda (kFileaddr),y
+    sta (kCurraddr),y
+    iny
+    dec basicLength+0    
+    jmp -
++   pla
+    clc
+    adc kCurraddr+0
+    sta kCurraddr+0
+    bcc +
+    inc kCurraddr+1
++   nop 
+    ;** start basic program
+!if useC128 {
+    ;** install the wedge (for "@ commands")
+    lda #$4c    ;JMP
+    sta CHRGET
+    lda #<idunWedge
+    sta CHRGET+1
+    lda #>idunWedge
+    sta CHRGET+2
+    ;$1210 must point to top of basic text
+    sta $1210
+    lda kCurraddr+1
+    sta $1211
+    lda #0
+    sta $f8
+    sta $f9     ;edit flags
+    lda #$14
+    sta 2604
+    sta $d018   ;VIC-II char base
+    lda #0
+    sta 208     ;empty the key buffer
+    jsr $af87   ;C128 lnkprg
+    jmp basicRun
+} else {
+    jsr $e453   ;basic INITV
+    lda #<IError
+    ldy #>IError
+    sta IERROR+0
+    sty IERROR+1
+    jsr $e3bf   ;basic INITCZ
+    ;$2d (VARTAB) must point to top of basic text
+    lda kCurraddr+0
+    sta $2d
+    lda kCurraddr+1
+    sta $2e
+    jsr $a533   ;lnkprg
+    ;** install the wedge (for "@ commands")
+    lda #$4c    ;JMP
+    sta CHRGET
+    lda #<idunWedge
+    sta CHRGET+1
+    lda #>idunWedge
+    sta CHRGET+2
+    jmp magic
+}
 !if useC128 {
 idunkLen !byte 8
 idunk !pet "idunk128"
@@ -232,10 +601,176 @@ idunkLen !byte 5
 idunk !pet "idunk"
 }
 
+; RAM-resident part
+RAM_START = *
+
+!pseudopc (RAMR) {
+IOpen = *
+    lda kLastDevice
+    cmp MyDevice
+    beq +
+    jmp (kernalOpen)
++   ldy #0
+    jsr FnIsdir
+    bne +
+    jsr Catalog
++   jmp basicPrompt
+ILoader = *
+    pha
+    lda kLastDevice
+    cmp MyDevice
+    beq +
+    pla
+    jmp (kernalLoader)
++   pla
+    sta kVerify
+    ldy #0
+    jsr FnIsdir
+    bne +
+    jmp Catalog
++   ldx #hookLoad
+    jmp romcall   
+ISaver = *
+    lda kLastDevice
+    cmp MyDevice
+    beq +
+    jmp (kernalSaver)
++   ldx #hookSave
+    jmp romcall
+IError = *
+    cpx #$0b    ;is syntax error?
+    bne +
+    jmp OnSyntaxErr
++   cpx #$11    ;is undef'd statement error?
+    bne +
+    jmp OnUndefErr
++   jmp basicError
+loadIdun = *
+    ; boot idun kernel
+    lda #26     ;Z:
+    sta IdunDrive
+    lda #1
+    sta kSecaddr
+    lda idunkLen
+    ldx #<idunk
+    ldy #>idunk
+    jsr kernelSetnam
+!if useC128 {
+    lda #bkRam0
+    ldx #bkKernel
+    jsr kernelSetbnk
+}
+    ; load kernel and jump
+    ldx #hookLoad
+    jsr romcall
+    bcc +
+    rts
++   jmp $1300
+!if useC64 {
+runProg = *
+    ;parse name of prog
+    ldx #0
+-   inx
+    lda $200,x
+    cmp #$20    ;skip over spaces
+    beq -
+    cmp #$22    ;RUN "
+    beq +
+    jmp basicError
++   stx start_name
+-   inx
+    lda $200,x
+    cmp #$22    ;RUN "<name>"
+    bne -
+    dex
+    txa
+    sec
+    sbc start_name
+    ldx start_name
+    inx
+    ldy #>$200
+    jsr kernelSetnam
+    ldx #hookLoad
+    jsr romcall
+    bcc +
+    jmp basicError
+    ; disable EXROM
++   lda #$00
+    sta $de7e
+    lda $81ff
+    jsr kernelRESTOR
+    jmp magic
+start_name !byte 0
+}
+romcall = *
+    tay
+    lda #$c0
+    jsr kernelSetmsg
+!if useC128 {
+    ;select 1MHz
+    lda $d030
+    sta $0a37
+    lda #%00
+    sta $d030
+}
+    lda bkSelect
+    pha
+    lda #bkExtrom
+    sta bkSelect
+    tya
+    stx *+4
+    jsr JUMP_ROM
+    tay
+    pla
+    sta bkSelect
+!if useC128 {
+    ;restore 2MHz
+    lda $0a37
+    sta $d030
+}
+    tya
+    rts
+FnIsdir = *
+!if useC128 {
+	ldx kFnbank
+	lda #kFnaddr
+	jsr kernelINDFET
+} else {
+    lda (kFnaddr),y
+}
+    cmp #"$"
+    rts
+!if useC64 {
+magic = *
+    ldx #7
+-   lda exit_magic,x
+    sta $277,x
+    dex
+    bpl -
+    lda #5
+    sta $c6
+    lda #0
+    jmp $27b
+    ;Here's how we exit:
+    ;JMP ($a002)
+    ;and keyb buffer contains "RUN\r"
+exit_magic !pet "run:",13,$6c,$02,$a0
+}
+}   ;END RAM-resident part
+
+!if *-RAM_START > 248 {
+    !error "RAM resident driver exceeds one page limit!"
+} else {
+    !ifndef first_time_warning {
+        !set first_time_warning = 1
+        !warn "RAM resident driver: ",RAMR," - ",RAMR+(*-RAM_START)
+        !warn "BASIC extension: ",LOADADDR," - ",RAM_START-1
+        !warn "Configuration Page: ",RAM_START
+    }
+}
+
 Install = *
-; Install hook driver
-    ; lda #bkKernel
-    ; sta bkSelect
+    ;Install hook driver
     lda configDrv
     sta IdunDrive
     lda configIec
@@ -278,273 +813,30 @@ Install = *
     inx
     cpx #<RAMVAR    ;stop when reach vars area
     bne -
-    rts
-
-Basic = *
-    ;** copy basic startup code
-    ldy #0
-    lda #<basicStart    ;from
-    sta kFileaddr+0
-    lda #>basicStart
-    sta kFileaddr+1
-    lda #<basicAddr     ;to
-    sta kCurraddr+0
-    lda #>basicAddr
-    sta kCurraddr+1
-    lda basicLength+0   ;size
-    sta temp+0
-    lda basicLength+1
-    sta temp+1
--   beq +
-    lda (kFileaddr),y
-    sta (kCurraddr),y
-    iny
-    jmp -
-+   inc kFileaddr+1
-    inc kCurraddr+1
-    dec temp+1
-    beq +
-    jmp -
-+   lda temp+0
-    pha
--   beq +
-    lda (kFileaddr),y
-    sta (kCurraddr),y
-    iny
-    dec temp+0    
-    jmp -
-+   pla
+    ;** RAM_START area relocated, then
+    ;** overwritten with the config blob
+LoadConfig = *
+    ; TALK channel #9
+    lda #9  ;I:
     clc
-    adc kCurraddr+0
-    sta kCurraddr+0
-    bcc +
-    inc kCurraddr+1
-+   nop 
-    ;** start basic program
-!if useC128 {
-    ;$1210 must point to top of basic text
-    sta $1210
-    lda kCurraddr+1
-    sta $1211
-    lda #0
-    sta $f8
-    sta $f9     ;edit flags
-    lda #$14
-    sta 2604
-    sta $d018   ;VIC-II char base
-    lda #0
-    sta 208     ;empty the key buffer
-    jsr $af87   ;C128 lnkprg
-    jmp basicRun
-} else {
-    jsr $e453   ;basic INITV
-    lda #<IError
-    ldy #>IError
-    sta IERROR+0
-    sty IERROR+1
-    jsr $e3bf   ;basic INITCZ
-    ;$2d (VARTAB) must point to top of basic text
-    lda kCurraddr+0
-    sta $2d
-    lda kCurraddr+1
-    sta $2e
-    jsr $a533   ;lnkprg
-    ;copy "magic" exit routine
-magic = *
-    ldx #6
--   lda exit_magic,x
-    sta $277,x
-    dex
-    bpl -
-    lda #4
-    sta $c6
-    lda #0
-    jmp $27b
-    ;Here's how we exit:
-    ;JMP ($a002)
-    ;and keyb buffer contains "RUN\r"
-exit_magic !pet "run",13,$6c,$02,$a0
-}
-
-; RAM-resident part
-RAM_START = *
-
-!pseudopc (RAMR) {
-IOpen = *
-    lda kLastDevice
-    cmp MyDevice
-    beq +
-    jmp (kernalOpen)
-+   ldy #0
-    jsr FnIsdir
-    bne +
-    jsr Catalog
-+   jmp basicPrompt
-ILoader = *
-    pha
-    lda kLastDevice
-    cmp MyDevice
-    beq +
-    pla
-    jmp (kernalLoader)
-+   pla
-    sta kVerify
-    ldy #0
-    jsr FnIsdir
-    bne +
-    jmp Catalog
-!if useC128 {
-+	ldx kFnbank
-	lda #kFnaddr
-	jsr kernelINDFET
-} else {
-+   lda (kFnaddr),y
-}
-    cmp #"/"
-    bne +
-    jmp ChDir
-+   ldx #hookLoad
-    jmp romcall   
-ISaver = *
-    lda kLastDevice
-    cmp MyDevice
-    beq +
-    jmp (kernalSaver)
-+   ldx #hookSave
-    jmp romcall
-IError = *
-    cpx #$0b    ;is syntax error?
-    beq +
-!if useC64 {
-    cpx #$11    ;is undef'd statement error?
-    beq +
-}
-    jmp basicError
-!if useC128 {
-+   cmp #"S"
-    bne +
-    lda $200
-    cmp #$eb    ;"DOS"
-    bne +
-    jmp loadIdun
-+   jmp basicError
-} else {
-+   lda $200
-    cmp #$8a    ;RUN
-    beq +
-    cmp #"D"
-    bne ++
-    lda $201
-    cmp #"O"
-    bne ++
-    lda $202
-    cmp #"S"    ;DOS
-    bne ++
-    lda $eb
-    sta $200
-    jmp loadIdun
-+   ldx #0
--   inx
-    lda $200,x
-    cmp #$20    ;skip over spaces
-    beq -
-    cmp #$22    ;RUN"
-    bne ++
-    jmp runProg
-++  jmp basicError
-runProg = *
-    stx start_name
--   inx
-    lda $200,x
-    cmp #$22    ;RUN"name"
-    bne -
-    dex
-    txa
-    sec
-    sbc start_name
-    ldx start_name
+    adc #$40
+    jsr idunChOut
+    ; SECOND $7F
+    lda #$7F
+    jsr idunChOut
+    ; Read 256-byte config
+    ldx #0
+--  ldy idRxBufLen
+    beq --
+-   lda idDataport
+    sta RAM_START,x
     inx
-    ldy #>$200
-    jsr kernelSetnam
-    ldx #hookLoad
-    jsr romcall
-    bcc +
-    jmp basicError
-    ; disable EXROM
-+   lda #$00
-    sta $de7e
-    lda $81ff
-    jsr kernelRESTOR
-    jmp magic
-start_name !byte 0
-}
-loadIdun = *
-    ; boot idun kernel
-    lda #26     ;Z:
-    sta IdunDrive
-    lda #1
-    sta kSecaddr
-    lda idunkLen
-    ldx #<idunk
-    ldy #>idunk
-    jsr kernelSetnam
-!if useC128 {
-    lda #bkRam0
-    ldx #bkKernel
-    jsr kernelSetbnk
-}
-    ; load kernel and jump
-    ldx #hookLoad
-    jsr romcall
-    bcc +
+    beq +
+    dey
+    beq --
+    jmp -
++   clc
     rts
-+   jmp $1300
-FnIsdir = *
-!if useC128 {
-	ldx kFnbank
-	lda #kFnaddr
-	jsr kernelINDFET
-} else {
-    lda (kFnaddr),y
-}
-    cmp #"$"
-    rts
-romcall = *
-    tay
-    lda #$c0
-    jsr kernelSetmsg
-!if useC128 {
-    ;select 1MHz
-    lda $d030
-    sta $0a37
-    lda #%00
-    sta $d030
-}
-    lda bkSelect
-    pha
-    lda #bkExtrom
-    sta bkSelect
-    tya
-    stx *+4
-    jsr JUMP_ROM
-    pla
-    sta bkSelect
-!if useC128 {
-    ;restore 2MHz
-    lda $0a37
-    sta $d030
-}
-    rts
-}
-
-!if *-RAM_START > 248 {
-    !error "RAM resident driver exceeds one page limit!"
-} else {
-    !ifndef first_time_warning {
-        !set first_time_warning = 1
-        !warn "RAM resident driver: ",RAMR," - ",RAMR+(*-RAM_START)
-    }
-}
 
 basicStart = *
 !if useC128 {
@@ -554,6 +846,9 @@ basicStart = *
 }
 basicLength !word *-basicStart
 
+!if useC128 and * > $1bff {
+    !error "Running into BASIC TEXT memory! (",*,")"
+}
 
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
