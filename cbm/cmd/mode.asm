@@ -655,6 +655,43 @@ loadcbm !pet "Loading Commodore font...",0
 ansfont !pet "z:chrset-ansi",0
 loadans !pet "Loading ANSI font...",0
 
+   setChrset = *
+   lda argnum
+   ldy #0
+   jsr getarg
+   ldy #2
+   ldx #4
+-  lda (zp),y
+   cmp fontdrv,x
+   beq +
+   jmp doUsageMsg
++  iny
+   inx
+   cpx #9
+   beq +
+   jmp -
++  nop
+-  lda (zp),y
+   beq +
+   sta fontdrv,x
+   iny
+   inx
+   jmp -
++  lda #<loadany
+   ldy #>loadany
+   jsr puts
+   lda #<fontdrv
+   ldy #>fontdrv
+   jsr puts
+   lda #13
+   jsr putchar
+   lda #<fontdrv
+   ldy #>fontdrv
+   jmp setChrContinue
+fontdrv !pet "z:chrset-"
+anyfont !fill 10,0
+loadany !pet "Loading font from ",0
+
    setChrContinue = *
    sta zp
    sty zp+1
@@ -791,6 +828,8 @@ argsus = *
    !word setChrCommodore
    !pet "an"  ;ansi charset
    !word setChrAnsi
+   !pet "ch"  ;any chrset-? file
+   !word setChrset
    !pet "de"  ;set debug
    !word setDebugMode
    !byte 0

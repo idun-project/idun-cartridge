@@ -1061,17 +1061,8 @@ kernDirClose = *
    beq +
    clc
    rts
-+  ldy devtable,x
-   stx closeFd
-   lda configBuf+0,y
-   ; IDUN: Replace with acepid for type #4/7
-   cmp #4
-   beq +
-   cmp #7
-   beq +
-   lda closeFd
-   jmp aceClose
-+  jmp pidDirClose
++  stx closeFd
+   jmp close
 
 ;*** aceDirRead( .X=fcb ) : .Z=eof, aceDirentBuffer=data
 

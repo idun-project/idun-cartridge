@@ -203,6 +203,7 @@ funkeydef    = $1000 ;(256 bytes) 16 user programmed "hotkey" defs
    kernelStopHandler = $f66e
    nmiRedirect = $318
    nmiExit = $ff33
+   CHRGET = $380
 } else {
    basicZpSave  = $a00  ;("maxZpUse" bytes ($90))
    unusedMem1   = $e50  ;unused (176 bytes)
@@ -219,6 +220,7 @@ funkeydef    = $1000 ;(256 bytes) 16 user programmed "hotkey" defs
    kernelBrkHandler = $fe66
    kernelNmiHandler = $fe47
    kernelStopHandler = $f6ed
+   CHRGET = $73
 }
 
 vic   = $d000
@@ -327,6 +329,18 @@ entryPoint = *
    stx vic+$30
 }
    jsr kernelRestor
+   ;remove wedge
+   lda #$e6
+   sta CHRGET+0
+!if useC128 {
+   lda #$3d
+} else {
+   lda #$7a
+}
+   sta CHRGET+1
+   lda #$d0
+   sta CHRGET+2
+   ;start ace
    lda #bkACE
    sta bkSelect
    jmp main

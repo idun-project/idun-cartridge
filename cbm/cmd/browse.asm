@@ -44,62 +44,64 @@ ColumnIntf:
    +toolUserIntfCol ~iColumn, 20
    lda #0
    sta toolUserStyles
+   lda #$22
+   sta toolUserColor
 	jsr toolUserNode
 _node !byte 0,0          ;draw from 0,0
 	;24 entries per column
 _row1:
 	jsr toolUserGadget        ;1
-       !pet $82,"                ",$20,0
+       !pet $82,"                   ",0
 _bytes_per_entry = *-_row1
 _row2:
    jsr toolUserGadget        ;2
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;3
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;4
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
 _row5:
    jsr toolUserGadget        ;5
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;6
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;7
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;8
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;9
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;10
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;11
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;12
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;13
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;14
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;15
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;16
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;17
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;18
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;19
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;20
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;21
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;22
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;23
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
 _row24:
    jsr toolUserGadget        ;24
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
 	jsr toolUserEnd
    inc iColumn            ;clear redraw
 	rts
@@ -111,20 +113,22 @@ MenuRestore = *
    jsr toolUserLayout
    lda #0
    sta toolUserStyles
+   lda #$22
+   sta toolUserColor
    jsr toolUserNode
 !byte 0,0
    ;5 entries to cover popup area
 _menu_restore_buf = *
    jsr toolUserGadget        ;1
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;2
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;3
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;4
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserGadget        ;5
-       !pet 0,"                ",$20,0
+       !pet 0,"                   ",0
    jsr toolUserEnd
    rts
 MenuBackup = *
@@ -169,7 +173,7 @@ _next_menu_restore_row = *
 
 ;Popup menu for PRG
 Popup1 = *
-   +toolUserIntfMenu 2, 11, menu1, ~menu1_refresh_ctr, ~menu1_code
+   +toolUserIntfMenu 3, 11, menu1, ~menu1_refresh_ctr, ~menu1_code
    lda #$80
    sta toolUserStyles
    lda #$22
@@ -180,13 +184,15 @@ menu1 !byte 0,0
        !pet HotkeyCmd3,0,"Load    ",0
    jsr toolUserMenuItem
        !pet HotkeyCmd2,0,"Go64    ",0
+   jsr toolUserMenuItem
+       !pet HotkeyCmd4,0,"Cancel  ",0
    jsr toolUserEnd
    inc menu1_refresh_ctr
    rts
 
 ;Popup menu for disk image
 Popup2 = *
-   +toolUserIntfMenu 2, 11, menu2, ~menu2_refresh_ctr, ~menu2_code
+   +toolUserIntfMenu 3, 11, menu2, ~menu2_refresh_ctr, ~menu2_code
    lda #$80
    sta toolUserStyles
    lda #$22
@@ -197,6 +203,8 @@ menu2 !byte 0,0
        !pet HotkeyCmd6,0,"Mount D:",0
    jsr toolUserMenuItem
        !pet HotkeyCmd2,0,"Go64    ",0
+   jsr toolUserMenuItem
+       !pet HotkeyCmd4,0,"Cancel  ",0
    jsr toolUserEnd
    inc menu2_refresh_ctr
    rts
@@ -240,6 +248,7 @@ clearScr = *
   jmp aceWinCls
 	
 main = *
+   jsr loadChrset
    lda toolWinRegion+1
    cmp #80
    bne +
@@ -325,6 +334,7 @@ exit = *
    lda #0
    ldy #0
    jsr toolStatMenu
+   jsr unloadChrset
    jmp clearScr
 fail = *
    jsr exit
@@ -364,9 +374,13 @@ dirAddColumn = *
    ;set header row to ".."
    lda #2
    sta _row1+3
-   lda #"."
+   lda #$b5
    sta _row1+4
+   lda #$b6
    sta _row1+5
+   lda #"."
+   sta _row1+6
+   sta _row1+7
    ;set current and focus to row2
    lda #<_row2
    ldy #>_row2
@@ -429,12 +443,7 @@ focusRedraw = *
    lda (focusEntry),y
    ora #$80
    sta (focusEntry),y
-   and #2   ;check for dir focused
-   beq +
-   ldy #20
-   lda #$3e
-   sta (focusEntry),y
-+  dec iColumn      ;set redraw
+   dec iColumn      ;set redraw
    rts
 
 focusMoveDown = *
@@ -479,9 +488,9 @@ focusEvent = *    ;(.A=event/key)
    lda (focusEntry),y
    and #$7f
    sta (focusEntry),y
-   ldy #20
-   lda #$20
-   sta (focusEntry),y
+   ; ldy #20
+   ; lda #$20
+   ; sta (focusEntry),y
    ;uddate focus
    pla
    cmp #HotkeyDown
@@ -571,14 +580,14 @@ selectEvent = *
    jmp menuPopup
 
 dirChange = *
-   ldy #20
-   lda #$20
-   sta (focusEntry),y
+   ; ldy #20
+   ; lda #$20
+   ; sta (focusEntry),y
    ldx #0
    ldy #4
 -  lda (focusEntry),y
    sta currDir,x
-   cpx #15
+   cpx #17
    beq +
    iny
    inx
@@ -591,16 +600,19 @@ dirChange = *
    sta currDir,x
    dex
    jmp -
-+  cpx #15
++  cpx #17
    bmi dirChangeCont
    inx
    lda #"*"
    sta currDir,x
    dirChangeCont = *
    lda #<currDir
-   ldy #>currDir
+   clc
+   adc #2
    sta zp+0
-   sty zp+1
+   lda #>currDir
+   adc #0
+   sta zp+1
    dirChangeZp = *
    lda #0
    dirDoChange = *
@@ -630,10 +642,10 @@ dirScrollDown = *
 -- ldy #3
 -  lda (moveSrc),y
    sta (moveDst),y
+   beq +
    iny
-   cpy #21
-   bne -
-   ldx #moveSrc
+   jmp -
++  ldx #moveSrc
    jsr nextRow
    bcs +
    ldx #moveDst
@@ -644,9 +656,9 @@ dirScrollDown = *
    lda (moveDst),y
    and #$7f
    sta (moveDst),y
-   ldy #20
-   lda #$20
-   sta (moveDst),y
+   ; ldy #20
+   ; lda #$20
+   ; sta (moveDst),y
    ;set focus for last row
    jsr focusRedraw
    lda currColumn
@@ -663,8 +675,44 @@ dirAddEntry = *
    txa
    ora (currEntry),y
    sta (currEntry),y
-	;copy dir entry name to current row
+   ;prepend icon based on filetype
+   cpx #2
+   bne +
+   ;folder icon
    iny
+   lda #$b5
+   sta (currEntry),y
+   iny
+   lda #$b6
+   sta (currEntry),y
++  cpx #1
+   bne +
+   ;disk image icon
+   iny
+   lda #$bb
+   sta (currEntry),y
+   iny
+   lda #$bc
+   sta (currEntry),y
++  cpx #5
+   bne +
+   ;joystick icon
+   iny
+   lda #$b3
+   sta (currEntry),y
+   iny
+   lda #$b4
+   sta (currEntry),y
+   jmp +
+   ;misc file icon
+   iny
+   lda #$b7
+   sta (currEntry),y
+   iny
+   lda #$b8
+   sta (currEntry),y
+	;copy dir entry name to current row
++  iny
 	ldx #0
 -	lda aceDirentName,x
 	beq +
@@ -699,9 +747,13 @@ dirEmptyEntries = *
    ldx #currEntry
    jsr nextRow
    bcs ++
+   ;unfocused
+   ldy #3
+   lda #0
+   sta (currEntry),y
    ;fill empty rows with blank names
-+  ldy #20
-   ldx #17
++  ldy #21
+   ldx #18
    lda #$20
 -  sta (currEntry),y
    dey
@@ -924,11 +976,11 @@ FileArgLen !byte 0
    jmp -
 +  tya
    sec
-   sbc #4
+   sbc #6
    sta FileArgLen
    ;copy filename arg
    ldx #0
-   ldy #4
+   ldy #6
 -  lda (focusEntry),y
    sta FileArg,x
    cpx FileArgLen
@@ -991,8 +1043,14 @@ mountErrorMsg    !pet "open image fail!",0
 mountedMsg       !pet "mounted on d:   ",0
 
 callGo64 = *
+   lda dirFcb
+   beq +
+   jsr aceDirClose
++  jsr toolUserLayoutEnd
+   lda #0
+   ldy #0
+   jsr toolStatMenu
    jsr getFileArg
-   jsr exit    ;below cmd call should not return
    lda #<go64Command
    ldy #>go64Command
    sta zp+0
@@ -1005,6 +1063,61 @@ go64Ptrs !word (go64Command-go64Ptrs),(FileArg-go64Ptrs),$0000
 go64Command !pet "go64",0
 FileArg !fill 17,0
 go64End = *
+
+loadChrset = *
+   lda #<chrsetBrowse
+   ldy #>chrsetBrowse
+   jmp loadChrContinue
+chrsetBrowse !pet "z:chrset-browse",0
+unloadChrset= *
+   lda #<chrsetStd
+   ldy #>chrsetStd
+   jmp loadChrContinue
+chrsetStd !pet "z:chrset-standard",0
+
+   loadChrContinue = *
+   sta zp
+   sty zp+1
+   lda aceMemTop
+   sta zw
+   lda aceMemTop+1
+   sta zw+1
+   lda #<.charsetBuf
+   ldy #>.charsetBuf
+   jsr aceFileBload
+   bcc +
+   jmp exit
++  lda #<.charsetBuf
+   ldx #>.charsetBuf
+   sta syswork+0
+   stx syswork+1
+   ldy #5
+   lda (syswork+0),y
+   tay
+   clc
+   lda syswork+0
+   adc #8
+   bcc +
+   inx
++  sta syswork+0
+   stx syswork+1
+   lda #%11100000
+   cpy #$00
+   beq +
+   ora #%00010000
++  ldx #$00
+   ldy #40
+   jsr aceWinChrset
+   clc
+   lda syswork+0
+   adc #40
+   sta syswork+0
+   bcc +
+   inc syswork+1
++  lda #%10001010
+   ldx #$00
+   ldy #0
+   jmp aceWinChrset
 
 ;******** standard library ********
 
@@ -1081,7 +1194,8 @@ getarg = *
    ora zp+0
    rts
 
-bss = *
+;=== bss ===
+.charsetBuf = *
 
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │

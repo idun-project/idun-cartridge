@@ -524,7 +524,7 @@ toolStatMenu = *     ;(.AY=menu)
 +  tax
    lda #$bf    ;HotkeyCmdBackarrow
    jsr toolKeysSet
-   lda #$f8    ;menu symbol
+   lda #$df    ;menu symbol
 ++ sta _label80Title+0
    sta _label40Title+0
    rts
@@ -1466,11 +1466,8 @@ toolUserLabel = *
    bit uiGadgetFlags
    bvc +
    lda uiGadgetFlags
-   eor toolUserColor
    jmp ++
-+  lda uiGadgetFlags
-   bne ++
-   lda toolUserColor
++  lda toolUserColor
 ++ and #$07
    tay
    lda toolWinPalette,y
