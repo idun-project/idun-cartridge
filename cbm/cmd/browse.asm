@@ -488,9 +488,6 @@ focusEvent = *    ;(.A=event/key)
    lda (focusEntry),y
    and #$7f
    sta (focusEntry),y
-   ; ldy #20
-   ; lda #$20
-   ; sta (focusEntry),y
    ;uddate focus
    pla
    cmp #HotkeyDown
@@ -580,9 +577,6 @@ selectEvent = *
    jmp menuPopup
 
 dirChange = *
-   ; ldy #20
-   ; lda #$20
-   ; sta (focusEntry),y
    ldx #0
    ldy #4
 -  lda (focusEntry),y
@@ -656,9 +650,6 @@ dirScrollDown = *
    lda (moveDst),y
    and #$7f
    sta (moveDst),y
-   ; ldy #20
-   ; lda #$20
-   ; sta (moveDst),y
    ;set focus for last row
    jsr focusRedraw
    lda currColumn

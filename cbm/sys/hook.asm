@@ -331,6 +331,8 @@ idunCmdSend = *
     jsr idunChOut
     lda #$3F
     jsr idunChOut
+-   jsr idunChIn
+    bcs -
     pla
     rts
 idunCmdError = *
