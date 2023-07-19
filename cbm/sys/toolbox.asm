@@ -1349,7 +1349,9 @@ toolUserLabel = *
    lda #0
    sta uiGadgetFlags
    ;temp. disable statline
-+  lda #$60
++  lda dispStatline
+   sta _tbStatlinesave
+   lda #$60
    sta dispStatline
    ;first parameter is string
    tsx
@@ -1422,9 +1424,10 @@ toolUserLabel = *
 +  jsr _toolCheckScroll
    lda node_pos_save+0
    sta uiNodePos+0
-++ lda #$ea
+++ lda _tbStatlinesave
    sta dispStatline
    rts
+_tbStatlinesave !byte $ea
 
    _bordDrawTop = *
    ; top-left

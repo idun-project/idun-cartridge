@@ -1,0 +1,59 @@
+.bytesInMsg !byte 0
+.save_y     !byte 4
+
+m8_results_handler = *
+   lda #0
+   sta endRow
+   lda #<.copyResults
+   ldy #>.copyResults
+   jsr aceMapperProcmsg
+   lda #0
+   sta rowc
+   jsr __m8_mailbox_reset
+   dec iResults
+   rts
+   
+   .copyResults = *
+   sta .bytesInMsg
+   ldx #0
+   lda endRow
+   bne +
+   ;first byte of msg is ending row
+   lda mailboxB,x
+   sta endRow
+   lda #<_row1
+   ldy #>_row1
+   sta zp
+   sty zp+1
+   inx
+   ;copy results count
+-  lda mailboxB,x
+   clc
+   adc #$c0
+   sta $f800+result_count-screen_codes-1,x
+   inx
+   cpx #11
+   bne -
+   ;copy all the rows to ResultsIntf
++  nop
+-- ldy .save_y
+-  cpx .bytesInMsg
+   beq +
+   lda mailboxB,x
+   sta (zp),y
+   inx
+   iny
+   cpy #RES_INTF_NUM_COLS+4
+   bne -
+   lda zp
+   clc
+   adc #_bytes_per_srch_entry
+   sta zp
+   lda zp+1
+   adc #0
+   sta zp+1
+   lda #4
+   sta .save_y
+   jmp --
++  sty .save_y
+   rts

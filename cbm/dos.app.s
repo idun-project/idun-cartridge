@@ -93,6 +93,9 @@ idunDosMain = *
    lda #<minuteTimeout
    ldy #>minuteTimeout
    jsr toolTmoSecs
+   ; cd HOME
+   lda #$80
+   jsr aceDirChange
    ; Start shell
    lda #stdin
    sta inputFd
@@ -904,7 +907,9 @@ shellExecCommand = *
 shellLoadExternal = *
    jsr cmdIsAppl
    bcs +
-   jsr shellStartAppl
+   jmp shellStartAppl
++  cmp #aceErrFileNotFound
+   beq ++
 +  jsr toolTmoCancel
    lda suppressPromptFlag
    pha
@@ -919,7 +924,7 @@ shellLoadExternal = *
    rts
 +  pla
    sta suppressPromptFlag
-   jsr dosReinit
+++ jsr dosReinit
    lda errno
    pha
    lda name+0
@@ -955,7 +960,7 @@ shellLoadExternal = *
 
 loadFd = 2
 cmdIsAppl = *
-   ;check if name ends is .app
+   ;check if name ends with ".app"
    ldy #0
 -  lda (name),y
    beq +
@@ -981,6 +986,7 @@ failAppName:
    +ldaSCII "r"
    jsr open
    bcc +
+   lda errno
    rts
 +  sta loadFd
    ;check for App binary (1st 8 bytes)

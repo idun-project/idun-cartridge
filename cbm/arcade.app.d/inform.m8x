@@ -1,0 +1,60 @@
+m8_inform_handler = *
+	ldx #3
+-	lda .info_txt,x
+	sta $f800+info_header-screen_codes,x
+	dex
+	bpl -
+    lda #<.copyInfo
+    ldy #>.copyInfo
+    jsr aceMapperProcmsg
+    lda #0
+    jmp __m8_mailbox_reset
+.info_txt !byte $89,$8E,$86,$8F
+
+    .copyInfo = *
+    ldx #0
+-   lda mailboxB,x
+    clc
+    adc #$c0
+    sta $f800+result_count-screen_codes,x
+    inx
+    cpx #4
+    bne -
+    lda #<$f800+(publisher-screen_codes)
+    ldy #>$f800+(publisher-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(byline1-screen_codes)
+    ldy #>$f800+(byline1-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(byline2-screen_codes)
+    ldy #>$f800+(byline2-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(byline3-screen_codes)
+    ldy #>$f800+(byline3-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(language-screen_codes)
+    ldy #>$f800+(language-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(genre-screen_codes)
+    ldy #>$f800+(genre-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(controls-screen_codes)
+    ldy #>$f800+(controls-screen_codes)
+    jsr .copyAttribute
+    lda #<$f800+(trainers-screen_codes)
+    ldy #>$f800+(trainers-screen_codes)
+    jsr .copyAttribute
+    rts
+
+    .copyAttribute = *
+    sta zp
+    sty zp+1
+    ldy #0
+-   lda mailboxB,x
+    beq +
+    sta (zp),y
+    inx
+    iny
+    jmp -
++   inx
+    rts

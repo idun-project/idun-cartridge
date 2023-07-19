@@ -1,0 +1,104 @@
+.count !byte 0
+.save  !byte 0,0,0
+
+m8_programs_handler = *
+    lda rowc
+    ldx focusEntry+0
+    ldy focusEntry+1
+    sta .save+0
+    stx .save+1
+    sty .save+2
+    lda #1
+    sta rowc
+    ldx #0
+-   lda header_text,x
+    beq +
+    sta $f800+prgheader-screen_codes,x
+    inx
+    jmp -
++   lda #<.copyProgs
+    ldy #>.copyProgs
+    jsr aceMapperProcmsg
+    lda #0
+    jsr __m8_mailbox_reset
+    jsr select_ui_programs
+    rts
+
+unselect_ui_programs = *
+    lda #<($f800+prgheader-screen_codes)
+    ldy #>($f800+prgheader-screen_codes)
+    sta zp
+    sty zp+1
+    lda #0
+    sta .count
+--  inc .count
+    lda .count
+    cmp #11
+    bcs ++
+    ldx #0
+    ldy #0
+-   lda no_header_t,x
+    beq +
+    sta (zp),y
+    inx
+    iny
+    jmp -
++   lda zp
+    clc
+    adc #40
+    sta zp
+    lda zp+1
+    adc #0
+    sta zp+1
+    jmp --
+++  lda #HotkeyStop
+    jsr toolKeysRemove
+    lda .save+0
+    ldx .save+1
+    ldy .save+2
+    sta rowc
+    stx focusEntry+0
+    sty focusEntry+1
+    jsr select_ui_results
+    rts
+
+.copyProgs = *
+    ldx #0
+    stx .count
+    lda mailboxB,x
+    cmp #TRUE
+    bne +
+    lda #$7b
+    sta $f800+prgheader-screen_codes+1
+    lda #$7c
+    sta $f800+prgheader-screen_codes+2
++   inx
+    lda mailboxB,x
+    sta numProgs
+    lda #<_prg1
+    ldy #>_prg1
+    sta zp
+    sty zp+1
+--  inc .count
+    lda .count
+    cmp #10
+    bcs ++
+    ldy #4
+-   inx
+    lda mailboxB,x
+    beq +
+    sta (zp),y
+    iny
+    jmp -
++   lda zp
+    clc
+    adc #_bytes_per_prog_entry
+    sta zp
+    lda zp+1
+    adc #0
+    sta zp+1
+    jmp --
+++  rts
+
+header_text !byte $65,$E0,$E0,$83,$08,$0F,$0F,$13,$05,$E0,$90,$12,$0F,$07,$EE,$E0,$E0,$AE,$00
+no_header_t !byte $A0,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$A0,$00

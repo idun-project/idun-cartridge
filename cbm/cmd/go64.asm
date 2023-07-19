@@ -36,7 +36,7 @@ loadDevType = 2
 dirFcb      = 3
 loadFd      = 4
 argnum      = 5
-IdunDrive   = $9c
+IdunDevice  = $102
 
 main = *
    lda #0
@@ -51,7 +51,7 @@ main = *
    bcc go64Disk
 go64 = *
    lda #3
--  sta IdunDrive
+-  sta IdunDevice
    ldx #1      ;CMD_SYS_REBOOT
    lda #64     ;reboot C64 mode
    jmp aceMapperCommand
@@ -94,6 +94,7 @@ mountImageFile = *
    lda #FALSE
    jsr aceMountImage
    lda errno
+   beq mtDone
    cmp #aceErrFileTypeMismatch
    beq mtMountError
    mtOpenError = *

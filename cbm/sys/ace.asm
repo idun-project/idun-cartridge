@@ -395,7 +395,7 @@ aceBootstrap = *
    bpl -
    pla
    sta aceSuperCpuFlag
-   lda #$0c  ;"c:"
+   lda #$68  ;"z:"
    sta aceCurrentDevice
    lda #0
    jsr kernelSetmsg
@@ -529,6 +529,7 @@ aceShutdown = *
    ldy #>kernelStopHandler
    sta $328
    sty $329
+   cli
 !if useC128 {
    lda #%01111111
    sta $dc0d
@@ -926,7 +927,6 @@ main = *
    jsr openStdio
    cli
    ;** start designated main application/shell
-   lda $200  ;address of shellApp Id
    jsr shellApp
 callApplication = *
    lda aceMemTop+0
@@ -1011,12 +1011,20 @@ kernRestart = *
    ;self-modifying code below sets native or mmap load
 +  cpx #1
    bne +
+!if useC128 {
    lda #1      ;native IEC device loading
+} else {
+   lda #65
+}
    sta setparam+1
    lda #$0c
    sta romjmp+1
    jmp viceCheck
+!if useC128 {
 +  lda #2      ;Mmap device loading
+} else {
++  lda #66
+}
    sta setparam+1
    lda #$09
    sta romjmp+1
@@ -1045,14 +1053,9 @@ kernViceEmuCheck = *    ;() : .ZS=emulator detected
    rts
 
 shellApp = *
-+  cmp #$bd       ;EXPLORE.app
-   bne +
-   lda #<ExploreApp
-   ldy #>ExploreApp
-   jmp ++
-+  lda #<DosApp   ;default to DOS.app
-   ldy #>DosApp
-++ sta shellName+0
+   lda #<configBuf+$d0    ;configured dos app
+   ldy #>configBuf+$d0
+   sta shellName+0
    sty shellName+1
 startupApp = *
    sta zp
@@ -1067,8 +1070,6 @@ startupApp = *
    jmp -
 +  stx startupArgsLength
    rts
-DosApp !pet "dos.app",0
-ExploreApp !pet "explore.app",0
 startupArgsLength !byte 0
 startupArgs: !byte 0,0,0,0
 startupName: !fill 25,0

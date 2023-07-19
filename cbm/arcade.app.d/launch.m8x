@@ -1,0 +1,88 @@
+m8_launch_handler = *
+    lda #<.launcher
+    ldy #>.launcher
+    ;never returns!
+    jmp aceMapperProcmsg
+
+.error = *
+    inc $d020       ;what else?
+    jmp .error
+
+.launcher = *
+    ;respond mailbox
+    lda #0
+    jsr __m8_mailbox_reset
+    ;close lua comms
+    lda #3
+    jsr close
+    ;switch to G: drive
+    lda #<g_drive
+    ldy #>g_drive
+    sta zp
+    sty zp+1
+    jsr aceDirChange
+    ;check if mounting disk image
+    lda mailboxB
+    cmp #":"
+    beq mountD64
+    lda #<mailboxB
+    ldy #>mailboxB
+    sta zp
+    sty zp+1
+    lda #0
+    jsr aceDirChange
+    bcc +
+    jmp .error
++   jmp .loadprg
+mountD64 = *
+    lda #<mailboxB+1
+    ldy #>mailboxB
+    sta zp
+    sty zp+1
+    lda #"d"
+    and #$1f
+    asl
+    asl
+    tax
+    lda #FALSE
+    jsr aceMountImage
+    bcc +
+    jmp .error
++   lda #<d_drive
+    ldy #>d_drive
+    sta zp
+    sty zp+1
+    jsr aceDirChange
+    bcc .loadprg
+    jmp .error
+g_drive !pet "g:",0
+d_drive !pet "d:",0
+load_fd !byte 0
+load_typ !byte 0
+
+.loadprg = *
+    ;find start of program name (2nd string)
+    ldx #0
+-   lda mailboxB,x
+    beq +
+    inx
+    jmp -
++   inx
+    stx zp
+    ldy #>mailboxB
+    sty zp+1
+    +ldaSCII "r"
+    jsr open
+    sta load_fd
+    jsr aceMiscDeviceInfo
+    sta $102
+    stx load_typ
+    lda syswork+1
+    lsr
+    lsr
+    ldx #255            ;CMD_STREAM_CHANNEL
+    jsr aceMapperCommand
+    jsr toolUserLayoutEnd
+    ldx load_typ
+    lda #aceRestartLoadPrg
+    jmp aceRestart

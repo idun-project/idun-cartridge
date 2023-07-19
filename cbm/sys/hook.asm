@@ -105,7 +105,13 @@ kFnaddr     = $bb ; address of the filename
 configDrv !byte 3
 configIec !byte 10
 main = *
-    jsr Install
+!if useC64 {
+    lda $102
+    bmi +
+    beq +
+    sta configDrv
+}
++   jsr Install
     lda #bkKernel
     sta bkSelect
     jmp Basic
@@ -560,6 +566,7 @@ Basic = *
     lda #>idunWedge
     sta CHRGET+2
     ;$1210 must point to top of basic text
+    lda kCurraddr+0
     sta $1210
     lda kCurraddr+1
     sta $1211
@@ -596,11 +603,9 @@ Basic = *
     jmp magic
 }
 !if useC128 {
-idunkLen !byte 8
-idunk !pet "idunk128"
+idunk !pet "idun128"
 } else {
-idunkLen !byte 5
-idunk !pet "idunk"
+idunk !pet "idun-64"
 }
 
 ; RAM-resident part
@@ -653,7 +658,7 @@ loadIdun = *
     sta IdunDrive
     lda #1
     sta kSecaddr
-    lda idunkLen
+    lda #7
     ldx #<idunk
     ldy #>idunk
     jsr kernelSetnam
@@ -701,6 +706,12 @@ runProg = *
     sta $de7e
     lda $81ff
     jsr kernelRESTOR
+    ;$2d (VARTAB) must point to top of basic text
+    lda kCurraddr+0
+    sta $2d
+    lda kCurraddr+1
+    sta $2e
+    jsr $a533   ;lnkprg
     jmp magic
 start_name !byte 0
 }
@@ -752,10 +763,10 @@ magic = *
     lda #5
     sta $c6
     lda #0
-    jmp $27b
+    jmp $27c
     ;Here's how we exit:
     ;JMP ($a002)
-    ;and keyb buffer contains "RUN\r"
+    ;and keyb buffer contains "RUN:\r"
 exit_magic !pet "run:",13,$6c,$02,$a0
 }
 }   ;END RAM-resident part
