@@ -10,16 +10,15 @@ The idun-cartridge uses a Propeller 1 micro-controller to provide a fast hardwar
 
 The first set of photos show the idun-cartridge with RPi Zero 2 fitted. As you can see, a standard-sized C64/128 cartridge case can be hacked to cover the board, but leave the RPi, ports, and button accessible.
 
-![cart-zero-1](doc/330_112856.jpg)
-![cart-sero-2](doc/330_112927.jpg)
+![cartridge without RPi](doc/cart_no_rpi.jpg)
+![cartridge with Pi Zero](doc/330_112856.jpg)
 
  A Model B RPi will also fit on an idun-cartridge, as this photo shows. For both Model Zero and Model B, the RPi is fitted on top of the idun-cartridge and upside-down. For the Model B, a case or other support is essential because of the weight.
 
-![cart-model-b](doc/401_122754.jpg)
-
 You can also fit a Model A RPi, but the headers must be relocated to the opposite side of both the idun-cartridge PCB and the RPi itself. In this case, the RPi will be on the bottom (under the idun-cartridge), as shown here connected to a flat C128.
 
-![cart-model-a](doc/407_144230.jpg)
+![cartridge with Model B](doc/401_122754.jpg)
+![cartridge with Model A](doc/407_144230.jpg)
 
 ### Support the project
 
@@ -41,12 +40,19 @@ It is recommended that you power the RPi externally from a USB power supply. The
 
 You can also run [idun-vice](https://github.com/idun-project/idun-vice) to experiment with the idun-cartridge software WITHOUT any actual cartridge; just running everything off of the Raspberry Pi.
 
+### Mode Switch
+<img align="right" src="doc/cart_mode_sw2.jpg" />
+
+As of release v1.1.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (i.e. not switched to the "Mode" position), the idun-cartridge loads the usual software stack. However, when switched to "Mode", a different software stack is selected as specified by the [mode] settings in the configuration file.
+
+With the default configuration file settings, setting the switch to the "Mode" position enables "C64 Arcade Mode". This means the C128 is booted into C64 mode and the "arcade.app" game selector software is automatically loaded. This provides a very convenient way to quickly load and run C64 games on the C128.
+
 ### Configuration
 
 Configuration options are available in `$HOME/.config/idunrc.toml`. There is documentation within that file, but the following hints are also helpful.
 
 1. Because of the "special" VDC hi-res graphic modes used by some of the software (e.g. `showvdc`), it is very important to set the correct amount of VRAM in the configuration file to either 16kB or 64kB, as appropriate. The setting is the second parameter in the `[vdc]` section.
-2. Some monitors are picky about how many rows of text they can display in 80 column mode, and how they look when displaying text in interlaced mode. The default is 27 rows, non-interlaced. You can modify this by changing the first parameter in the `[vdc]` section, and for interlaced text, the section `[vdc_interlace]`. Also take a look at the `mode` command for changing the number of text rows on demand.
+2. Some monitors are picky about how many rows of text they can display in 80 column mode, and how they look when displaying text in interlaced mode. The default is 27 rows, non-interlaced. You can modify this by changing the first parameter in the `[vdc]` section, and for interlaced text, the section `[vdc_interlace]`. Also take a look at the `mode` command for changing the number of text rows on demand (not to be confused with the mode switch described above).
 3. If you are using the software with only a Raspberry Pi and Vice (no idun-cartridge hardware), then pay careful attention to disable the configuration file from trying to connect with hardware that isn't there. For details, see the [README for idun-vice](https://github.com/idun-project/idun-vice).
 
 ### Building C128 code
