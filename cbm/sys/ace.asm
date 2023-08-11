@@ -324,6 +324,7 @@ entryPoint = *
    ldx vic+$30
    sta vic+$30
 }
+   lda $81ff
    lda $8000
 !if useFastClock {
    stx vic+$30

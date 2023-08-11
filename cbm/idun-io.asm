@@ -78,6 +78,7 @@ nmiMmap = *             ;33 cycles (in kernal)
   lda #0                ;2
   sta $de7e             ;4
   lda $81ff             ;4
+  lda $8000             ;4
   ; Restore 2MHz
   bit winDriver         ;4
   bpl +                 ;2

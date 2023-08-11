@@ -617,8 +617,7 @@ IOpen = *
     cmp MyDevice
     beq +
     jmp (kernalOpen)
-+   ldy #0
-    jsr FnIsdir
++   jsr FnIsdir
     bne +
     jsr Catalog
 +   jmp basicPrompt
@@ -631,7 +630,6 @@ ILoader = *
     jmp (kernalLoader)
 +   pla
     sta kVerify
-    ldy #0
     jsr FnIsdir
     bne +
     jmp Catalog
@@ -670,9 +668,7 @@ loadIdun = *
     ; load kernel and jump
     ldx #hookLoad
     jsr romcall
-    bcc +
-    rts
-+   jmp $1300
+    jmp $1300
 !if useC64 {
 runProg = *
     ;parse name of prog
@@ -705,6 +701,7 @@ runProg = *
 +   lda #$00
     sta $de7e
     lda $81ff
+    lda $8000
     jsr kernelRESTOR
     ;$2d (VARTAB) must point to top of basic text
     lda kCurraddr+0
@@ -744,6 +741,7 @@ romcall = *
     tya
     rts
 FnIsdir = *
+    ldy #0
 !if useC128 {
 	ldx kFnbank
 	lda #kFnaddr
