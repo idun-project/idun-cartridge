@@ -229,7 +229,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$9c-$9f
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a0-$a3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a4-$a7
-   !word CmdNotImp,CmdNotImp,CmdCapJoys,CmdCapKeys ;$a8-$ab
+   !word CmdNotImp,CmdNotImp,CmdNotImp,CmdCapKeys  ;$a8-$ab
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$ac-$af
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b0-$b3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
@@ -473,19 +473,6 @@ CmdCapKeys = *
    dec refreshStatusBar80
    clc
    rts
-
-CmdCapJoys = *
-   lda joykeyCapture
-   eor #$40
-   and #$40
-   sta joykeyCapture
-   jsr updateStatPutCap
-   ;refresh
-   dec refreshStatusBar40
-   dec refreshStatusBar80
-   clc
-   rts
-
 
 ;=== Status Line (Top Bar) routines ===
 

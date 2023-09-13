@@ -90,13 +90,11 @@ aceConKeyMat   = aceCallB+123 ;( (zp)=keymatrixPtr )
 aceConMouse    = aceCallB+126 ;( ) : .A=buttons:l/r:128/64, (sw+0)=X, (sw+2)=Y
 aceConJoystick = aceCallB+129 ;( ) : .A=joy1, .X=joy2
 aceConOption   = aceCallB+132 ;( .X=op, .A=arg, .CS=set ) : .A=return
+aceConGamepad  = aceCallB+135 ;( .AY=buf) : .AY[0-1]=gamepad1 ,AY[2-3]=gamepad2
+aceGrExit      = aceCallB+138 ;( )
+aceConDebugLog = aceCallB+141 ;( (zp)=msg,(.AY)=byte vars,.X=num vars)
 ; IDUN: Deprecated
-;aceGrScreen = aceCallB+135 ;( .A=grType, .X=borderColor, .Y=BgFgColor )
-;                           ;  : .A=cols8, (sw+0)=rows, .X=xAspect
-;aceGrFill   = aceCallB+141 ;( .A=fillValue )
 ;aceGrOp     = aceCallB+144 ;( .A=flags, .X=X8, (sw+0)=Y, .Y=cols8, (sw+2)=rows,
-;                           ; (sw+4)=sPtr/val,(sw+6)=dPtr,(sw+8)=mPtr,sw+a=intl8)
-aceGrExit   = aceCallB+138 ;( )
 
 aceProcExec = aceCallB+147 ;( (zp)=execName, (zw)=argv,.AY=argCnt,[mp]=saveArea,
                            ; .X=reftch):.A=exitCode,.X=exitDataLen,[mp]=saveArea

@@ -7,7 +7,7 @@
     useC128 = 1
     useC64  = 0
     LOADADDR = $1300
-    RAMR = $0e00    ; kernel hooks page
+    RAMR = $0f00    ; kernel hooks page
     CHRGET = $0380
     CHRGOT = $0386
     CURLIN = $3b

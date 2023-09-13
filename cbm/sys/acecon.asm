@@ -1634,18 +1634,7 @@ conGetkey = *
 +  jsr pisvcPutKeyboard
    jmp -
 ++ cli
-   bit joykeyCapture
-   bvc ++
-   sei
-   lda conButtonChange
-   and #$03
-   beq +
-   jsr pisvcPutJoysticks
-   lda conButtonChange
-   and #$fc
-   sta conButtonChange
-+  cli
-++ lda keybufCount
+   lda keybufCount
    beq -
    sei
    ldy keybufHead
@@ -1661,19 +1650,6 @@ conGetkey = *
 
 ;*** conkeyavail( ) : .CC=.Z=keyIsAvailable, .A=availKey[notRemoved], .X=shift
 kernConKeyAvail = *
-   ; BKH TODO: Add joystick forwarding to console app here
-   ; Check if joy inputs forwarded
-   ;bit joykeyCapture   ;$40=capture joy
-   ;bvc +
-   ;sei
-   ;lda conButtonChange
-   ;and #$03
-   ;beq +
-   ;jsr pisvcPutJoysticks
-   ;lda conButtonChange
-   ;and #$fc
-   ;sta conButtonChange
-   ;+  cli
    lda keybufCount
    beq ++
    ldy keybufHead
@@ -2446,6 +2422,14 @@ kernConJoystick = *
    ldx conJoy2
    plp
    rts
+
+kernConGamepad = *
+   bcc +
+   jmp pisvcPutJoystick
++  jmp pisvcGetJoysticks
+   
+kernConDebugLog = *
+   jmp pisvcPutDebugLog
 
 kernConOption = *
    ;** 1.console-put mask

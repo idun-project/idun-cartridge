@@ -114,10 +114,9 @@ jmp kernConKeyMat
 jmp kernConMouse
 jmp kernConJoystick
 jmp kernConOption
-
-jmp notImp  ;kernGrScreen
+jmp kernConGamepad
 jmp kernGrExit
-jmp notImp  ;kernGrFill
+jmp kernConDebugLog
 jmp notImp  ;kernGrOp
 
 jmp kernProcExec

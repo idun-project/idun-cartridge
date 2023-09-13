@@ -112,16 +112,25 @@ pisvcTimeGetDate = *
   ldx #8
   jmp pidGetbuf
 
-;*** (conJoy1, conJoy2)
-pisvcPutJoysticks = *
+;*** (.AY = joysBuf[4])
+; returns joysBuf[4]
+pisvcGetJoysticks = *
+  ; LISTEN channel J:
+  ldx #10
+  jsr pisvcCommonGet
+  ; Get 4-byte response
+  ldx #4
+  jmp pidGetbuf
+
+;*** (.AY = joysConfig[10])
+pisvcPutJoystick = *
+  sta writePtr+0
+  sty writePtr+1
   ; LISTEN channel J:
   lda #10
   jsr pisvcCommonListen
-  ; Send 2-byte message
-  lda conJoy1
-  jsr pidChOut
-  lda conJoy2
-  jsr pidChOut
+  ldx #10
+  jsr pidPutbuf
   jmp pisvcCommonDone
 
 ;*** (keycode, shiftValue)
@@ -143,6 +152,56 @@ pisvcPutKeyboard = *
   jsr pisvcCommonDone
 + rts
 
+;*** ( (zp)=msg, .X=0..2 param spec.
+;      .A=byte param, zw=word param
+pisvcPutDebugLog = *
+  stx dbg_byte_count
+  pha
+  ;determine length of msg
+  ldy #0
+- lda (zp),y
+  beq +
+  iny
+  jmp -
++ iny
+  tya
+  clc
+  adc dbg_byte_count
+  sta dbg_byte_count
+  ; LISTEN channel \:
+  lda #28
+  jsr pisvcCommonListen
+  ;send total size
+  lda dbg_byte_count
+  jsr pidChOut
+  ;put the msg bytes
+  ldy #0
+- lda (zp),y
+  beq +
+  jsr pidChOut
+  dec dbg_byte_count
+  iny
+  jmp -
++ jsr pidChOut
+  dec dbg_byte_count
+  ldx dbg_byte_count
+  cpx #2
+  bne +
+  ;send word param
+  lda zw
+  jsr pidChOut
+  lda zw+1
+  jsr pidChOut
+  jmp ++
++ cpx #1
+  bne ++
+  ;send byte param
+  pla
+  jsr pidChOut
+  jmp pisvcCommonDone
+++pla
+  jmp pisvcCommonDone
+dbg_byte_count !byte 0
 
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │

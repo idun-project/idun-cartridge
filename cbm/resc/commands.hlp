@@ -56,8 +56,8 @@ info
 show disks/devices available
 ${bold}Usage:${normal} info [/d] -- The ${green}info${white} command is used to show the available disks/devices that have been configured in the idun kernel. If the otional '/d' switch is used, then only real and virtual disk devices are shown; otherwise, all devices are included.
 joys
-test joystick(s)
-${green}joys${white} is a simple tool for testing joystick inputs. Connect a joystick to either controller port, and ${green}joys${white} will detect and show direction and fire button inputs on the screen.
+configure usb gamepad
+${green}joys${white} is a simple tool for configuring a USB gamepad, which can then be used as a controller for games programmed to recognize it. Configuration is simple, but the usb gamepad you want to use needs to be connected, then the idun-cartridge must be RESET first. After doing so, launch `joys` and follow the instructions.
 keys
 test keyboard
 ${green}keys${white} is a simple tool for viewing the active character set and its keycode mapping. Use the arrow keys to select any character from the set, and press ENTER to see its keycode. To exit the ${green}keys${white} tool, press STOP.
