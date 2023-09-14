@@ -912,6 +912,26 @@ ALTERS :  <nothing>
 The kernel will remap the meanings of "joy1" and "joy2" according to the system configuration.  You will normally want to use "joy1" if you are running a single-joystick application.
 
 ```
+NAME   :  aceConGamepad
+PURPOSE:  read/configure the inputs of up to two usb gamepad controllers
+ARGS   :  .AY = ptr to byte array
+          .CC = read controller
+          .CS = configure controller
+RETURNS:  4-byte array with controller button bits
+ALTERS :  .A, .X, .Y
+```
+
+For reading the controllers, pass a pointer to a 4-byte array in .AY. The first two bytes of the array are for js0 and the last two bytes are for js1. For each gamepad, the low-order nybble of the low-order byte has the direction (e.g. D-pad) bits, and the high-order byte has the bits for the 8 supported buttons. The buttons are translated through a configuration option specific to each gamepad. Configuration is done in the idun-shell using the 'joys' command.
+
+The mapping of the standard directions/buttons to the value returned from this procedure is as follows:
+```
+button X    X    X    X  Left Right Up  Down Strt Sel L-Tr  R-Tr  Y    X    B    A
+bit   15   14   13   12   11   10   9    8    7    6    5    4    3    2    1    0    
+```
+
+In the case of configuring a gamepad, the carry-bit must be set, and the returned values are button numbers rather than a bitmask. For more details, [see: cmd/joys.asm.](../cbm/cmd/joys.asm)
+
+```
 NAME   :  aceConOption
 PURPOSE:  read/modify console configuration settings
 ARGS   :  .X=option from list below
