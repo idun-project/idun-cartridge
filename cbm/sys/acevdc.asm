@@ -34,7 +34,15 @@ vdcStartup = *
 +  jmp vdcWarmReset
 
 vdcHardwareReset = *
-   ldx #0
+   lda configBuf+$c7
+   beq +
+   lda #$7f
+   sta vdcHardData+0 ;R0=$7f for PAL
+   lda #$26
+   sta vdcHardData+4 ;R4=$26 for PAL
+   lda #$20
+   sta vdcHardData+7 ;R7=$20 for PAL
++  ldx #0
 -  lda vdcHardData,x
    cpx #$1e
    beq +
