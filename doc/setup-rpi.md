@@ -20,9 +20,9 @@ It IS POSSIBLE to expand the file system on the idun-cartridge directly, using t
 
 1. First, use `fdisk` to delete the 2nd partition, and re-create the 2nd partition using the maximum available space on your SD card.
 2. `sudo fdisk /dev/mmcblk0`
-3. At the fdisk prompt, "d", then "2" to delete 2nd partition.
-4. Then "n", "p", "2" to re-create a primary partition #2. Choose the default starting and ending blocks. Select "N" to NOT REMOVE the partition's signature.
-5. The "w" to write the updated partition table to disk. You have to reboot for the change to take effect.
+3. At the fdisk prompt, type "d"<return>, then "2"<return> to delete 2nd partition.
+4. Then "n"<return>, "p"<return>, "2"<return> to re-create a primary partition #2. Choose the default starting and ending blocks AND select "N" to NOT REMOVE the partition's signature.
+5. Finally "w" to write the updated partition table to disk. You must reboot for the change to take effect.
 6. `sudo reboot now`
 7. After the reboot and back at the Linux terminal: `sudo resize2fs /dev/mmcblk0p2`.
 8. If all went well, then `df -h` should show max. space available for your SD card on the root partition.
