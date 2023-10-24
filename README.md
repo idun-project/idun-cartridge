@@ -20,6 +20,12 @@ You can also fit a Model A RPi, but the headers must be relocated to the opposit
 ![cartridge with Model B](doc/401_122754.jpg)
 ![cartridge with Model A](doc/407_144230.jpg)
 
+#### Partial Support for original Pi Zero
+
+The original Pi Zero is nearing end-of-life, being phased out by the Raspberry Pi Foundation in favor of the more powerful Pi Zero 2. Because of this, some ARM Linux disributions are discontinuing support, making it difficult for the idun-cartridge to continue supporting the Pi Zero. However, the current state of affairs is that the Pi Zero is widely available and very inexpensive, and this could remain the case for the next year-or-so.
+
+In light of the above, the Pi Zero is *partially* supported. You can download a compatible [image file](https://drive.google.com/file/d/1-f4fZqi1PGydYXPUaHLZCb5UNGgmPkZW/view?usp=sharing) that includes v1.2 of the software. All features are present on this image *except* for the `idunSID` remote SID player software (it requires a newer `glibc` library).
+
 ### Support the project
 
 The best way to support the project is to [buy a hardware kit](https://www.tindie.com/products/idun-cartridge-c128/idun-cartridge-c128-kit/) from the online store. The kit comes with everything needed to assemble the idun-cartridge, except for the Raspberry Pi, which you will need to obtain yourself. Only basic soldering skills are needed, since the PCB is strictly through-hole components.
