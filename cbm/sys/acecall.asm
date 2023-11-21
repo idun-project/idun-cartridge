@@ -866,9 +866,11 @@ internBload = *
    ldy bloadAddress+1
    rts
 
-;*** aceFileInfo( .X=Fcb ) : .A=DevType(0=con,1=char,2=disk), .X=Cols, .Y=Rows
+;*** aceFileInfo ( .X=fd ) : .A=devType,.X=cols,.Y=rows
+;***                         -or- sw+0=remains,sw+2=virt.dev,.(XY)=size
 
 kernFileInfo = *
+   stx syswork+3
    lda devtable,x
    tax
    lda configBuf+0,x
@@ -878,18 +880,40 @@ kernFileInfo = *
    tay
    lda #0
    rts
-
-+  ldx #80
++  cmp #1
+   bne +
+-  ldx #80
    ldy #66
-   cmp #1
-   beq +
-   cmp #4
+   rts
++  cmp #4
    beq +
    cmp #7
    beq +
    lda #1
-   rts
-+  lda #2
+   jmp -
+   ;for virtual drive files, get size
++  lda syswork+3
+   asl
+   asl
+   asl
+   tax
+   lda fileinfoTable,x
+   sta syswork+2 
+   inx
+   lda fileinfoTable,x
+   sta syswork+0
+   inx
+   lda fileinfoTable,x
+   sta syswork+1
+   inx
+   lda fileinfoTable,x
+   sta syswork+3
+   inx
+   lda fileinfoTable,x
+   tay
+   ldx syswork+3 
+   lda #2
+   clc
    rts
 
 ;*** aceFileStat( ... ) : ...

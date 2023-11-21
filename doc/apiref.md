@@ -312,13 +312,16 @@ ALTERS :  .A, .X, .Y, errno
 Renames a file or directory.  If a file with the new name already exists, then the operation will be aborted and a "file exists" error will be returned.  On most devices, the file to be renamed must be in the current directory and the new name may not include any path, just a filename.
 
 ```
-NAME   :  aceFileInfo **DEPRECATED use aceMiscDeviceInfo
+NAME   :  aceFileInfo
 PURPOSE:  give information about file/device
 ARGS   :  .X   = file descriptor number
-          .A   = info-type flags ($00 for these returns,$01=ready,$02=dirinfo)
 RETURNS:  .A   = device type code (0=console, 1=char-dev, 2=disk-dev)
-          .X   = number of columns on device
-          .Y   = number of rows per "page" of device
+          .X   = number of columns on device for console or char-dev
+          .Y   = number of rows per "page" of device for console/char
+      -OR- in the case of virtual drive files
+          sw+0 = remaining read bytes for file (LSB,MSB)
+          sw+2 = virtual device channel
+          .XY  = total size of file (LSB,MSB)
           .CS  = error occurred flag
 ALTERS :  errno
 ```

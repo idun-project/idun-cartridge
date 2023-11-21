@@ -96,7 +96,7 @@ show disks in search path
 The ${green}path${white} command will show the disk devices in the order they are searched when you type a command into the shell. This is configured at boot, and removing devices from the path can have unexepcted results. Normally, the current device is searched, so the recommended approach is to switch to the drive using the ${green}cd${white} command, or to prefix the name in the shell such as 'a:my_command'.
 reboot
 reboot computer
-This will restart the computer, but with the idun cartridge activated within BASIC. So, you will be able to select an idun virtual drive and use it to launch C128 programs. This will also work with many programs that need to access a (virtual) disk after they begin, usually for loading data files. As long as the program in question does not overwrite the memory at $0e00-$0eff in BANK 0, it should be able to use the kernal to read files from the virtual disk.
+This will restart the computer, but with the idun cartridge activated within BASIC. So, you will be able to select an idun virtual drive and use it to launch C128 programs. This will also work with many programs that need to access a (virtual) disk after they begin, usually for loading data files. As long as the program in question does not overwrite the memory at $0f00-$0fff in BANK 0, it should be able to use the kernal to read files from the virtual disk.
 rename
 rename disk file(s)
 ${bold}Usage:${normal} rename <old> <new> ... -- This command will rename one (or more) files. Simply repeat the parameters multiple times to rename multiple files in one go.
@@ -121,3 +121,6 @@ This is a fairly capable terminal mainly used for connecting to Linux running on
 type
 print text file to screen
 The ${green}type${white} command displays the contents of a PETSCII file to the screen.
+zload
+Run a Z80 program file
+The ${green}zload${white} command will load and execute a program written for the Z80 CPU in the C128. The Z80 code is loaded into RAM BANK 1, and has access to the full 64kB in that bank. If the Z80 program terminates, you will be returned to the Idun Shell. Note: The program file specified as argument to this command must be a valid Z80 binary as built by the ${green}zcc${white} cross-compiler & assembler, and the program file must be loaded from a virtual drive, such as the C: drive.

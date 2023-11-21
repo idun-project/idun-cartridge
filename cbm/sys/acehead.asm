@@ -46,7 +46,7 @@ seek          = aceCallB+12  ;( .X=fd, .AY=newpos : .CS=error,errno)
 aceFileBload  = aceCallB+15  ;( (zp)=name, .AY=loadAddr, (zw)=limit+1):.AY=end+1
 aceFileRemove = aceCallB+18  ;( (zp)=name )
 aceFileRename = aceCallB+21  ;( (zp)=oldName, (zw)=newName )
-aceFileInfo   = aceCallB+24  ;( .X=fd, .A=flags ) : .A=devType, .X=cols, .Y=rows
+aceFileInfo   = aceCallB+24  ;( .X=fd ) : .A=devType,.X=cols,.Y=rows,sw+0=remain,.XY=size
 aceFileIoctl  = aceCallB+27  ;( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
 aceFileSelect = aceCallB+30  ;( .A=conFlags, .X=fdCount, sw=... ) : .A=fl,.X=fd
 aceFileBlock  = aceCallB+33  ;( .A=cmd, [sw+0]=blockNum, (zp)=dataPtr )

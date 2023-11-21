@@ -42,7 +42,8 @@ build/showzx\
 build/mousetest\
 build/liner\
 build/go64\
-build/browse
+build/browse\
+build/zload
 
 RESC=\
 resc/chrset-commodore resc/chrset-standard resc/chrset-ansi resc/chrset-browse\
