@@ -22,7 +22,8 @@ bkApp     = $0e
 bkSelect  = $ff00
 FETCH     = $02a2
 STASH     = $02af
-JMPFAR    = $02e3
+JMPFAR    = $ff71
+JSRFAR    = $ff6e
 z80Start  = $3000
 z80Load   = $3005
 zlUsage64 = *
@@ -65,8 +66,7 @@ main = *
    jmp doUsageMsg
 +  jsr loadz80
    bcs +
-   jsr startz80
-   rts         ;return to shell
+   jmp startz80
 +  jsr eputs
    jmp die
 startz80 = *
@@ -92,6 +92,8 @@ startz80 = *
    lda #$7e    ;modify $ffd2 so ram01 is used for z80
    ldx #bkRam1
    jsr STASH
+   lda #bkApp
+   sta bkSelect
    ;copy the return from Z80 stub
    lda #<z80ReturnStub
    ldy #>z80ReturnStub
@@ -104,8 +106,6 @@ startz80 = *
    cpy #z80_stub_sz
    bne -
    ;start z80 program
-   lda #bkApp
-   sta bkSelect
    lda #1
    sta $02     ;BANK = 1
    lda #>z80Start
@@ -113,13 +113,20 @@ startz80 = *
    lda #<z80Start
    sta $04     ;z80 start addr
    sta $05     ;clear carry
-   jmp JMPFAR
+   lda $d030
+   sta $a37
+   and $fe
+   sta $d030   ;switch to 1MHz
+   jsr JMPFAR  ;launch Z80 prog
+   rts         ;return to shell
 
 ;code we execute when returning from Z80 program; copy this to $1100
 z80ReturnStub = *
    cli
    lda #bkApp
    sta bkSelect
+   lda $a37
+   sta $d030   ;back to 2MHz
    rts
 z80_stub_sz = *-z80ReturnStub
 
@@ -179,14 +186,14 @@ loadRam01 = *
    ;first load; copy stub to low-memory
    ldy #0
 -  lda load_stub,y
-   sta $100,y
+   sta $200,y
    iny
    cpy #load_stub_sz
    bne -
-+  jmp $100
++  jmp $200
 load_stub = *
-!pseudopc($100) {
-   lda #$7e
+!pseudopc($200) {
+   lda #$4e
    sta bkSelect
    ;TALK
    lda loadDev
@@ -195,6 +202,8 @@ load_stub = *
    ; SECOND logical filenum
    lda loadFd
    ora #$60
+   nop
+   nop
    sta $de00
    ldy #0
 -  lda $de01
@@ -208,7 +217,7 @@ load_stub = *
    ;UNTALK
    lda #$5f
    sta $de00
-   lda #$3e
+   lda #bkApp
    sta bkSelect
    clc
    rts
