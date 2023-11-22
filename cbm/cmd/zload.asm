@@ -129,9 +129,8 @@ z80ReturnStub = *
    sta bkSelect
    lda $a37
    sta $d030   ;back to original CPU speed
-   ldx toolWinRegion+1
-   lda #0
-   jsr aceWinScreen
+   jsr aceGrExit
+   jsr toolWinRestore
    rts
 z80_stub_sz = *-z80ReturnStub
 
