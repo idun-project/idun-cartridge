@@ -6,7 +6,7 @@
 ; out https://github.com/idun-project/idun-zcc.
 
 !source "sys/acehead.asm"
-!source "sys/acemacro.asm"
+!source "sys/toolhead.asm"
 
 * = aceToolAddress
 
@@ -15,6 +15,7 @@ jmp main
 !byte 64,0 ;*stack,reserved
 
 ; Constants
+MAXPROG   = 53200    ;max. size Z80 binary
 FALSE     = 0x00
 bkRam0    = $3f
 bkRam1    = $7f
@@ -33,6 +34,7 @@ zlErrorMsg1   !pet "Error: Z80 programs require a C128",chrCR,0
 zlErrorMsg2   !pet "Error: cannot open program file",chrCR,0
 zlErrorMsg3   !pet "Error: Z80 load ONLY from virtual devices",chrCR,0
 zlErrorMsg4   !pet "Error: unrecognized z80 binary",chrCR,0
+zlErrorMsg5   !pet "Error: Z80 binary too big. Max. 52kB.",chrCR,0
 argsus = *
 !pet "/?"  ;show help
 !word doUsageMsg
@@ -126,7 +128,10 @@ z80ReturnStub = *
    lda #bkApp
    sta bkSelect
    lda $a37
-   sta $d030   ;back to 2MHz
+   sta $d030   ;back to original CPU speed
+   ldx toolWinRegion+1
+   lda #0
+   jsr aceWinScreen
    rts
 z80_stub_sz = *-z80ReturnStub
 
@@ -155,7 +160,17 @@ loadz80 = *
    rts
 +  ldx loadFd
    jsr aceFileInfo      ;fetch load device/size
-   lda syswork+2
+   checkZ80Size = *
+   cpy #>MAXPROG
+   bcc +
+   bne +
+   cpx #<MAXPROG
+   bcc +
+   lda #<zlErrorMsg5    ;z80 binary too big
+   ldy #>zlErrorMsg5
+   sec
+   rts
++  lda syswork+2
    sta loadDev
    lda syswork+0
    sta loadSz+0
@@ -193,8 +208,6 @@ loadRam01 = *
 +  jmp $200
 load_stub = *
 !pseudopc($200) {
-   lda #$4e
-   sta bkSelect
    ;TALK
    lda loadDev
    ora #$40
@@ -206,19 +219,23 @@ load_stub = *
    nop
    sta $de00
    ldy #0
+-- lda #$4e
+   sta bkSelect
 -  lda $de01
    beq -
    lda $de00
+   ldx #$4f
+   stx bkSelect
    sta (pageCnt),y
    iny
    dec byteCnt
-   bne -
+   bne --
    inc pageCnt+1
+   lda #bkApp
+   sta bkSelect
    ;UNTALK
    lda #$5f
    sta $de00
-   lda #bkApp
-   sta bkSelect
    clc
    rts
 }

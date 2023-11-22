@@ -45,6 +45,9 @@ vicActivate = *
    lda $dd00
    and #%11111100
    sta $dd00
+   lda $d506
+   and #%10111111
+   sta $d506   ;VIC uses RAM00 bank
    ;** window parameters
    sec
    lda #$d8
