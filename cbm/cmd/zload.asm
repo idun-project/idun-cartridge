@@ -124,12 +124,12 @@ startz80 = *
 
 ;code we execute when returning from Z80 program; copy this to $1100
 z80ReturnStub = *
-   cli
    lda #bkApp
    sta bkSelect
    lda $a37
-   sta $d030   ;back to original CPU speed
-   jsr aceGrExit
+   sta $d030         ;back to original CPU speed
+   cli               ;resume interrupt handler
+   jsr aceGrExit     ;reset VDC
    jsr toolWinRestore
    rts
 z80_stub_sz = *-z80ReturnStub
@@ -194,19 +194,12 @@ loadz80 = *
 
 ;RAM bank 01 loader code
 loadRam01 = *
-   lda pageCnt+1
-   cmp #$30
-   bne +
-   ;first load; copy stub to low-memory
-   ldy #0
--  lda load_stub,y
-   sta $200,y
-   iny
-   cpy #load_stub_sz
-   bne -
-+  jmp $200
-load_stub = *
-!pseudopc($200) {
+   ldx pageCnt+0
+   ldy pageCnt+1
+   stx zp
+   sty zp+1
+   lda #zp
+   sta $2b9
    ;TALK
    lda loadDev
    ora #$40
@@ -218,27 +211,20 @@ load_stub = *
    nop
    sta $de00
    ldy #0
--- lda #$4e
-   sta bkSelect
 -  lda $de01
    beq -
    lda $de00
-   ldx #$4f
-   stx bkSelect
-   sta (pageCnt),y
+   ldx #bkRam1
+   jsr STASH
    iny
    dec byteCnt
-   bne --
+   bne -
    inc pageCnt+1
-   lda #bkApp
-   sta bkSelect
    ;UNTALK
    lda #$5f
    sta $de00
    clc
    rts
-}
-load_stub_sz = *-load_stub
 
 ;load first bytes from progfile and confirm header
 checkHdr = *
