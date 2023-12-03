@@ -6,6 +6,8 @@ appRunLoop = *
    bcs exit
    rts
    exit = *
+   lda __luafd
+   jsr close
    lda #0
    sta zp
    sta zp+1

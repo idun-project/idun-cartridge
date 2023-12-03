@@ -5,6 +5,7 @@ TOOLBAR = 1
 
 __mailbox = $9b   ;(2)
 __work    = $9d   ;(2)
+__luafd   = $02   ;(1)
 
 jmp idunAppInit
 
@@ -115,6 +116,7 @@ __lua_init = *
    sty zp+1
    lda #"W"
    jsr open
+   sta __luafd
    bcc __forever
    rts
 __forever = *
