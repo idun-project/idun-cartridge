@@ -1823,20 +1823,7 @@ conWriteNewline = *
 
 -  lda scrollFreeze
    bne -
-   ldy #$00
-   lda configBuf+$ac
-   bit winDriver
-   bmi conPrescrollBegin
-   lda configBuf+$ad
-   bvs conPrescrollBegin
-   ldy #$ff
-   lda configBuf+$ae
-   bit aceSuperCpuFlag
-   bmi +
-   ldx winScrollReuWork+3
-   cpx #aceMemNull
-   beq conPrescrollBegin
-+  lda configBuf+$ab
+   lda #99     ;IDUN: hard-coded value (no configBuf use!)
    ldy #$00
    conPrescrollBegin = *
    sty conSoft80NonReu

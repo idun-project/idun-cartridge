@@ -10,7 +10,7 @@
     RAMR = $0f00    ; kernel hooks page
     CHRGET = $0380
     CHRGOT = $0386
-    CURLIN = $3b
+    RUNMOD = $7f
     TXTPTR = $3d
 } else {
     useC128 = 0
@@ -19,7 +19,7 @@
     RAMR = $cf00    ; kernel hooks page
     CHRGET = $73
     CHRGOT = $79
-    CURLIN = $39
+    MSGFLG = $9d
     TXTPTR = $7a
 }
 ; Local vars stored at the end of RAM-resident block
@@ -53,6 +53,7 @@ kernelChrout    = $ffd2
 kernelStop      = $ffe1
 kernelSetnam    = $ffbd
 kernelSetmsg    = $ff90
+kernelLoad      = $ffd5
 
 ;** kernal vars
 kStatus     = $90 ; I/O status var
@@ -75,6 +76,7 @@ kFnaddr     = $bb ; address of the filename
     kernelSetbnk        = $ff68
     basicPrompt         = $4d37
     basicRun            = $af99
+    basicNew            = $af84
     basicError          = $4d3f
     basicAddr           = $1c01
 } else {
@@ -84,6 +86,7 @@ kFnaddr     = $bb ; address of the filename
     basicPrompt         = $a474
     basicError          = $e38b     ;$a43a
     basicAddr           = $801
+    basicNew            = $a642
 }
 
 ;Handy macros
@@ -116,7 +119,7 @@ main = *
     sta bkSelect
     jmp Basic
 Catalog = *
-    lda #"R"
+    lda #"P"
     ldx #hookOpen
     jsr romcall
     ;get length of dir listing
@@ -397,11 +400,23 @@ idunChOut = *
 idunWedge = *
     +incTXTPTR
     ;direct/immediate mode?
-    lda CURLIN+1
-    cmp #$ff
-    bne wedgeOut
+!if useC128 {
+    lda RUNMOD
+    beq +
+} else {
+    lda MSGFLG
+    bne +
+}
+    ;entered RUN mode; disable wedge
+    lda #$e6
+    sta CHRGET
+    lda #$3d
+    sta CHRGET+1
+    lda #$d0
+    sta CHRGET+2
+    jmp CHRGOT
     ;is direct mode, check for "@"
-    ldy #0
++   ldy #0
     lda (TXTPTR),y
     cmp #"@"
     bne wedgeOut
@@ -499,13 +514,10 @@ OnSyntaxErr = *
     +decTXTPTR
     lda (TXTPTR),y
     cmp #"D"    ;DOS
-    beq OnStartDos
+    bne +
+    jmp OnStartDos
 +   jmp basicError
 }
-OnStartDos = *
-    lda $eb
-    sta $200
-    jmp loadIdun
 
 OnUndefErr = *
 !if useC64 {
@@ -518,6 +530,14 @@ OnUndefErr = *
     bne +
     jmp runProg
 }
++   jmp basicError
+IError = *
+    cpx #$0b    ;is syntax error?
+    bne +
+    jmp OnSyntaxErr
++   cpx #$11    ;is undef'd statement error?
+    bne +
+    jmp OnUndefErr
 +   jmp basicError
 
 Basic = *
@@ -558,13 +578,6 @@ Basic = *
 +   nop 
     ;** start basic program
 !if useC128 {
-    ;** install the wedge (for "@ commands")
-    lda #$4c    ;JMP
-    sta CHRGET
-    lda #<idunWedge
-    sta CHRGET+1
-    lda #>idunWedge
-    sta CHRGET+2
     ;$1210 must point to top of basic text
     lda kCurraddr+0
     sta $1210
@@ -593,13 +606,6 @@ Basic = *
     lda kCurraddr+1
     sta $2e
     jsr $a533   ;lnkprg
-    ;** install the wedge (for "@ commands")
-    lda #$4c    ;JMP
-    sta CHRGET
-    lda #<idunWedge
-    sta CHRGET+1
-    lda #>idunWedge
-    sta CHRGET+2
     jmp magic
 }
 !if useC128 {
@@ -612,6 +618,31 @@ idunk !pet "idun-64"
 RAM_START = *
 
 !pseudopc (RAMR) {
+OnStartDos = *
+    lda $eb
+    sta $200
+    ; boot idun kernel
+    lda #26     ;Z:
+    sta IdunDrive
+    lda MyDevice
+    sta kLastDevice
+    lda #1
+    sta kSecaddr
+    lda #7
+    ldx #<idunk
+    ldy #>idunk
+    jsr kernelSetnam
+!if useC128 {
+    lda #bkRam0
+    ldx #bkKernel
+    jsr kernelSetbnk
+}
+    ; load kernel and jump
+    ldx #$00
+    ldy #$13    
+    lda #0
+    jsr kernelLoad
+    jmp $1300
 IOpen = *
     lda kLastDevice
     cmp MyDevice
@@ -642,33 +673,6 @@ ISaver = *
     jmp (kernalSaver)
 +   ldx #hookSave
     jmp romcall
-IError = *
-    cpx #$0b    ;is syntax error?
-    bne +
-    jmp OnSyntaxErr
-+   cpx #$11    ;is undef'd statement error?
-    bne +
-    jmp OnUndefErr
-+   jmp basicError
-loadIdun = *
-    ; boot idun kernel
-    lda #26     ;Z:
-    sta IdunDrive
-    lda #1
-    sta kSecaddr
-    lda #7
-    ldx #<idunk
-    ldy #>idunk
-    jsr kernelSetnam
-!if useC128 {
-    lda #bkRam0
-    ldx #bkKernel
-    jsr kernelSetbnk
-}
-    ; load kernel and jump
-    ldx #hookLoad
-    jsr romcall
-    jmp $1300
 !if useC64 {
 runProg = *
     ;parse name of prog
@@ -780,15 +784,27 @@ exit_magic !pet "run:",13,$6c,$02,$a0
     }
 }
 
+* = RAM_START+256
 Install = *
-    ;Install hook driver
     lda configDrv
     sta IdunDrive
     lda configIec
     sta MyDevice
     jsr kernelRESTOR
     sei
-    lda ILOAD+0
+    ;always install IError hook
+    lda #<IError
+    ldy #>IError
+    sta IERROR+0
+    sty IERROR+1
+    ;check for patched ROM
+!if useC128 {
+    lda $ff80
+    bpl +
+    jmp CopyRAMR
+}
+    ;Install hook driver
++   lda ILOAD+0
     ldy ILOAD+1
     sta kernalLoader+0
     sty kernalLoader+1
@@ -812,11 +828,7 @@ Install = *
     ldy #>IOpen
     sta IOPEN+0
     sty IOPEN+1
-    lda #<IError
-    ldy #>IError
-    sta IERROR+0
-    sty IERROR+1
-    cli
+CopyRAMR = *
     ;** copy RAM-resident part
     ldx #0
 -   lda RAM_START,x
@@ -824,6 +836,7 @@ Install = *
     inx
     cpx #<RAMVAR    ;stop when reach vars area
     bne -
+    cli
     ;** RAM_START area relocated, then
     ;** overwritten with the config blob
 LoadConfig = *
@@ -848,17 +861,29 @@ LoadConfig = *
     jmp -
 +   clc
     rts
-
-basicStart = *
+InstallWedge = *
+    lda #$4c
+    sta CHRGET
+    lda #<idunWedge
+    sta CHRGET+1
+    lda #>idunWedge
+    sta CHRGET+2
+    lda #$00    ;required for NEW
+    jsr basicNew
+    jmp basicPrompt
 !if useC128 {
+    * = $1c01
+    basicStart = *
     !binary "resc/boot128.bas",,2
 } else {
+    basicStart = *
     !binary "resc/boot.bas",,2
 }
 basicLength !word *-basicStart
 
-!if useC128 and * > $1bff {
-    !error "Running into BASIC TEXT memory! (",*,")"
+!ifndef wedge_install {
+    !set wedge_install = 1
+    !warn "Wedge install: ",InstallWedge
 }
 
 ;┌────────────────────────────────────────────────────────────────────────┐

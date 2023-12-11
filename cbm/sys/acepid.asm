@@ -58,10 +58,27 @@ getFileinfoChan = * ;(.X=fcb) : .A=device
   sta zz+1
   pla
 }
-; This sets both the length and the remianing bytes to
-; the initial value given by zz.
-setFileinfoLength = * ;(.X=fcb, zz=16-bit len.)
+; This gets and sets both the length and the remianing bytes.
+setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
+  txa
   pha
+  ; TALK
+  jsr getFileinfoChan
+  jsr talkChan
+  jsr pidChOut
+  ; SECOND logical filenum
+  pla
+  clc
+  adc #$60
+  jsr pidChOut
+  tax
+  ; recv length (LSB, MSB)
+- jsr pidChIn
+  bcs -
+  sta zz
+- jsr pidChIn
+  bcs -
+  sta zz+1
   txa
   asl
   asl
@@ -80,7 +97,7 @@ setFileinfoLength = * ;(.X=fcb, zz=16-bit len.)
   inx
   inx
   sta fileinfoTable,x
-  pla
+  jsr pidDoUntalk
   rts
 
 !macro updateFileinfoBytes {
@@ -209,7 +226,21 @@ pidOpen = *
   lda #0
   jsr pidChOut
   jsr pidFlushbuf
-  jmp pidDoUnlisten
+  jsr pidDoUnlisten
+  bcc +
+  rts
++ ldx openFcb
+  lda openMode
+  cmp #"p"
+  bne +
+  jsr setFileinfoLength
+  jmp ++
++ cmp #"P"
+  bne ++
+  jsr setFileinfoLength
+++lda openFcb
+  clc
+  rts
 
 ;*** (closeFd) : .CS=error, errno
 pidClose = *
@@ -298,25 +329,9 @@ pidRead = *
   clc
   adc #$60
   jsr pidChOut
-  ; recv length (LSB, MSB), if not previously received
-  ldx readFcb
-  +getFileinfoLength
-  lda zz+1
-  cmp #$ff
-  bne +
-  eor zz+0
-  bne +
-- jsr pidChIn
-  bcs -
-  sta zz
-- jsr pidChIn
-  bcs -
-  sta zz+1
-  ldx readFcb
-  jsr setFileinfoLength
   ; determine how much can be recv'd (readMaxLen >= zz)
   calcRecvLength = *
-+ ldx readFcb
+  ldx readFcb
   +getFileinfoLength
   lda zz+1
   sec
@@ -488,7 +503,7 @@ pidBload = *
   lsr
   lsr
   sta bloadDevice
-  lda #"r"
+  lda #"p"
   sta openMode
   lda #0
   sta openNameScan
@@ -502,15 +517,6 @@ pidBload = *
   sta readPtr
   lda BloadAddr+1
   sta readPtr+1
-  ; READ file size
-  lda bloadDevice
-  jsr talkChan
-  jsr pidChOut
-  ; SECOND logical filenum
-  lda BloadFcb
-  clc
-  adc #$60
-  jsr pidChOut
   ; Maximum read length = zw-BloadAddr
   lda zw
   sec
@@ -519,15 +525,8 @@ pidBload = *
   lda zw+1
   sbc BloadAddr+1
   sta readlentemp+1
-  ; recv length (LSB, MSB)
-- jsr pidChIn
-  bcs -
-  sta zz
-- jsr pidChIn
-  bcs -
-  sta zz+1
   ldx BloadFcb
-  jsr setFileinfoLength
+  +getFileinfoLength
   ; Check file is not Too Big
   clc
   lda zz+1
@@ -536,8 +535,18 @@ pidBload = *
   sec
   lda #aceErrInsufficientMemory
   rts
-  ; READ rest of file
+  ; READ file
 + sta BloadPgs
+  ; TALK
+  lda bloadDevice
+  jsr talkChan
+  jsr pidChOut
+  ; SECOND logical filenum
+  lda BloadFcb
+  clc
+  adc #$60
+  jsr pidChOut
+  lda BloadPgs
 - cmp #0
   beq lastPg
   ldx #0        ; this means read whole page (256 bytes)

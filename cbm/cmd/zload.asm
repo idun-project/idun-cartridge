@@ -136,7 +136,7 @@ z80_stub_sz = *-z80ReturnStub
 
 loadz80 = *
    ;open file
-   lda #"r"
+   lda #"p"
    jsr open
    bcc +
    lda #<zlErrorMsg2    ;error opening file
