@@ -403,39 +403,45 @@ doSpectrum = *
    cmp #6
    bne +
    ;fill even frame (mode 6)
-   lda #0
-   ldy #0
+   clc
+   jsr xGrExtents
+   lda syswork+0
+   ldy syswork+1
    jsr vdcAddrWrite16
+   ldy #0
 -  lda #$55
    jsr vdcRamWrite
    lda #$ff
    ldx #30
    jsr vdcWrite
    iny
-   cpy #>19200
+   cpy #$52
    bne -
    ;fill odd frame (mode 6)
-   lda #0
-   ldy #>19200
+   lda syswork+4
+   ldy syswork+5
    jsr vdcAddrWrite16
+   ldy #0
 -  lda #$aa
    jsr vdcRamWrite
    lda #$ff
    ldx #30
    jsr vdcWrite
-   dey
-   bpl -
+   iny
+   cpy #$52
+   bne -
    ;fill all attrs (mode 6)
-   lda #0
-   ldy #$a0
+   lda syswork+2
+   ldy syswork+3
    jsr vdcAddrWrite16
+   ldy #0
 -  lda #$00
    jsr vdcRamWrite
    lda #$ff
    ldx #30
    jsr vdcWrite
    iny
-   cpy #$eb
+   cpy #$52
    bne -
    lda rows
    asl
@@ -528,8 +534,8 @@ spectrumAttr:
 !byte $bf,$af,$bb,$ba,$b0,$aa,$a0
 !byte $df,$cf,$dd,$dc,$d0,$cc,$c0
 !byte $ff,$ef,$ff,$fe,$f0,$ee,$e0
-specCol80 !byte 2,13,24,35,46,57,68
-specCol40 !byte 1,6,11,17,23,28,33
+specCol80 !byte 2,12,22,32,42,52,62
+specCol40 !byte 1,6,11,16,21,26,31
 specRow !byte 0
 specCol !byte 0
 
