@@ -1028,25 +1028,25 @@ xVdcDblBuffer = *
    rts
 
 xVdcBufswap = *
-   ; bmadr1 <- R12/13
+   ; bmadr0 <- R12/13
    ldx #12
    jsr vdcRead
-   sta .bmadr1+1
+   sta .bmadr0+1
    ldx #13
    jsr vdcRead
-   sta .bmadr1+0
-   ; R12/13 <- bmadr0
-   ldx #12
-   lda .bmadr0+1
-   jsr vdcWrite
-   ldx #13
-   lda .bmadr0+0
-   jsr vdcWrite
-   ; bmadr0 <- bmadr1
-   lda .bmadr1+0
-   ldy .bmadr1+1
    sta .bmadr0+0
-   sty .bmadr0+1
+   ; R12/13 <- bmadr1
+   ldx #12
+   lda .bmadr1+1
+   jsr vdcWrite
+   ldx #13
+   lda .bmadr1+0
+   jsr vdcWrite
+   ; bmadr1 <- bmadr0
+   lda .bmadr0+0
+   ldy .bmadr0+1
+   sta .bmadr1+0
+   sty .bmadr1+1
    rts
 }
 
