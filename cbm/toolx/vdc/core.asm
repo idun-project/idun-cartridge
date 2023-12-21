@@ -27,7 +27,7 @@ VDC_GRMODE_MAX = 7
 ; Mode 1: medres (640x200), monochrome bitmap (no attr, 264 line NTSC)
 ; Mode 2: hires (640x480), monochrome bitmap (64k, no attr, interlace, 525 line NTSC)
 ; Mode 3: lores (up to 320x256), low-color bitmap (8x8 attr, 312 line PAL)
-; Mode 4: hires (up to 640x512), low-color bitmap (64k, 8x8 attr, interlace, 525 line NTSC)
+; Mode 4: hires (up to 640x480), low-color bitmap (64k, 8x8 attr, interlace, 525 line NTSC)
 ; Mode 5: lores (320x200), high-color bitmap (8x2 attr, 312 line PAL)
 ; Mode 6: hires (640x480), high-color bitmap (64k, 8x2 attr, interlace, 525 line NTSC)
 ; Mode 7: super-res (800x600), monochrome bitmap (64k, no attr, interlace, 625 line PAL)

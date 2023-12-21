@@ -779,7 +779,7 @@ The tables below summarize the meanings of the various key codes.  Not all of th
 ```
 CODE(s)   C128 KEY(s)    C64 KEY(s)     DESCRIPTION
 -------   ------------   ------------   -----------
-$20-$3f   SPIdun to "?"   SPIdun to "?"   Regular numbers and punctuation
+$20-$3f   SP to "?"      SP to "?"      Regular numbers and punctuation
 $40-$5f   "@" to "_"     "@" to "_"     Regular lowercase letters
 $60-$7f   AL-@ to AL-_   <undecided>    Alternate keys
 $a0-$bf   CO-@ to CO-_   CO-@ to CO-_   Commodore keys
@@ -1470,10 +1470,6 @@ The Idun system itself is written using the ACME assembler, so it is recommended
 jmp main
 !byte aceID1,aceID2,aceID3
 !byte 64,0 ;*stack,reserved
-
-jmp main
-!byte aceID1,aceID2,aceID3
-!byte 64,0
 
 main = *
    lda #<helloMsg
