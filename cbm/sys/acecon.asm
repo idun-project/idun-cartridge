@@ -1576,7 +1576,6 @@ keybufData  !fill keybufSize,0
 keybufShift !fill keybufSize,0
 
 kernMiscRobokey = *
-   ldx #$ff
    stx suppressSaveLine
 storeKey = *  ;( .A=char )
    ldx keybufCount
@@ -1674,7 +1673,13 @@ kernConKeyAvail = *
 
 kernConStopkey = *
 conStopkey = *
-   lda stopKeyRow
+   lda keybufCount
+   beq +
+   ldy keybufHead
+   lda keybufData,y
+   cmp #$03
+   beq ++
++  lda stopKeyRow
    cmp #$80
    beq +
 -  clc
@@ -1682,7 +1687,7 @@ conStopkey = *
 +  lda shiftValue
    and #$0f
    bne -
-   lda #0
+++ lda #0
    sta keybufCount
    sta keybufHead
    sta keybufTail

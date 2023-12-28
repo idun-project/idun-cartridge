@@ -143,6 +143,7 @@ minuteTimeout = *
    ldy tempIndex
    jmp -
 +  lda #chrCR
+   ldx #$ff
    jsr aceMiscRobokey
    rts
 ++ ldx #60
@@ -1204,6 +1205,7 @@ roboCmdCont = *
 +  lda #chrQuote
    jsr aceMiscRobokey
    lda #chrCR
+   ldx #$ff
    jsr aceMiscRobokey
    rts
 nixPrefix !pet "tty ",chrQuote,"x:",0
