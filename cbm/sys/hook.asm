@@ -410,7 +410,7 @@ idunWedge = *
     ;entered RUN mode; disable wedge
     lda #$e6
     sta CHRGET
-    lda #$3d
+    lda #TXTPTR
     sta CHRGET+1
     lda #$d0
     sta CHRGET+2
