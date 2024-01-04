@@ -1129,11 +1129,14 @@ loader = *
 +  sta loadFd
    jsr aceMiscDeviceInfo
    stx loadDevType
-   cpx #1
-   beq closeIec
+   bcs +
+   jmp closeIec
++  sta $9b        ;Pass $ba and $9b/$9c values to BASIC
+   sta $ba
    lda syswork+1
    lsr
    lsr
+   sta $9c
    ldx #255            ;CMD_STREAM_CHANNEL
    jsr aceMapperCommand
    ldx loadDevType
