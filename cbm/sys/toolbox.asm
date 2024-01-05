@@ -365,6 +365,7 @@ MacroHandler = * ;( tbwork=keycode )
    jmp macroInject
    ;done injecting command
 +  lda #chrCR
+   ldx #$ff
    jsr aceMiscRobokey
    clc
    rts
@@ -1771,11 +1772,12 @@ tbFrameSync = *
    _inactiveLayout = *
    rts
 
-aceToolboxEnd = *
-
-!if aceToolboxEnd>aceToolAddress {
+!if *>aceToolAddress {
    !error "Toolbox exceeds maximum address ", aceToolAddress
+} else {
+   * = aceToolAddress
 }
+aceToolboxEnd = *
 
 
 ;┌────────────────────────────────────────────────────────────────────────┐

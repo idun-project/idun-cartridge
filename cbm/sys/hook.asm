@@ -35,11 +35,14 @@ MyDevice    = $9b       ;(1)
 IdunDrive   = $9c       ;(1)
 
 ;** ROM entry points
-JUMP_ROM    = $800b
-hookOpen    = <JUMP_ROM+0
-hookLoad    = <JUMP_ROM+3
-hookSave    = <JUMP_ROM+6
-hookClose   = <JUMP_ROM+9
+PATCH_ROM_JUMP = $e600  ;for patched ROMs
+HOOK_ROM_JUMP  = $8000   ;for EXROM
+jump_offset    = $0b
+hookOpen       = <jump_offset+0
+hookLoad       = <jump_offset+3
+hookSave       = <jump_offset+6
+hookClose      = <jump_offset+9
+hookCatalog    = <jump_offset+12
 
 ;** kernal vectors
 ILOAD = $0330
@@ -108,13 +111,7 @@ kFnaddr     = $bb ; address of the filename
 configDrv !byte 3
 configIec !byte 10
 main = *
-!if useC64 {
-    lda $102
-    bmi +
-    beq +
-    sta configDrv
-}
-+   jsr Install
+    jsr Install
     lda #bkKernel
     sta bkSelect
     jmp Basic
@@ -461,7 +458,8 @@ wedgeDir = *
     ldy #>dirSymbol
     lda #1
     jsr kernelSetnam
-    jsr Catalog
+    ldx #hookCatalog
+    jsr romcall
     jmp basicPrompt
 dirSymbol !pet "$"
 invdiskMsg !pet "?not a virtual disk",13,0
@@ -650,7 +648,8 @@ IOpen = *
     jmp (kernalOpen)
 +   jsr FnIsdir
     bne +
-    jsr Catalog
+    ldx #hookCatalog
+    jsr romcall
 +   jmp basicPrompt
 ILoader = *
     pha
@@ -663,7 +662,8 @@ ILoader = *
     sta kVerify
     jsr FnIsdir
     bne +
-    jmp Catalog
+    ldx #hookCatalog
+    jmp romcall
 +   ldx #hookLoad
     jmp romcall   
 ISaver = *
@@ -673,53 +673,12 @@ ISaver = *
     jmp (kernalSaver)
 +   ldx #hookSave
     jmp romcall
-!if useC64 {
-runProg = *
-    ;parse name of prog
-    ldx #0
--   inx
-    lda $200,x
-    cmp #$20    ;skip over spaces
-    beq -
-    cmp #$22    ;RUN "
-    beq +
-    jmp basicError
-+   stx start_name
--   inx
-    lda $200,x
-    cmp #$22    ;RUN "<name>"
-    bne -
-    dex
-    txa
-    sec
-    sbc start_name
-    ldx start_name
-    inx
-    ldy #>$200
-    jsr kernelSetnam
-    ldx #hookLoad
-    jsr romcall
-    bcc +
-    jmp basicError
-    ; disable EXROM
-+   lda #$00
-    sta $de7e
-    lda $81ff
-    lda $8000
-    jsr kernelRESTOR
-    ;$2d (VARTAB) must point to top of basic text
-    lda kCurraddr+0
-    sta $2d
-    lda kCurraddr+1
-    sta $2e
-    jsr $a533   ;lnkprg
-    jmp magic
-start_name !byte 0
-}
 romcall = *
     tay
     lda #$c0
     jsr kernelSetmsg
+enPatchRom = *+1
+    jmp *+3
 !if useC128 {
     ;select 1MHz
     lda $d030
@@ -733,7 +692,7 @@ romcall = *
     sta bkSelect
     tya
     stx *+4
-    jsr JUMP_ROM
+    jsr HOOK_ROM_JUMP
     tay
     pla
     sta bkSelect
@@ -744,6 +703,10 @@ romcall = *
 }
     tya
     rts
+patchcall = *
+    tya
+    stx *+4
+    jmp PATCH_ROM_JUMP
 FnIsdir = *
     ldy #0
 !if useC128 {
@@ -801,7 +764,13 @@ Install = *
 !if useC128 {
     lda $ff80
     bpl +
-    jmp CopyRAMR
+    ;Using patched ROM
+    ; disable idun boot rom
+    lda #0
+    sta $de7e
+    lda $81ff
+    lda $8000
+    jmp CopyRUNR
 }
     ;Install hook driver
 +   lda ILOAD+0
@@ -828,6 +797,16 @@ Install = *
     ldy #>IOpen
     sta IOPEN+0
     sty IOPEN+1
+CopyRUNR = *
+    ;** copy C64 RUN command handler to $2a7-$2ff
+!if useC64 {
+    ldx #0
+-   lda RUN_START,x
+    sta $2a7,x
+    inx
+    cpx #(RUNR_END-RUN_START)
+    bne -
+}
 CopyRAMR = *
     ;** copy RAM-resident part
     ldx #0
@@ -836,7 +815,18 @@ CopyRAMR = *
     inx
     cpx #<RAMVAR    ;stop when reach vars area
     bne -
-    cli
+    ;check for patched ROM
+!if useC128 {
+    lda $ff80
+    bpl +
+    ;Using patched ROM
+    ; set appropriate romcall routine
+    lda #<patchcall
+    ldy #>patchcall
+    sta enPatchRom+0
+    sty enPatchRom+1
+}
++   cli
     ;** RAM_START area relocated, then
     ;** overwritten with the config blob
 LoadConfig = *
@@ -861,6 +851,55 @@ LoadConfig = *
     jmp -
 +   clc
     rts
+!if useC64 {
+RUN_START = *
+!pseudopc($2a7) {
+runProg = *
+    ;parse name of prog
+    ldx #0
+-   inx
+    lda $200,x
+    cmp #$20    ;skip over spaces
+    beq -
+    cmp #$22    ;RUN "
+    beq +
+    jmp basicError
++   stx $2ff
+-   inx
+    lda $200,x
+    cmp #$22    ;RUN "<name>"
+    bne -
+    dex
+    txa
+    sec
+    sbc $2ff
+    ldx $2ff
+    inx
+    ldy #>$200
+    jsr kernelSetnam
+    ldx #hookLoad
+    jsr romcall
+    bcc +
+    jmp basicError
+    ; disable EXROM
++   lda #$00
+    sta $de7e
+    lda $81ff
+    lda $8000
+    jsr kernelRESTOR
+    ;$2d (VARTAB) must point to top of basic text
+    lda kCurraddr+0
+    sta $2d
+    lda kCurraddr+1
+    sta $2e
+    jsr $a533   ;lnkprg
+    jmp magic
+}
+RUNR_END = *
+!if *-RUN_START>($2ff-$2a7) {
+        !error("C64 RUN handler exceeds memory limit!")
+}
+}
 InstallWedge = *
     lda #$4c
     sta CHRGET

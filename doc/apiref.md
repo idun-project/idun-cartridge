@@ -790,7 +790,7 @@ $dc       SH-\ (Pound)   SH-\ (Pound)   Vertical bar (|)
 $dd       SH-- (Minus)   SH-- (Minus)   Right curly brace (})
 $de       SH-Uparrow     SH-Uparrow     Tilda (~)
 $df       SH-Backarrow   SH-Backarrow   House character (DEL on most systems)
-$e0-$ef   CT-@ to CT-_   CT-@ to CT-_   Control keys
+$e0-$ff   CT-@ to CT-_   CT-@ to CT-_   Control keys
 
 CODE(s)   C128 KEY(s)    C64 KEY(s)     DESCRIPTION
 -------   ------------   ------------   -----------

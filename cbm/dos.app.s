@@ -143,6 +143,7 @@ minuteTimeout = *
    ldy tempIndex
    jmp -
 +  lda #chrCR
+   ldx #$ff
    jsr aceMiscRobokey
    rts
 ++ ldx #60
@@ -1128,11 +1129,14 @@ loader = *
 +  sta loadFd
    jsr aceMiscDeviceInfo
    stx loadDevType
-   cpx #1
-   beq closeIec
+   bcs +
+   jmp closeIec
++  sta $9b        ;Pass $ba and $9b/$9c values to BASIC
+   sta $ba
    lda syswork+1
    lsr
    lsr
+   sta $9c
    ldx #255            ;CMD_STREAM_CHANNEL
    jsr aceMapperCommand
    ldx loadDevType
@@ -1204,6 +1208,7 @@ roboCmdCont = *
 +  lda #chrQuote
    jsr aceMiscRobokey
    lda #chrCR
+   ldx #$ff
    jsr aceMiscRobokey
    rts
 nixPrefix !pet "tty ",chrQuote,"x:",0
