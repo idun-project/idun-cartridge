@@ -4,6 +4,8 @@ This is the home of the idun-cartridge for the C128. Here you will find the late
 
 What does it do? Hopefully a [demo](https://www.youtube.com/watch?v=X_DMMz55Tpo) is worth a thousand words.
 
+I've also just created (January 5, 2024) a [Discord Server](https://discord.gg/mWwpZb5t) for the project. This is for idun-project discussion, new user advice, and beta testing new features.
+
 ### Hardware
 
 The idun-cartridge uses a Propeller 1 micro-controller to provide a fast hardware interface between the C128 and a Raspberry Pi ("RPi") that runs a customized Linux OS. The cartridge is designed to work and fit best with the Raspberry Pi Zero 2. However, any recent Raspberry Pi can be made to work.
