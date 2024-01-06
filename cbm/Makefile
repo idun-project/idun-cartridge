@@ -55,6 +55,7 @@ RESC=\
 resc/chrset-commodore resc/chrset-standard resc/chrset-ansi resc/chrset-browse\
 resc/autoexec.bat resc/basic780 resc/prompt.lua resc/sidplay.lua resc/tpat600.pbm\
 resc/tpat480.pbm resc/tpat200.pbm resc/help.lua resc/commands.hlp resc/editor.hlp\
+resc/makerom.lua resc/kernal128.patch\
 $(wildcard resc/dos/*) $(wildcard resc/util/*)
 
 all: rel sys
