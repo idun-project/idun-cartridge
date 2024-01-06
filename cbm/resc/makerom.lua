@@ -12,8 +12,8 @@ local kcomborom = '/tmp/318023-02.rom'
 -- Patch files
 local pfile = 'sys/kernal128.patch'
 -- Output files
-local ofile = 'U35.rom'
-local ocombofile = 'U32.rom'
+local ofile = '/home/idun/U35.rom'
+local ocombofile = '/home/idun/U32.rom'
 -- Mssage text
 local msg_k128_16k = 'Making patched C128 kernal ROM U35'
 local msg_k128_32k = 'Making patched C128 kernal ROM U32'
@@ -71,8 +71,7 @@ local function patchRom(roms, patchs, outf)
 end
 
 local function make16k(roms)
-    local outnm = os.getenv('HOME')..'/'..ofile
-    local outf = assert(io.open(outnm, 'wb'))
+    local outf = assert(io.open(ofile, 'wb'))
     local patchf = assert(io.open(pfile, 'rb'))
     -- Read in the patch file
     local patchs = patchf:read("*all")
@@ -82,12 +81,11 @@ local function make16k(roms)
     -- Apply the patch
     patchRom(roms, patchs, outf)
     outf:close()
-    return outnm
+    return ofile
 end
 
 local function make32k(roms)
-    local outnm = os.getenv('HOME')..'/'..ocombofile
-    local outf = assert(io.open(outnm, 'wb'))
+    local outf = assert(io.open(ocombofile, 'wb'))
     local patchf = assert(io.open(pfile, 'rb'))
     -- Read in the patch file
     local patchs = patchf:read("*all")
@@ -97,7 +95,7 @@ local function make32k(roms)
     -- Apply the patch
     patchRom(roms, patchs, outf)
     outf:close()
-    return outnm
+    return ocombofile
 end
 
 local function md5(fname)
