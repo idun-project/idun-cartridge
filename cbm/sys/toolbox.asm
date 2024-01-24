@@ -1772,6 +1772,12 @@ tbFrameSync = *
    _inactiveLayout = *
    rts
 
+;** these four fields MUST be retained between dos.app restarts
+shellRedirectStdin  !byte 0
+shellRedirectStdout !byte 0
+shellRedirectStderr !byte 0
+inputFd             !byte 0
+
 !if *>aceToolAddress {
    !error "Toolbox exceeds maximum address ", aceToolAddress
 } else {

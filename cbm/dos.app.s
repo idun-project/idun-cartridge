@@ -15,12 +15,6 @@
 jmp DosStartup
 
 chrQuote = 34
-;** these four fields need are retained
-shellRedirectStdin  !byte 0
-shellRedirectStdout !byte 0
-shellRedirectStderr !byte 0
-inputFd             !byte 0
-
 suppressPromptFlag  !byte 0
 
 stackPtr = $60

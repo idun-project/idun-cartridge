@@ -315,6 +315,7 @@ pidRead = *
   ldx readFcb
   +fileinfoEof
   bne +
+pidDetectEOF:
   clc
   ldy #0
   lda #0
@@ -368,7 +369,10 @@ pidRead = *
   jmp readEnd
   readPage = *
   jsr pidGetbuf
-  dec zz+1
+  bcc +
+  jsr pidFlushbuf
+  jmp pidDetectEOF
++ dec zz+1
   inc readPtr+1
   jsr pidDoUntalk
   ; TALK for next page
@@ -387,6 +391,9 @@ pidRead = *
   ;WARNING passing zero to pidGetbuf reads #256 bytes!
   beq readEnd
   jsr pidGetbuf
+  bcc readEnd
+  jsr pidFlushbuf
+  jmp pidDetectEOF
   readEnd = *
   ; subtract length from remaining
   lda readlentemp
@@ -442,6 +449,10 @@ pidWrite = *
   beq writeEnd
   jsr pidPutbuf
   writeEnd = *
+  lda #$fa
+  jsr pidChOut
+  lda #$00
+  jsr pidChOut
   ; UNLISTEN
   lda #$3F
   jmp pidChOut

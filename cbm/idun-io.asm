@@ -146,9 +146,27 @@ pidGetbuf = *
 --lda idRxBufLen
   sta recvAvail
   beq --
-  ; copy all available, up to lengthBuf
-- lda idDataport
+  ; check for EOF marker [$fa,$00]
+  cmp #1
+  beq pidCopyToBuf
+  lda idDataport
+  cmp #$fa
+  bne ++
+  lda idDataport
+  bne +
+  sec
+  rts     ;return .CS for EOF detected
++ pha
+  lda #$fa
   sta (readPtr),y
+  iny
+  pla
+  sta (readPtr),y
+  iny
+  ; copy all available, up to lengthBuf
+pidCopyToBuf:
+- lda idDataport
+++sta (readPtr),y
   iny
   cpy lengthBuf
   beq +
