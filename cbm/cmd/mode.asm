@@ -10,7 +10,7 @@
 ; mode 80 - set 80 column text mode
 ; mode 40 - set 40 column text mode
 ; mode vdc 1 - set VDC graphics mode #1
-; mode vdc 3 32 24 - set VDC graphics mode #3 with X Y dimesions
+; mode vdc 3 32 24 - set VDC graphics mode #3 with X Y dimensions
 ; mode vic 2 - set VIC graphics mode #2
 ; mode 80 cbm - switch to CBM character set and 80 columns
 ;
@@ -813,7 +813,7 @@ usemsg1 = *
    !pet "2. mode [vic 0-4",$dc,"vdc 0-7] [X Y]",chrCR
    !pet "Set text/graphics mode of VIC-II or VDC,",chrCR,0
 usemsg2 = *
-   !pet "with optional X/Y dimesion in char cells",chrCR
+   !pet "with optional X/Y dimension in char cells",chrCR
    !pet "3. mode [std",$dc,"cbm",$dc,"ans]",chrCR
    !pet "Set character set to Standard, CBM or ANSI",chrCR
    !pet "no args: show current text mode setup",chrCR,0

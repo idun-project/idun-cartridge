@@ -1939,9 +1939,9 @@ getLfAndFcb = * ;() : .X=fcb, .A=lf
    openLfSearch = *
 +  inc newlf
    lda newlf
-   and #$3f
-   clc
-   adc #1
+   and #$1f
+   sec
+   sbc #1
    ldy #fcbCount-1
 -  cmp lftable,y
    beq openLfSearch

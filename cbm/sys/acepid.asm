@@ -68,8 +68,9 @@ setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   jsr pidChOut
   ; SECOND logical filenum
   pla
-  clc
-  adc #$60
+  tax
+  jsr pidGetlfn
+  ora #$60
   jsr pidChOut
   tax
   ; recv length (LSB, MSB)
@@ -139,6 +140,18 @@ setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   tay
   pla
 }
+!macro fileinfoSeteof {
+  txa
+  asl
+  asl
+  asl
+  tax
+  inx
+  lda #0
+  sta fileinfoTable,x
+  inx
+  sta fileinfoTable,x
+}
 !macro fileinfoEof {
   txa
   asl
@@ -195,6 +208,16 @@ pidDoUnlisten = *
   clc
   rts
 
+;*** (.X=Fcb) : .A=Lfn
+pidGetlfn = *
+  txa
+  and #$30
+  beq +
+  txa
+  rts
++ lda lftable,x
+  rts
+
 ;*** (openDevice, openFcb, openNameScan, openMode, (zp)=name)
 ;    : .A=Fcb , .CS=error, errno
 pidOpen = *
@@ -207,9 +230,9 @@ pidOpen = *
   jsr listenChan
   jsr pidChOut
   ; OPEN logical filenum
-  lda openFcb
-  clc
-  adc #$A0
+  ldx openFcb
+  jsr pidGetlfn
+  ora #$A0
   jsr pidChOut
   ; send name
   ldy openNameScan
@@ -253,9 +276,9 @@ pidClose = *
 + jsr listenChan
   jsr pidChOut
   ; CLOSE logical filenum
-  lda closeFd
-  clc
-  adc #$80
+  ldx closeFd
+  jsr pidGetlfn
+  ora #$80
   jsr pidChOut
   ldx closeFd
   +closeFileinfo
@@ -292,9 +315,9 @@ kernDirectRead = * ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len
   jsr talkChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda readFcb
-  clc
-  adc #$60
+  ldx readFcb
+  jsr pidGetlfn
+  ora #$60
   jsr pidChOut
   jmp readMore
 
@@ -315,7 +338,6 @@ pidRead = *
   ldx readFcb
   +fileinfoEof
   bne +
-pidDetectEOF:
   clc
   ldy #0
   lda #0
@@ -326,9 +348,9 @@ pidDetectEOF:
   jsr talkChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda readFcb
-  clc
-  adc #$60
+  ldx readFcb
+  jsr pidGetlfn
+  ora #$60
   jsr pidChOut
   ; determine how much can be recv'd (readMaxLen >= zz)
   calcRecvLength = *
@@ -368,9 +390,8 @@ pidDetectEOF:
   beq readLast
   jmp readEnd
   readPage = *
-  jsr pidGetbuf
+  jsr pidReadseq
   bcc +
-  jsr pidFlushbuf
   jmp pidDetectEOF
 + dec zz+1
   inc readPtr+1
@@ -381,19 +402,23 @@ pidDetectEOF:
   jsr talkChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda readFcb
-  clc
-  adc #$60
+  ldx readFcb
+  jsr pidGetlfn
+  ora #$60
   jsr pidChOut
   jmp readMore
   readLast = *
   ldx zz+0
-  ;WARNING passing zero to pidGetbuf reads #256 bytes!
+  ;WARNING passing zero to pidReadseq reads #256 bytes!
   beq readEnd
-  jsr pidGetbuf
+  jsr pidReadseq
   bcc readEnd
+  pidDetectEOF = *
+  sty zz
   jsr pidFlushbuf
-  jmp pidDetectEOF
+  ldx readFcb
+  +fileinfoSeteof
+  jmp pidDoUntalk
   readEnd = *
   ; subtract length from remaining
   lda readlentemp
@@ -420,8 +445,9 @@ pidWrite = *
   jsr pidChOut
   ; SECOND logical filenum
   pla
-  clc
-  adc #$60
+  tax
+  jsr pidGetlfn
+  ora #$60
   jsr pidChOut
   ; send length (LSB, MSB)
   lda writeLength+0
@@ -475,9 +501,9 @@ pidDirRead = *
   jsr talkChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda readFcb
-  clc
-  adc #$60
+  ldx readFcb
+  jsr pidGetlfn
+  ora #$60
   jsr pidChOut
   ; read one entry
   lda #<aceDirentBuffer
@@ -496,8 +522,8 @@ pidDirRead = *
 ;     : .AY=end addr.+1, .CS=error, errno
 
 BloadPgs !byte 0
-BloadFcb !byte 30      ; fixed Fcb for Bload
 BloadAddr !byte 0,0    ; temp. storage so won't be overwritten
+BloadFcb = 30          ; fixed Fcb for Bload
 
 pidBload = *
   lda bloadFilename+0
@@ -518,7 +544,7 @@ pidBload = *
   sta openMode
   lda #0
   sta openNameScan
-  lda BloadFcb
+  lda #BloadFcb
   sta openFcb
   jsr pidOpen
   bcc +
@@ -536,7 +562,7 @@ pidBload = *
   lda zw+1
   sbc BloadAddr+1
   sta readlentemp+1
-  ldx BloadFcb
+  ldx #BloadFcb
   +getFileinfoLength
   ; Check file is not Too Big
   clc
@@ -553,9 +579,8 @@ pidBload = *
   jsr talkChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda BloadFcb
-  clc
-  adc #$60
+  lda #BloadFcb
+  ora #$60
   jsr pidChOut
   lda BloadPgs
 - cmp #0
@@ -564,15 +589,14 @@ pidBload = *
   jsr pidGetbuf
   inc readPtr+1 ; setup to read next page
   dec BloadPgs
-  ldx BloadFcb
+  ldx #BloadFcb
   jsr pidDoUntalk
   ; TALK for next page
 + lda bloadDevice
   jsr talkChan
   jsr pidChOut
-  lda BloadFcb
-  clc
-  adc #$60
+  lda #BloadFcb
+  ora #$60
   jsr pidChOut
   clc
   lda BloadPgs
@@ -582,10 +606,10 @@ pidBload = *
   beq +
   tax
   jsr pidGetbuf
-  ldx BloadFcb
+  ldx #BloadFcb
   jsr pidDoUntalk
   ; CLOSE
-+	lda BloadFcb
++	lda #BloadFcb
   sta closeFd
 	jsr pidClose
   lda readPtr+0
@@ -739,8 +763,7 @@ pidCommandStart = *
   jsr pidChOut
   ; SECOND logical filenum
   lda #31
-  clc
-  adc #$60
+  ora #$60
   jsr pidChOut
 + rts
 pidCommandFinish = *
