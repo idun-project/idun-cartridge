@@ -38,6 +38,8 @@ appRunLoop = *
 restartEvt !byte .MENU_SELECT,2,$20
 
    exit = *
+   lda __luaFd
+   jsr close
    lda #0
    sta zp
    sta zp+1

@@ -24,6 +24,8 @@ appRunLoop = *
    bcs exit
    rts
    exit = *
+   lda __luaFd
+   jsr close
    jsr aceGrExit
    lda #0
    sta zp

@@ -3,6 +3,7 @@
 
 __mailbox    = $9b   ;(2)
 __work       = $9d   ;(2)
+__luaFd      = $02   ;(1)
 
 jmp idunAppInit
 
@@ -99,6 +100,7 @@ __lua_init = *
    sty zp+1
    lda #"W"
    jsr open
+   sta __luaFd
    bcc __forever
    rts
 __forever = *

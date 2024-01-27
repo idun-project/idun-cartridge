@@ -19,6 +19,8 @@ appRunLoop = *
    bcs exit
    jmp xPointerUpdate
    exit = *
+   lda __luaFd
+   jsr close
    jsr aceGrExit
    lda #0
    sta zp
