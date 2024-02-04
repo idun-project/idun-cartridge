@@ -252,7 +252,7 @@ bitmapImageOpen = *     ;(temp=filename): grMode, .ZS=error
    sta zp
    lda temp+1
    sta zp+1
-   lda #"R"
+   lda #"B"
    jsr open
    bcc +
    jmp displayBitmapError

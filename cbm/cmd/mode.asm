@@ -561,7 +561,7 @@ doTestBitmap = *
    ldy #>bitmapTestFile
    sta zp
    sty zp+1
-   lda #"R"
+   lda #"b"
    jsr open
    bcc +
    rts

@@ -161,7 +161,7 @@ copyfile = *
    bcs +
    lda #0
    sta virtualDevsFlag
-+  +ldaSCII "R"
++  lda #"P"
    jsr open
    bcc +
    lda copyInName

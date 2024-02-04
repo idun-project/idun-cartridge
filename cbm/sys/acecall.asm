@@ -69,7 +69,9 @@ internOpen = *
    jsr getFcb
    bcc +
    rts
-+  lda #cmdlf
++  +ldaSCII "R"
+   sta openMode
+   lda #cmdlf
    jmp fileOpenCont
 ++ jsr getLfAndFcb
    bcc fileOpenCont

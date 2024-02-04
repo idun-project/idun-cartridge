@@ -806,7 +806,7 @@ trackReadVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    iny
    lda (zp),y
    sta cmdVCurrTrkSec+1
-   +ldaSCII "r"
+   +ldaSCII "b"
    ldx readDevice
    jsr blockOpenVirt
    bcc +

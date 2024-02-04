@@ -2,14 +2,14 @@
 ; This is free software, released under the MIT License.
 
 ; Uses `fileinfoTable` defined as 256-byte table in idunk. 
-; 8 bytes per Fcb #0-31 as `CXXYYMMU`
+; 8 bytes per Fcb #0-31 as `CXXYYMMO`
 ;
 ; C  = pid device channel (#31 is reserved for memory-mapped files)
 ; XX = bytes remaining for read w/ virtual disk files
 ;      -or- current seek position w/ memory-mapped files
 ; YY = total length of file
 ; MM = far mem page address (only w/ mmap files)
-; U  = unused byte
+; O  = mode flag with which file was opened
 
 ; local var used for temporary storage of `zw` system var
 ; values passed in `zw` should not modify it!
@@ -24,14 +24,15 @@ getFileinfoChan = * ;(.X=fcb) : .A=device
   lda fileinfoTable,x
   rts
 
-!macro setFileinfoChan {
-  sta zz+0
+setFileinfoChan = * ;(.A=device, .X=fcb, openMode) : .A=device
+  pha
+  pha
   txa
   asl
   asl
   asl
   tax
-  lda zz+0
+  pla
   sta fileinfoTable,x
   ; init bytes to $FFFF as a flag to indicate
   ; size is not yet known.
@@ -40,8 +41,27 @@ getFileinfoChan = * ;(.X=fcb) : .A=device
   sta fileinfoTable,x
   inx
   sta fileinfoTable,x
-  lda zz+0
-}
+  inx
+  inx
+  inx
+  inx
+  inx
+  lda openMode
+  sta fileinfoTable,x
+  pla
+  rts
+
+getFileinfoMode = * ;(.X=fcb) : .A=mode
+  inx
+  txa
+  asl
+  asl
+  asl
+  tax
+  dex
+  lda fileinfoTable,x
+  rts
+
 !macro getFileinfoLength {
   pha
   txa
@@ -72,7 +92,6 @@ setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   jsr pidGetlfn
   ora #$60
   jsr pidChOut
-  tax
   ; recv length (LSB, MSB)
 - jsr pidChIn
   bcs -
@@ -101,8 +120,7 @@ setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   jsr pidDoUntalk
   rts
 
-!macro updateFileinfoBytes {
-  pha
+updateFileinfoBytes = *
   txa
   asl
   asl
@@ -118,8 +136,15 @@ setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   lda fileinfoTable,x
   sbc zz+1
   sta fileinfoTable,x
-  pla
-}
+  bne +
+  dex
+  ora fileinfoTable,x
+  bne +
+  lda #$ff
+  ldx readFcb
+  sta eoftable,x
++ rts
+
 !macro closeFileinfo {
   pha
   tya
@@ -139,29 +164,6 @@ setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   pla
   tay
   pla
-}
-!macro fileinfoSeteof {
-  txa
-  asl
-  asl
-  asl
-  tax
-  inx
-  lda #0
-  sta fileinfoTable,x
-  inx
-  sta fileinfoTable,x
-}
-!macro fileinfoEof {
-  txa
-  asl
-  asl
-  asl
-  tax
-  inx
-  lda fileinfoTable,x
-  inx
-  ora fileinfoTable,x
 }
 
 swap_count !byte 0
@@ -226,7 +228,7 @@ pidOpen = *
   lsr
   lsr
   ldx openFcb
-  +setFileinfoChan
+  jsr setFileinfoChan
   jsr listenChan
   jsr pidChOut
   ; OPEN logical filenum
@@ -300,26 +302,22 @@ readlentemp = *
 
 kernDirectRead = * ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len
   stx readFcb
-  sta zz+1
-  dec zz+1
+  sta readMaxLen+1
   lda #0
-  sta zz+0
-  +updateFileinfoBytes
+  sta readMaxLen+0
   lda zp+0
   ldy zp+1
   sta readPtr+0
   sty readPtr+1
-  ; TALK channel
-  ldx readFcb
-  jsr getFileinfoChan
-  jsr talkChan
-  jsr pidChOut
-  ; SECOND logical filenum
-  ldx readFcb
-  jsr pidGetlfn
-  ora #$60
-  jsr pidChOut
-  jmp readMore
+  jsr pidRead
+  ;ignore EOF marker
+  pha
+- jsr pidChIn   ;read $fa
+  bcs -
+- jsr pidChIn   ;read $00
+  bcs -
+  pla
+  rts  
 
 kernDirectWrite = * ;( .X=fd, (zp)=buf, .A=# sector)
   sta writeLength+1
@@ -334,16 +332,24 @@ kernDirectWrite = * ;( .X=fd, (zp)=buf, .A=# sector)
 ;*** (readFcb, readPtr[readMaxLen]) : readPtr[zw], .AY=zw,
 ;                                               : .CS=error, .ZS=eof, errno
 pidRead = *
-  ; Check for EOF
+  ; Check whether OPEN was binary mode
   ldx readFcb
-  +fileinfoEof
-  bne +
-  clc
-  ldy #0
-  lda #0
-  rts
+  jsr getFileinfoMode
+  cmp #"b"
+  beq +
+  cmp #"B"
+  beq +
+  lda #<pidReadseq
+  ldy #>pidReadseq
+  sta readGetbuf+1
+  sty readGetbuf+2
+  jmp ++
++ lda #<pidGetbuf
+  ldy #>pidGetbuf
+  sta readGetbuf+1
+  sty readGetbuf+2
   ; TALK channel
-+ ldx readFcb
+++ldx readFcb
   jsr getFileinfoChan
   jsr talkChan
   jsr pidChOut
@@ -390,12 +396,15 @@ pidRead = *
   beq readLast
   jmp readEnd
   readPage = *
-  jsr pidReadseq
+  jsr readGetbuf
   bcc +
   jmp pidDetectEOF
-+ dec zz+1
-  inc readPtr+1
-  jsr pidDoUntalk
++ inc readPtr+1
+  dec zz+1
+  bne +
+  lda zz+0
+  beq readEnd
++ jsr pidDoUntalk
   ; TALK for next page
   ldx readFcb
   jsr getFileinfoChan
@@ -409,15 +418,16 @@ pidRead = *
   jmp readMore
   readLast = *
   ldx zz+0
-  ;WARNING passing zero to pidReadseq reads #256 bytes!
+  ;WARNING passing zero to readGetbuf reads #256 bytes!
   beq readEnd
-  jsr pidReadseq
+  jsr readGetbuf
   bcc readEnd
   pidDetectEOF = *
   sty zz
   jsr pidFlushbuf
   ldx readFcb
-  +fileinfoSeteof
+  lda #$ff
+  sta eoftable,x
   jmp pidDoUntalk
   readEnd = *
   ; subtract length from remaining
@@ -426,7 +436,7 @@ pidRead = *
   lda readlentemp+1
   sta zz+1
   ldx readFcb
-  +updateFileinfoBytes
+  jsr updateFileinfoBytes
   pidDoUntalk = *
   lda #$5F
   jsr pidChOut
@@ -434,6 +444,8 @@ pidRead = *
   lda zz
   clc
   rts
+readGetbuf = *
+  jmp pidReadseq
 
 ;*** (writePtr[writeLength], .X = Fcb) : .CS=error flag, errno
 pidWrite = *
