@@ -4,7 +4,7 @@ This is the home of the idun-cartridge for the C128. Here you will find the late
 
 What does it do? Hopefully a [demo](https://www.youtube.com/watch?v=X_DMMz55Tpo) is worth a thousand words.
 
-I've also just created (January 5, 2024) a [Discord Server](https://discord.gg/mWwpZb5t) for the project. This is for idun-project discussion, new user advice, and beta testing new features.
+I've also just created (January 5, 2024) a [Discord Server](https://discord.gg/DpwsRZ6r) for the project. This is for idun-project discussion, new user advice, and beta testing new features.
 
 ### Hardware
 
