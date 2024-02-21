@@ -296,13 +296,13 @@ conScroll = *
    bmi ++
    ldx #1
    lda shiftValue
-   and #%11
-   cmp #%11
+   and #%00000011
+   cmp #%00000011
    beq +
    ldx #2
 +  stx scrollCountdown
 -  lda shiftValue
-   and #%10
+   and #%00000010
    beq ++
    cli
    lda scrollCountdown

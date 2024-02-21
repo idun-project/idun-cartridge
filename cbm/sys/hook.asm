@@ -683,7 +683,7 @@ enPatchRom = *+1
     ;select 1MHz
     lda $d030
     sta $0a37
-    lda #%00
+    lda #0
     sta $d030
 }
     lda bkSelect
