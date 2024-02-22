@@ -1,5 +1,6 @@
 BUILD=build
 SYSDIR=../sys
+ACME=acme --dialect 0.94.12
 
 ACESYS=\
 sys/ace.asm sys/config.asm sys/acecall.asm sys/acemem.asm \
@@ -65,25 +66,31 @@ $(SYSDIR):
 	mkdir -p $@/arcade.app.d
 
 $(SYSDIR)/idun128 : idunk.asm $(ACESYS)
-	acme -Dcomputer=128 -Dromsize=0 -o $(SYSDIR)/idun128 -f cbm idunk.asm
+	$(ACME) -Dcomputer=128 -Dromsize=0 -o $(SYSDIR)/idun128 -f cbm idunk.asm
 
 $(SYSDIR)/idun-64 : idunk.asm $(ACESYS)
-	acme -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
+	$(ACME) -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
 
-$(SYSDIR)/boot128 : $(ACESYS) resc/boot128.bas
-	acme -Dcomputer=128 -o $(SYSDIR)/boot128 -f cbm sys/hook.asm
+$(SYSDIR)/boot128 : $(ACESYS) resc/boot128.prg
+	$(ACME) -Dcomputer=128 -o $(SYSDIR)/boot128 -f cbm sys/hook.asm
 
-$(SYSDIR)/boot-64 : $(ACESYS) resc/boot.bas
-	acme -Dcomputer=64 -o $(SYSDIR)/boot-64 -f cbm sys/hook.asm
+$(SYSDIR)/boot-64 : $(ACESYS) resc/boot.prg
+	$(ACME) -Dcomputer=64 -o $(SYSDIR)/boot-64 -f cbm sys/hook.asm
+
+resc/boot128.prg : resc/boot128.bas
+	bastext -o $<
+
+resc/boot.prg : resc/boot.bas
+	bastext -o $<
 
 $(CMDS): $(BUILD)/%: cmd/%.asm $(ACEHDRS) sys/toolhead.asm toolx/*/*
-	acme --cpu 6510 --vicelabels $@.sym -f plain -o $@ $<
+	$(ACME) --cpu 6510 --vicelabels $@.sym -f plain -o $@ $<
 
 $(BUILD)/dos.app: dos.app.s $(ACEHDRS) sys/toolbox.asm
-	acme --cpu 6510 --vicelabels $(BUILD)/dos.sym -f plain -o $(BUILD)/dos.app dos.app.s
+	$(ACME) --cpu 6510 --vicelabels $(BUILD)/dos.sym -f plain -o $(BUILD)/dos.app dos.app.s
 
 $(BUILD)/arcade.app: arcade.app.s $(wildcard arcade.app.d/*.asm) $(wildcard arcade.app.d/*.m8x)
-	acme --cpu 6510 --vicelabels $(BUILD)/arcade.sym -f plain -o $(BUILD)/arcade.app -I../cbm arcade.app.s
+	$(ACME) --cpu 6510 --vicelabels $(BUILD)/arcade.sym -f plain -o $(BUILD)/arcade.app -I../cbm arcade.app.s
 	@$(foreach f,$(wildcard arcade.app.d/*.lua), cp $(f) $(SYSDIR)/arcade.app.d;)
 
 summary:
@@ -92,3 +99,4 @@ summary:
 clean:
 	rm -fr $(BUILD)
 	rm -fr $(SYSDIR)
+	rm -fr resc/boot.prg resc/boot128.prg
