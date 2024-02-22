@@ -913,10 +913,10 @@ InstallWedge = *
 !if useC128 {
     * = $1c01
     basicStart = *
-    !binary "resc/boot128.bas",,2
+    !binary "resc/boot128.prg",,2
 } else {
     basicStart = *
-    !binary "resc/boot.bas",,2
+    !binary "resc/boot.prg",,2
 }
 basicLength !word *-basicStart
 
