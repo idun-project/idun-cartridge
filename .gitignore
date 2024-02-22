@@ -1,2 +1,3 @@
 .vscode/
 sys/*
+cbm/resc/boot*.prg

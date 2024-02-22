@@ -1,5 +1,9 @@
 BUILD=build
-SYSDIR=../sys
+ifdef IDUN_SYS_DIR
+	SYSDIR=$(IDUN_SYS_DIR)/sys
+else
+	SYSDIR=$(HOME)/idun-sys/sys
+endif
 ACME=acme --dialect 0.94.12
 
 ACESYS=\
