@@ -339,11 +339,30 @@ toolKeysMacro = * ;(.A=key (zp)=macro) : .CS=out of mem
    sta cmdDispatchTable+1,x
 +  rts
 
+isDosHandler !byte 0
+DosMacroHandler = *  ;( (zp)=alias :.Y=cmd offset .CS=not recognized)
+   lda #$ff
+   sta isDosHandler
+   lda zp+0
+   ldy zp+1
+   jsr aceHashTag
+   sta tbwork
+   ;don't collide with function key macros!
+   and #$f0
+   cmp #$80
+   bne +
+   lda #$f0
+   eor tbwork
+   sta tbwork
+   jmp +
 MacroHandler = * ;( tbwork=keycode )
+   lda #0
+   sta isDosHandler
    ;locate keycode and command
-   ldy #255
++  ldy #255
 -- iny
    lda macroUserCmds,y
+   beq ++
    cmp tbwork
    beq +
 -  iny
@@ -354,6 +373,11 @@ MacroHandler = * ;( tbwork=keycode )
    bne -
    jmp --
 +  sty tbwork+14
+   bit isDosHandler
+   bpl macroInject
+   iny
+   clc
+   rts   ;early return for doskey macro
    ;run the DOS command by injecting into console keybuf
    macroInject = *
    inc tbwork+14
@@ -1637,6 +1661,7 @@ toolMmapLoad = *       ;(.AY=tagname, (zp)=filename : .CS=error)
 
 ; Keep track of timeouts and callbacks- defaulted setting
 ; updates Secs timeout and tool status line.
+!byte 0  ;FIX buggy JMP warning
 jifsTimeoutVars !byte 0,0,0
 secsTimeoutVars !byte 0,0,0
 

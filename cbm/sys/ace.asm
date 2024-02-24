@@ -117,7 +117,7 @@ jmp kernConOption
 jmp kernConGamepad
 jmp kernGrExit
 jmp kernConDebugLog
-jmp notImp  ;kernGrOp
+jmp kernHashTag
 
 jmp kernProcExec
 jmp kernProcExecSub

@@ -73,6 +73,7 @@ restoreMp = *
    bne -
    rts
 
+kernHashTag = *
 pearson = *       ;( (.AY)=tag : .A=hash)
    sta tagwork+2
    sty tagwork+3

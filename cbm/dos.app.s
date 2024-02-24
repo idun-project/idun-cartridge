@@ -416,7 +416,7 @@ shellHandleArg = *
    beq +
    rts
 +  lda argWasQuoted
-   bne +
+   bne ++
    ldx #stdin
    +ldaSCII "r"
    tay
@@ -430,10 +430,15 @@ shellHandleArg = *
    pla
    +cmpASCII ">"
    beq shellHandleRedirect
-   jsr checkWildcards
-   bcc +
+   lda parseArgc+0
+   bne +
+   jsr checkMacros
+   bcs +
+   jmp shellStoreMacro
++  jsr checkWildcards
+   bcc ++
    rts
-+  jsr shellStoreArg
+++ jsr shellStoreArg
    rts
 
 shellStoreArg = *
@@ -747,6 +752,42 @@ substrCmp = *  ;( .X=cmdbufOff, .Y=direntNameOff ) : .CC=match
 +  sec
    rts
 
+checkMacros = *
+   ;** check if arg is a macro alias
++  lda #<argBuffer
+   ldy #>argBuffer
+   sta zp+0
+   sty zp+1
+   jsr DosMacroHandler
+   rts
+
+shellStoreMacro = *
+   ldx #0
+   stx argPtr
+-- lda macroUserCmds,y
+   sta argBuffer,x
+   beq +          ;reached end of macro
+   cmp #$20       ;reached end of argument
+   beq insertArg
+   iny
+   inx
+   inc argPtr
+   jmp --
++  jmp shellStoreArg
+insertArg:
+   sty regsave+2  ;save .Y
+   lda #0
+   sta argBuffer,x
+   jsr shellStoreArg
+   ldy regsave+2
+-  iny
+   lda macroUserCmds,y
+   cmp #$20
+   beq -          ;skip any additional spaces
+   ldx #0
+   jmp --
+
+
 ;=== stack management ===
 
 frameArgvSource = $02
@@ -1028,6 +1069,9 @@ dispTable = *
 !pet "funkey"
 !byte 0
 !word funkey
+!pet "doskey"
+!byte 0
+!word doskey
 !pet "echo"
 !byte 0
 !word echo
@@ -1916,6 +1960,44 @@ macroUnrecognizeMsg = *
    !pet "error: illegal key code, not programmed."
    !byte chrCR,0
    
+
+;===doskey===
+
+dkTag = $02
+
+doskey = *
+   ;get alias string
+   lda #1
+   ldy #0
+   jsr getarg
+   ;get hash for alias
+   lda zp+0
+   ldy zp+1
+   jsr aceHashTag
+   ;don't collide with function key macros!
+   sta dkTag
+   and #$f0
+   cmp #$80
+   bne +
+   lda #$f0
+   eor dkTag
+   sta dkTag
+   ;get command string
++  lda #2
+   ldy #0
+   jsr getarg
+   ;add to programmed macros
+   ldx dkTag
+   jsr MacroCommand
+   bcc +
+   lda #<macroSizeMsg
+   ldy #>macroSizeMsg
+   jmp eputs
++  rts
+macroSizeMsg = *
+   !pet "error: diskey macro memory space limit."
+   !byte chrCR,0
+
 
 ;===echo===
 
