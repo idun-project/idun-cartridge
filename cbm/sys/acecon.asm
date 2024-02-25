@@ -1563,14 +1563,15 @@ handleOrigKey = * ;( .X=shiftTabOff )
    ldy keycode
    sty prevKeycode
    lda (keymapPtr),y
-   bne storeKey
-   rts
+   beq +
+   jmp storeKey
++  rts
 
 keybufHead  !byte 0
 keybufTail  !byte 0
 keybufCount !byte 0
 ;IDUN: Double buffer size to support user-defined macros
-keybufSize  = 32        ;need power of 2
+keybufSize  = 64        ;need power of 2
 suppressSaveLine !byte 0
 keybufData  !fill keybufSize,0
 keybufShift !fill keybufSize,0

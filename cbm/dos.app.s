@@ -1233,17 +1233,26 @@ roboCmdCont = *
    jsr aceMiscRobokey
    iny
    jmp -
-+  ldy #0
-   lda #1
-   jsr getarg
-   beq +
++  lda #1
+   sta regsave
    ldy #0
+   jsr getarg
+   beq ++
+-- ldy #0
 -  lda (zp),y
    beq +
    jsr aceMiscRobokey
    iny
    jmp -
-+  lda #chrQuote
++  ldy #0
+   inc regsave
+   lda regsave
+   jsr getarg
+   beq ++
+   lda #$20
+   jsr aceMiscRobokey
+   jmp --
+++ lda #chrQuote
    jsr aceMiscRobokey
    lda #chrCR
    ldx #$ff
@@ -1970,8 +1979,12 @@ doskey = *
    lda #1
    ldy #0
    jsr getarg
+   bne +
+-  lda #<doskeyErrMsg
+   ldy #>doskeyErrMsg
+   jmp eputs
    ;get hash for alias
-   lda zp+0
++  lda zp+0
    ldy zp+1
    jsr aceHashTag
    ;don't collide with function key macros!
@@ -1986,6 +1999,7 @@ doskey = *
 +  lda #2
    ldy #0
    jsr getarg
+   beq -
    ;add to programmed macros
    ldx dkTag
    jsr MacroCommand
@@ -1994,6 +2008,9 @@ doskey = *
    ldy #>macroSizeMsg
    jmp eputs
 +  rts
+doskeyErrMsg = *
+   !pet "usage: doskey alias ",chrQuote,"command",chrQuote
+   !byte chrCR,0
 macroSizeMsg = *
    !pet "error: diskey macro memory space limit."
    !byte chrCR,0
