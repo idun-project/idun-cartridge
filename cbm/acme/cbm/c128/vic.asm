@@ -3,7 +3,7 @@
 !ifdef lib_cbm_c128_vic_a !eof
 lib_cbm_c128_vic_a = 1
 
-!source <cbm/c64/vic.a>	; registers 0..2e
+!source <cbm/c64/vic.asm>	; registers 0..2e
 
 !address {
 	; registers only present in the C128 variant of this chip:

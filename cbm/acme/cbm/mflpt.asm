@@ -12,7 +12,7 @@ lib_cbm_mflpt_a = 1
 
 ; This file contains a macro for writing floating point numbers in the five-byte
 ; "mflpt" format, where the sign bit is packed into the mantissa.
-; Several interpreter functions use this format (see <cbm/c64/float.a>).
+; Several interpreter functions use this format (see <cbm/c64/float.asm>).
 
 ; Use the macro like this:
 ;		+mflpt 3.1415926	; each use will take up five bytes of memory

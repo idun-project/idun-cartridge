@@ -11,10 +11,10 @@ lib_cbm_c64_float_a = 2
 	fac2_base	= $69	; base address of floating-point accumulator 2
 }
 ; There is really no need to use these addresses directly when calling the ROM
-; functions. You'd only need the addresses when using <cbm/flpt.a>.
+; functions. You'd only need the addresses when using <cbm/flpt.asm>.
 
-!source <cbm/flpt.a>	; include macro to store floats in six-byte FLPT format
-!source <cbm/mflpt.a>	; include macro to store floats in five-byte MFLPT format
+!source <cbm/flpt.asm>	; include macro to store floats in six-byte FLPT format
+!source <cbm/mflpt.asm>	; include macro to store floats in five-byte MFLPT format
 
 ; convenience macros:
 

@@ -3,7 +3,7 @@
 !ifdef lib_cbm_c128_petscii_a !eof
 lib_cbm_c128_petscii_a = 1
 
-!source <cbm/petscii.a>
+!source <cbm/petscii.asm>
 
 ; color codes
 ; vic				vdc

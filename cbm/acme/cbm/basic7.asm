@@ -7,7 +7,7 @@ lib_cbm_basic7_a = 1
 ; BASIC keywords have been converted to "_" in the macro names.
 ; *All* function macros already include the '(' character.
 
-!source <cbm/basic3.5.a>	; from 0x80 to $fd
+!source <cbm/basic3.5.asm>	; from 0x80 to $fd
 
 ; extended (16-bit) tokens, $ce range (replacing RLUM function):
 

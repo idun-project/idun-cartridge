@@ -30,9 +30,9 @@ lib_cbm_c128_kernal_a = 1
 		; A/X/Y are preserved
 	k_release_number	= $ff80
 }
-!source <cbm/kernal.a>	; $ff81-$fff5 is mostly compatible to older machines
+!source <cbm/kernal.asm>	; $ff81-$fff5 is mostly compatible to older machines
 ; $fff6/$fff7 are unused (ff ff)
 !address {
 	k_indirect128mode	= $fff8	; indirect vector, without JMP command!
 }
-; $fffa through $ffff are cpu hardware vectors (see <6502/std.a>)
+; $fffa through $ffff are cpu hardware vectors (see <6502/std.asm>)

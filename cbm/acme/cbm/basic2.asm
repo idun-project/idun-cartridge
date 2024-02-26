@@ -3,7 +3,7 @@
 !ifdef lib_cbm_basic2_a !eof
 lib_cbm_basic2_a = 1
 
-!source <cbm/basic1.a>	; from 0x80 to 0xca
+!source <cbm/basic1.asm>	; from 0x80 to 0xca
 
 ; token values
 token_GO	= $cb

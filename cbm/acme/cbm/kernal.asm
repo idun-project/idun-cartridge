@@ -8,7 +8,7 @@ lib_cbm_kernal_a = 1
 ; There are alternative names for some calls.
 
 !address {
-	; for additional c128 calls, see <cbm/c128/kernal.a>
+	; for additional c128 calls, see <cbm/c128/kernal.asm>
 	k_cint		= $ff81
 	k_ioinit	= $ff84
 	; cbm-ii rom starts here:
@@ -32,7 +32,7 @@ lib_cbm_kernal_a = 1
 	k_setlfs	= $ffba	; set file parameters (A = logical file number, X = device, Y = secondary address)
 	k_setnam	= $ffbd	; set file name (A = length, YYXX = pointer)
 	; pet rom starts here:
-	; i/o calls: these may set C on error. in that case, A holds error code, see <cbm/ioerror.a> for the actual values.
+	; i/o calls: these may set C on error. in that case, A holds error code, see <cbm/ioerror.asm> for the actual values.
 	k_open		= $ffc0	; open channel/file (call setlfs/setnam before!)
 	k_close		= $ffc3:k_close_A	= $ffc3	; close channel/file (A = logical file number)
 	k_chkin		= $ffc6:k_chkin_X	= $ffc6	; set input channel (X = logical file number)

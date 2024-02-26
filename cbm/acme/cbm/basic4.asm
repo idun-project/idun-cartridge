@@ -3,7 +3,7 @@
 !ifdef lib_cbm_basic4_a !eof
 lib_cbm_basic4_a = 1
 
-!source <cbm/basic2.a>	; from 0x80 to $cb
+!source <cbm/basic2.asm>	; from 0x80 to $cb
 
 ; CAUTION - these tokens are different to the ones in BASIC 3.5, BASIC 7 and BASIC 10!
 

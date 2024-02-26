@@ -3,7 +3,7 @@
 !ifdef lib_cbm_basic3_5_a !eof
 lib_cbm_basic3_5_a = 1
 
-!source <cbm/basic2.a>	; from 0x80 to $cb
+!source <cbm/basic2.asm>	; from 0x80 to $cb
 
 ; token values
 token_RGR	= $cc

@@ -73,6 +73,6 @@ viccolor_GRAY3	= $f
 	vic_cs6		= $d02d
 	vic_cs7		= $d02e
 }
-; See <cbm/c128/vic.a> for the C128's two additional registers at $d02f/$d030.
+; See <cbm/c128/vic.asm> for the C128's two additional registers at $d02f/$d030.
 ; They are accessible even in C64 mode and $d030 can garble the video output,
 ; so be careful not to write to it accidentally in a C64 program!

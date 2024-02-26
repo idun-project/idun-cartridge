@@ -3,7 +3,7 @@
 !ifdef lib_cbm_c64_petscii_a !eof
 lib_cbm_c64_petscii_a = 1
 
-!source <cbm/petscii.a>
+!source <cbm/petscii.asm>
 
 ; color codes
 petscii_BLACK		= 144

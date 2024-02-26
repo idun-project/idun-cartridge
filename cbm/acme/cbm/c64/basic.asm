@@ -3,4 +3,4 @@
 !ifdef lib_cbm_c64_basic_a !eof
 lib_cbm_c64_basic_a = 1
 
-!source <cbm/basic2.a>
+!source <cbm/basic2.asm>
