@@ -27,7 +27,10 @@ show files on drive/directory
 ${bold}Usage:${normal} dir [/w] [/p] <dev:> -- The ${green}dir${white} command with no arguments will show the detailed listing of all files in the currently selected drive/directory. You can also specify a drive letter, such as 'dir d:' to see files in another drive without first switch to it using ${green}cd${white}. The '/w' switch formats the output into multiple columns showing only the name of each file. The '/p' switch is used to pause the output for each screen of filenames.
 diskcopy
 duplicate a disk/image
-${bold}Usage:${normal} diskcopy [/f] <src:> <dst:> -- The ${green}diskcopy${white} command is used to duplicate a disk to a compatible device. This works with, and is perhaps most useful for duplicating between disk images in .D64 or .D71 format and actual floppy disks. To use a disk image as the source or destination device, you must first use the ${green}mount${white} command to mount the image. If it will be a destination disk, then be sure to mount it writable (/w switch). Include the '/f' option to explicity format the destination disk.
+${bold}Usage:${normal} diskcopy [/f] <src:> <dst:> -- The ${green}diskcopy${white} command is used to duplicate a disk to a compatible device. This works with, and is perhaps most useful for duplicating between disk images in .D64 or .D71 format and actual floppy disks. To use a disk image as the source or destination device, you must first use the ${green}mount${white} command to mount the image. If it will be a destination disk, then be sure to mount it writable (/w switch). Include the '/f' option to explicitly format the destination disk.
+doskey
+Create aliased commands
+${bold}Usage:${normal} doskey <alias> "command" -- The ${green}doskey${white} command is used to specify an alias for a longer command. While processing the input, any defined alias that is found as the first word of the command line will be expanded to the longer command string created using doskey.
 echo
 print text to screen
 ${green}echo${white} sends whatever text follows it to the screen. This is useful for providing output from batch files.
