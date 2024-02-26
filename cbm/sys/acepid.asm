@@ -447,27 +447,32 @@ pidRead = *
 readGetbuf = *
   jmp pidReadseq
 
+writeFcb !byte 0
 ;*** (writePtr[writeLength], .X = Fcb) : .CS=error flag, errno
 pidWrite = *
-  txa
-  pha
+  stx writeFcb
   ; LISTEN channel
   jsr getFileinfoChan
   jsr listenChan
   jsr pidChOut
   ; SECOND logical filenum
-  pla
-  tax
+  ldx writeFcb
   jsr pidGetlfn
   ora #$60
   jsr pidChOut
-  ; send length (LSB, MSB)
-  lda writeLength+0
+  ; send length (LSB, MSB) only for "P" mode
+  ldx writeFcb
+  jsr getFileinfoMode
+  cmp #"P"
+  beq +
+  cmp #"p"
+  bne ++
++ lda writeLength+0
   jsr pidChOut
   lda writeLength+1
   jsr pidChOut
   ; send from buffer writePtr[writeLength]
-  lda writeLength+0
+++lda writeLength+0
   ora writeLength+1
   bne +
   jmp writeEnd   ; end if writeLength==0

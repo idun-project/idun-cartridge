@@ -3341,7 +3341,7 @@ CmdSave = *
    ldy #>docbufFilename
    sta zp+0
    sty zp+1
-   +ldaSCII "w"
+   +ldaSCII "a"
    jsr open
    bcc saveMain
    lda errno
@@ -3359,7 +3359,7 @@ CmdSave = *
    lda #<saveMsg3
    ldy #>saveMsg3
    jsr DisplayMessage
-   +ldaSCII "w"
+   +ldaSCII "a"
    jsr open
    bcs saveError
 
