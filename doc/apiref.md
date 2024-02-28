@@ -609,7 +609,7 @@ ALTERS :  .A, .X, .Y
 ```
 
 Scrolls the contents of the current window up or down.  You can scroll any number of rows at a time.  After scrolling, the bottom (or top) rows will be filled with the fill character and color (the attribute to fill with will always be all off).  You can limit whether the characters and/or colors are to be scrolled by using the "flags" byte in the usual way, except that the
-"color" flag also implies that "attribute" (since you would not normally want to scroll them separately, and it would be a lot of work).  Scrolling only the characters, for example, will normally be twice as fast as scrolling both characters and attributes.  Whether to scroll up or down is specified also using bits in the "flags" field, as indicated in the input arguments above.  If you specify multiple scroll directions in one call, your requests will be carried out, but the screen will end up as it was, with the top and bottom N liness cleared.
+"color" flag also implies that "attribute" (since you would not normally want to scroll them separately, and it would be a lot of work).  Scrolling only the characters, for example, will normally be twice as fast as scrolling both characters and attributes.  Whether to scroll up or down is specified also using bits in the "flags" field, as indicated in the input arguments above.  If you specify multiple scroll directions in one call, your requests will be carried out, but the screen will end up as it was, with the top and bottom N lines cleared.
 
 ```
 NAME   :  aceWinCursor

@@ -1180,6 +1180,12 @@ escAnsiRawDispatch:
 ++ +cmpASCII "r"
    bne +
    jmp escScrollRegion
++  +cmpASCII "S"
+   bne +
+   jmp escScrollViewUp
++  +cmpASCII "T"
+   bne +
+   jmp escScrollViewDown
 +  +cmpASCII "i"
    bne +
    jmp escPrinterControl
@@ -1478,6 +1484,27 @@ escScrollRegion = *  ;ESC [ top bottom r
    ldx syswork+1
    sta toolWinScroll+2
    stx toolWinScroll+3
+   jmp escFinish
+
+scrollFlag !byte 0
+escScrollViewUp = *     ;ESC [ n S
+   lda #$e8
+   sta scrollFlag       ;scroll Up
+   jmp +
+   
+escScrollViewDown = *   ;ESC [ n T
+   lda #$e4
+   sta scrollFlag       ;scroll Down
++  lda #$20
+   sta syswork+4        ;fill with <SP>
+   lda #0
+   sta syswork+6        ;fill attr.
+   ldy toolWinPalette+0 ;bkgd. color
+   ldx escParmData+0    ;rows
+   bne +
+   inx
++  lda scrollFlag
+   jsr aceWinScroll
    jmp escFinish
 
 escTabSet = *  ;ESC H
