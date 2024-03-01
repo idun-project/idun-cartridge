@@ -1747,8 +1747,8 @@ conKeymapControl = *
    !byte $9c,$f2,$e4,$1e,$e3,$e6,$f4,$f8  ;row 2
    !byte $1f,$f9,$e7,$9e,$e2,$e8,$f5,$f6  ;row 3
    !byte $12,$e9,$ea,$92,$ed,$eb,$ef,$ee  ;row 4
-   !byte $2b,$f0,$ec,$2d,$00,$fb,$e0,$00  ;row 5
-   !byte $fc,$60,$fd,$00,$00,$ff,$fe,$00  ;row 6
+   !byte $2b,$f0,$ec,$2d,$00,$db,$e0,$00  ;row 5
+   !byte $fc,$60,$dd,$00,$00,$ff,$fe,$00  ;row 6
    !byte $90,$ff,$00,$05,$20,$00,$f1,$00  ;row 7
    !byte $84,$8c,$87,$18,$89,$8a,$88,$85  ;row 8
    !byte $1b,$84,$8f,$0a,$00,$8b,$80,$86  ;row 9

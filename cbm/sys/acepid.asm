@@ -460,19 +460,17 @@ pidWrite = *
   jsr pidGetlfn
   ora #$60
   jsr pidChOut
-  ; send length (LSB, MSB) only for "P" mode
+  ; send length (LSB, MSB) only for "+" mode
   ldx writeFcb
   jsr getFileinfoMode
-  cmp #"P"
-  beq +
-  cmp #"p"
-  bne ++
-+ lda writeLength+0
+  cmp #"+"
+  bne +
+  lda writeLength+0
   jsr pidChOut
   lda writeLength+1
   jsr pidChOut
   ; send from buffer writePtr[writeLength]
-++lda writeLength+0
++ lda writeLength+0
   ora writeLength+1
   bne +
   jmp writeEnd   ; end if writeLength==0
