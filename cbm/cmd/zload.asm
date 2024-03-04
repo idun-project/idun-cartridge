@@ -193,6 +193,8 @@ loadz80 = *
    jmp close
 
 ;RAM bank 01 loader code
+;Warning! This is a dirty hack that
+;shamelessly bypasses idun kernel API
 loadRam01 = *
    ldx pageCnt+0
    ldy pageCnt+1
@@ -205,7 +207,8 @@ loadRam01 = *
    ora #$40
    sta $de00
    ; SECOND logical filenum
-   lda loadFd
+   ldx loadFd
+   lda $e00,x  ;Fcb->Lfn
    ora #$60
    nop
    nop
