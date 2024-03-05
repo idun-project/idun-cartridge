@@ -1217,25 +1217,21 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    jsr getloadRestoreZp
    jsr getLoadPathname
    lda execAddr+0
+   sta st
    ldy execAddr+1
+   sty st+1
    jsr internBload
    jsr getloadRestoreZp
    bcs execLoadError
-   ;IDUN: Special case for first loaded process reload.
-   lda aceProcessID
-   cmp #2
-   beq +
-   lda execAddr+0
-   sta st
-   lda execAddr+1
-   sta st+1
-   jmp ++
+   ;IDUN: Special case for dos.app reload
+   jsr isDosReload
+   bcc +
    ;Normally, dos.app is loaded at aceAppAddress ($6000)
-+  lda #$00
+   lda #$00
    sta st
    lda #$60
    sta st+1
-++ ldy #3
++  ldy #3
    lda (st),y
    cmp #aceID1
    bne execBadProg
@@ -1249,7 +1245,19 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    bne execBadProg
    clc
    rts
-
+   isDosReload = *
+   ldx #0
+-  lda stringBuffer,x
+   bne +
+   sec
+   rts
++  cmp dosappfn,x
+   bne +
+   inx
+   jmp -
++  clc
+   rts
+dosappfn !pet "_:dos.app"
    execLoadError = *
    lda errno
    cmp #aceErrFileNotFound
