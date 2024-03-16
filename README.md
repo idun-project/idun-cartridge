@@ -4,7 +4,7 @@ This is the home of the idun-cartridge for the C128. Here you will find the late
 
 What does it do? Hopefully a [demo](https://www.youtube.com/watch?v=X_DMMz55Tpo) is worth a thousand words.
 
-I've also just created (January 5, 2024) a [Discord Server](https://discord.gg/DpwsRZ6r) for the project. This is for idun-project discussion, new user advice, and beta testing new features.
+I've also just created (January 5, 2024) a [Discord Server](https://discord.gg/6Du9jhK4eF) for the project. This is for idun-project discussion, new user advice, and beta testing new features.
 
 ### Hardware
 
@@ -78,11 +78,11 @@ Configuration options are available in `$HOME/.config/idunrc.toml`. There is doc
 
 The idun-cartridge software in this repository is self-hosting. All of the assembly code is built with the `acme` cross-assembler and everything you need to build and modify it can be done on the cartridge itself. You can perform each of these steps from the Linux prompt:
 
-1. Install git: `sudo pacman -S git`
-2. Clone this repository to your idun home directory: `git clone https://github.com/idun-project/idun-cartridge`
-3. `cd idun-cartridge && ./build.sh`
+1. Clone this repository to your idun home directory: `git clone https://github.com/idun-project/idun-cartridge`
+2. `cd idun-cartridge && ./setup.sh` -installs additional packages such as acme and idun-zcc.
+3. `cd cbm && make` -builds cartridge software and updates the `sys` directroy (`z:` device in the idun-shell)
 
-This will update the `sys` directory with newly built software. See the [Makefile](cbm/Makefile) for details.
+See the [Makefile](cbm/Makefile) for details.
 
 ### Programming applications
 
