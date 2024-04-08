@@ -15,6 +15,9 @@
 ; values passed in `zw` should not modify it!
 zz !byte 0,0
 
+BlockLfn = 30          ; fixed Lfn for block read/write
+CommandLfn = 31        ; fixed Lfn for commands
+
 getFileinfoChan = * ;(.X=fcb) : .A=device
   txa
   asl
@@ -538,7 +541,6 @@ pidDirRead = *
 
 BloadPgs !byte 0
 BloadAddr !byte 0,0    ; temp. storage so won't be overwritten
-BloadFcb = 30          ; fixed Fcb for Bload
 
 pidBload = *
   lda bloadFilename+0
@@ -559,7 +561,7 @@ pidBload = *
   sta openMode
   lda #0
   sta openNameScan
-  lda #BloadFcb
+  lda #BlockLfn
   sta openFcb
   jsr pidOpen
   bcc +
@@ -577,7 +579,7 @@ pidBload = *
   lda zw+1
   sbc BloadAddr+1
   sta readlentemp+1
-  ldx #BloadFcb
+  ldx #BlockLfn
   +getFileinfoLength
   ; Check file is not Too Big
   clc
@@ -594,7 +596,7 @@ pidBload = *
   jsr talkChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda #BloadFcb
+  lda #BlockLfn
   ora #$60
   jsr pidChOut
   lda BloadPgs
@@ -604,13 +606,13 @@ pidBload = *
   jsr pidGetbuf
   inc readPtr+1 ; setup to read next page
   dec BloadPgs
-  ldx #BloadFcb
+  ldx #BlockLfn
   jsr pidDoUntalk
   ; TALK for next page
 + lda bloadDevice
   jsr talkChan
   jsr pidChOut
-  lda #BloadFcb
+  lda #BlockLfn
   ora #$60
   jsr pidChOut
   clc
@@ -621,10 +623,10 @@ pidBload = *
   beq +
   tax
   jsr pidGetbuf
-  ldx #BloadFcb
+  ldx #BlockLfn
   jsr pidDoUntalk
   ; CLOSE
-+	lda #BloadFcb
++	lda #BlockLfn
   sta closeFd
 	jsr pidClose
   lda readPtr+0
@@ -718,7 +720,7 @@ pidMount = *
   jsr deviceToTaChan
   sta _device_chan
   ; open command channel
-  lda #31
+  lda #CommandLfn
   sta openFcb
   jsr pidOpen
   bcs +
@@ -737,7 +739,7 @@ pidCopyLocal = *
   beq +
   jsr talkChan
   sta _device_chan
-  ldx #31
+  ldx #CommandLfn
   jsr getFileinfoChan
   beq +
   asl
@@ -767,7 +769,7 @@ pidCommandStart = *
   lda #"r"
   sta openMode
 	; open command channel
-	lda #31
+	lda #CommandLfn
 	sta openFcb
   jsr pidOpen
   bcs +
@@ -777,7 +779,7 @@ pidCommandStart = *
   jsr deviceToLiChan
   jsr pidChOut
   ; SECOND logical filenum
-  lda #31
+  lda #CommandLfn
   ora #$60
   jsr pidChOut
 + rts
@@ -801,7 +803,7 @@ pidCommandFinish = *
   jsr pidChOut
   jmp pidDoUnlisten
 pidCommandClose = *
-+	lda #31
++	lda #CommandLfn
   sta closeFd
 	jsr pidClose
   rts
