@@ -727,13 +727,11 @@ winIrqCursor = *
 +  jmp seIrqCursor
 
 kernGrExit = *
-   !if useVdc {
+   lda winCols
+   cmp #80
+   bne +
    jmp vdcGrExit
-   }
-   !if useSoft80 {
-   jmp seGrExit
-   }
-   jmp notImp
++  jmp vicGrExit
 
 !if useVdc {
 } else {

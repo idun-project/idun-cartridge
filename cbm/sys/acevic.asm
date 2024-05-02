@@ -77,6 +77,47 @@ vicActivate = *
    bpl -
    rts
 
+vicLoadCharset = *
+   ;load configured charset @$f000-$f800
+   ; default is z:chrset-standard
+   +ldaSCII "z"
+   sta stringBuffer
+   lda #":"
+   sta stringBuffer+1
+   lda #<configBuf+$87
+   ldy #>configBuf+$87
+   sta zp
+   sty zp+1
+   ldy #0
+-  lda (zp),y
+   sta stringBuffer+2,y
+   beq +
+   iny
+   jmp -
++  lda #<stringBuffer
+   ldy #>stringBuffer
+   sta zp
+   sty zp+1
+   lda #$00
+   ldy #$f9
+   sta zw
+   sty zw+1
+   lda #bkRam0io
+   sta bkSelect
+   lda #<($f000-$30)
+   ldy #>($f000-$30)
+   jsr internBload
+   lda #bkACE
+   sta bkSelect
+   rts
+   
+vicGrExit = *
+   jsr vicLoadCharset
+   lda winRows
+   ldx winCols
+   jsr kernWinScreen
+   rts
+
 rgbi2vic = *
    and #$0f
    tax

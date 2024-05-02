@@ -385,6 +385,7 @@ internClose = *
    rts
 +  ldy devtable,x
    stx closeFd
+   internCloseCont = *
    lda configBuf+0,y
    cmp #2
    bne +
@@ -1088,7 +1089,8 @@ kernDirClose = *
    clc
    rts
 +  stx closeFd
-   jmp close
+   ldy devtable,x
+   jmp internCloseCont
 
 ;*** aceDirRead( .X=fcb ) : .Z=eof, aceDirentBuffer=data
 

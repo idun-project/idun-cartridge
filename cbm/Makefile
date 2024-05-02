@@ -29,7 +29,8 @@ $(APPS) $(CMDS) $(RESC)
 
 APPS=\
 build/dos.app \
-build/arcade.app
+build/arcade.app \
+build/showvic.app
 
 CMDS=\
 build/tty\
@@ -70,7 +71,7 @@ $(SYSDIR):
 	mkdir -p $@/arcade.app.d
 
 $(SYSDIR)/idun128 : idunk.asm $(ACESYS)
-	$(ACME) -Dcomputer=128 -Dromsize=0 -o $(SYSDIR)/idun128 -f cbm idunk.asm
+	$(ACME) --vicelabels $(BUILD)/idun128.sym -Dcomputer=128 -Dromsize=0 -o $(SYSDIR)/idun128 -f cbm idunk.asm
 
 $(SYSDIR)/idun-64 : idunk.asm $(ACESYS)
 	$(ACME) -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
@@ -96,6 +97,9 @@ $(BUILD)/dos.app: dos.app.s $(ACEHDRS) sys/toolbox.asm
 $(BUILD)/arcade.app: arcade.app.s $(wildcard arcade.app.d/*.asm) $(wildcard arcade.app.d/*.m8x)
 	$(ACME) --cpu 6510 --vicelabels $(BUILD)/arcade.sym -f plain -o $(BUILD)/arcade.app -I../cbm arcade.app.s
 	@$(foreach f,$(wildcard arcade.app.d/*.lua), cp $(f) $(SYSDIR)/arcade.app.d;)
+
+$(BUILD)/showvic.app: showvic.app.s toolx/*/*
+	$(ACME) --cpu 6510 --vicelabels $(BUILD)/showvic.sym -f plain -o $(BUILD)/showvic.app showvic.app.s
 
 summary:
 	@grep aceToolboxEnd $(BUILD)/dos.sym
