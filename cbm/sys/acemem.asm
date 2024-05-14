@@ -513,8 +513,8 @@ searchSize      !byte 0
 allocProcID     !byte 0
 searchTypeJmp   !word 0,pageAllocREU,pageAllocInternal,0
 
-;kernel procids for pages: $00=free,$01=kernel,$ff=malloc,$fe=tpa,$fd=ramdisk,
-;                          $fc=devices,$fb=reservedRamdisk
+;kernel procids for pages: $00=free,$01=kernel,$ff=malloc,$fe=tpa,$fd=tag ram,
+;                          $fc=devices,$fb=reservedRamdisk,$fa=console history
 
 kernMemAlloc = *  ;( .A=pages, .X=stType, .Y=endType ) : [mp]=farPtr
    pha

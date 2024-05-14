@@ -28,6 +28,9 @@ vicShutdown = *
    rts
 
 vicActivate = *
+   lda vic+$16
+   and #%11101111
+   sta vic+$16    ;multicolor disabled
    lda vic+$11
    and #%00011111
    sta vic+$11
@@ -102,20 +105,18 @@ vicLoadCharset = *
    ldy #$f9
    sta zw
    sty zw+1
-   lda #bkRam0io
-   sta bkSelect
    lda #<($f000-$30)
    ldy #>($f000-$30)
    jsr internBload
-   lda #bkACE
-   sta bkSelect
    rts
    
 vicGrExit = *
+   sei
    jsr vicLoadCharset
    lda winRows
    ldx winCols
    jsr kernWinScreen
+   cli
    rts
 
 rgbi2vic = *

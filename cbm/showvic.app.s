@@ -120,8 +120,7 @@ showUsageError = *
 graphicOn = *
    lda #FALSE
    jsr toolStatEnable
-   ;lda #VIC_II_MODE
-   lda #1
+   lda #VIC_II_MODE
    ldx #0
    ldy #0
    jmp xGrMode
@@ -174,8 +173,17 @@ showKoaBmap = *
    ldy #0
    lda dest+1
    cmp #>(xGrBitmapAddr+$1f00)
-   bne -    ;stop copying at $ff00 to not mess up MMU
-+  rts
+   bne -
+   ;avoid writing to MCRs ($ff00-$ff04)
+   cmp #$ff
+   bne _copy_bmp_last
+   ldy #5
+   _copy_bmp_last = *
+   lda (source),y
+   sta (dest),y
+   iny
+   bne _copy_bmp_last
+   rts
    _copy_color = *
    ldx #0
 -  lda colorData,x

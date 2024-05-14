@@ -35,12 +35,14 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    sta GrMode
    cmp #0
    bne +
+   jsr systemRestore
    jmp aceGrExit
 +  sei
    sty BmColor
    txa
    jsr Rgbi2vic
    sta vic+$20
+   jsr systemSave
    jsr ActivateHardware
    lda BmColor
    jsr Rgbi2vicbit
@@ -62,16 +64,17 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    rts
 
 ActivateHardware = *
-   lda GrMode
-   cmp #2
-   bcs +
-   lda #%00100000
-   jmp ++
-+  lda #%01100000
-++ ora vic+$11
+   lda #%00100000    ;bitmap mode on
+   ora vic+$11
    and #%01111111
    sta vic+$11
-   lda #$38
+   lda GrMode
+   cmp #3
+   bcc +
+   lda #%00010000    ;multicolor mode on
+   ora vic+$16
+   sta vic+$16
++  lda #$38          ;bitmap memory setup
    sta vic+$18
    lda $dd00
    and #%11111100
@@ -396,6 +399,34 @@ PosAdd = *  ;add start addr of bitmap
    sta syswork+1
    rts
 }  ;end xVic
+
+;Since the VIC-II bitmap can overwrite system memory
+;on page $ff, we need to backup that data and restore
+;it when we exit graphics mode.
+systemSave = *
+   lda #bkRam0
+   sta bkSelect
+   ldx #5            ;save $ff05-ffff
+-  lda $ff00,x
+   sta systemPage,x
+   inx
+   bne -
+   lda #bkACE
+   sta bkSelect
+   rts
+systemRestore = *
+   lda #bkRam0
+   sta bkSelect
+   ldx #5            ;save $ff05-ffff
+-  lda systemPage,x
+   sta $ff00,x
+   inx
+   bne -
+   lda #bkACE
+   sta bkSelect
+   rts
+systemPage = *
+* = systemPage+256
 
 !ifndef xGrMode {
    xGrMode = xVicGrMode

@@ -991,6 +991,8 @@ kernRestart = *
 +  cmp #aceRestartApplReset
    bne restartCont
    ;unwind any active apps
+   ldx #$ff
+   txs
    jsr aceStartup
    ;setup name and args for appl restart
    lda zp
