@@ -166,7 +166,9 @@ aceDirectWrite  = aceCallB+261 ;( .X=fd, (zp)=buf, .A=# sector) : .CS=error
 ; Custom version of Vice Emulator can connect
 ; to Idun services over the network.
 aceViceEmuCheck = aceCallB+264 ;() : .ZS=emulator detected
-
+; IDUN: Use search path to determine full filename
+aceSearchPath   = aceCallB+267 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
+                               ;                                .CS=end of path
 aceID1 = $cb
 aceID2 = $06
 aceID3 = 16

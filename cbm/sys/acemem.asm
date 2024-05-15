@@ -1290,6 +1290,16 @@ getloadRestoreZp = *
    sty zp+1
    rts
 
+kernSearchPath = *   ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos, .CS=end of path
+   lda configBuf+$e0,x
+   beq +
+   stx loadPathPos
+   jsr getLoadPathname
+   ldx loadPathPos
+   clc
+   rts
++  sec
+   rts
 getLoadPathname = *  ;( (zp)=filename, configBuf+$e0, loadPathPos ) : (zp)=lname
    ldy loadPathPos
    ldx #0

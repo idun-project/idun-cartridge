@@ -994,7 +994,7 @@ shellLoadExternal = *
    !pet ": Bad external-program format"
    !byte chrCR,0
 
-loadFd = 2
+pathPos = 4
 cmdIsAppl = *
    ;check if name ends with ".app"
    ldy #0
@@ -1009,33 +1009,37 @@ cmdIsAppl = *
    cmp cmd_app_suffix,x
    bne failAppName
    cpx #0
-   beq +
+   beq findApplPath
    jmp -
 failAppName:
    sec
    rts
-   ;check file exists
-+  lda name+0
+findApplPath:
+   ;search path / check file exists
+   lda #0
+   sta pathPos
+-  lda name+0
    sta zp+0
    lda name+1
    sta zp+1
-   +ldaSCII "r"
-   jsr open
-   bcc +
-   lda errno
-   rts
-+  sta loadFd
-   ;check for App binary (1st 8 bytes)
-   tax
+   ldx pathPos
+   jsr aceSearchPath
+   bcs failAppName
+   stx pathPos
+   lda #<(is_app_sign+8)
+   ldy #>(is_app_sign+8)
+   sta zw
+   sty zw+1
    lda #<is_app_sign
    ldy #>is_app_sign
-   sta zp
-   sty zp+1
-   lda #8
-   ldy #0
-   jsr read
-   bcs failAppSign
-   ldx #8
+   jsr aceFileBload
+   bcc +
+   lda errno
+   cmp #aceErrFileNotFound
+   beq -
+   jmp failAppName
+   ;check for 8-byte signature
++  ldx #8
 -  dex
    bmi passAppSign
    lda is_app_sign,x
@@ -1043,13 +1047,9 @@ failAppName:
    bne failAppSign
    jmp -
 passAppSign:
-   lda loadFd
-   jsr close
    clc
    rts
 failAppSign:
-   lda loadFd
-   jsr close
    sec
    rts
 is_app_sign !fill 8,0

@@ -163,6 +163,7 @@ jmp kernWinGrChrPut
 jmp kernDirectRead
 jmp kernDirectWrite
 jmp kernViceEmuCheck
+jmp kernSearchPath
 
 !byte $ff,$fe,$3c,$e2,$fc
 

@@ -581,14 +581,14 @@ pidBload = *
   sta readlentemp+1
   ldx #BlockLfn
   +getFileinfoLength
-  ; Check file is not Too Big
-  clc
+  ; Set read length
   lda zz+1
   cmp readlentemp+1
   bmi +
-  sec
-  lda #aceErrInsufficientMemory
-  rts
+  lda readlentemp+0
+  sta zz+0
+  lda readlentemp+1
+  sta zz+1
   ; READ file
 + sta BloadPgs
   ; TALK

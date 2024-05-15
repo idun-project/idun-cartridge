@@ -6,8 +6,8 @@
 ;
 
 !source "sys/acehead.asm"
-!source "sys/toolbox.asm"
-jmp idunAppInit
+!source "toolx/vic/core.asm"  ;use VIC gfx routines
+jmp init
 
 ;constants
 KOA_FILE_SZ = 10003
@@ -23,15 +23,13 @@ dest     = $08 ;(2)
 
 showUsageErrMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "Usage: showvic.app in directory with",13,10
+!pet "Usage: koala.app in directory with",13,10
 !pet ".koa image files.",13,10
 !pet "No images found. <Press any key>",0
 
-;include VIC-II graphics extension
-!source "toolx/vic/core.asm"
 
 currDir: !pet ".:",0
-idunAppInit = *
+init = *
    lda #0
    sta count
    lda #<directory
@@ -118,8 +116,6 @@ showUsageError = *
    rts
 
 graphicOn = *
-   lda #FALSE
-   jsr toolStatEnable
    lda #VIC_II_MODE
    ldx #0
    ldy #0

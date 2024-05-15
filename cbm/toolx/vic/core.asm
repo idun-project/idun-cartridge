@@ -1,5 +1,10 @@
 !zone xVic {
 
+* = aceAppAddress
+jmp aceToolAddress
+!byte aceID1,aceID2,aceID3
+!byte 64,0  ;** stack,reserved
+
 ;constants
 VIC_GRMODE_MAX = 4
 vic            = $d000
@@ -427,6 +432,12 @@ systemRestore = *
    rts
 systemPage = *
 * = systemPage+256
+
+!if *>aceToolAddress {
+   !error "Tool extension exceeds maximum address ", aceToolAddress
+} else {
+   * = aceToolAddress
+}
 
 !ifndef xGrMode {
    xGrMode = xVicGrMode

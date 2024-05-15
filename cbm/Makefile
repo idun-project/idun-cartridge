@@ -30,7 +30,7 @@ $(APPS) $(CMDS) $(RESC)
 APPS=\
 build/dos.app \
 build/arcade.app \
-build/showvic.app
+build/koala.app
 
 CMDS=\
 build/tty\
@@ -98,8 +98,8 @@ $(BUILD)/arcade.app: arcade.app.s $(wildcard arcade.app.d/*.asm) $(wildcard arca
 	$(ACME) --cpu 6510 --vicelabels $(BUILD)/arcade.sym -f plain -o $(BUILD)/arcade.app -I../cbm arcade.app.s
 	@$(foreach f,$(wildcard arcade.app.d/*.lua), cp $(f) $(SYSDIR)/arcade.app.d;)
 
-$(BUILD)/showvic.app: showvic.app.s toolx/*/*
-	$(ACME) --cpu 6510 --vicelabels $(BUILD)/showvic.sym -f plain -o $(BUILD)/showvic.app showvic.app.s
+$(BUILD)/koala.app: koala.app.s toolx/*/*
+	$(ACME) --cpu 6510 --vicelabels $(BUILD)/koala.sym -f plain -o $(BUILD)/koala.app koala.app.s
 
 summary:
 	@grep aceToolboxEnd $(BUILD)/dos.sym
