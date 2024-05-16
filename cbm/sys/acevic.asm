@@ -112,6 +112,8 @@ vicLoadCharset = *
    
 vicGrExit = *
    sei
+   lda $0a37
+   sta vic+$30    ;restore 2Mhz mode
    jsr vicLoadCharset
    lda winRows
    ldx winCols

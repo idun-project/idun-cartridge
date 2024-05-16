@@ -41,7 +41,7 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    cmp #0
    bne +
    jsr systemRestore
-   jmp aceGrExit
+   jmp textRestore
 +  sei
    sty BmColor
    txa
@@ -69,7 +69,11 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    rts
 
 ActivateHardware = *
-   lda #%00100000    ;bitmap mode on
+   lda vic+$30
+   sta $0a37
+   lda #$00
+   sta vic+$30       ;1 MHz mode
+   lda #%00110000    ;bitmap mode on
    ora vic+$11
    and #%01111111
    sta vic+$11
@@ -404,6 +408,19 @@ PosAdd = *  ;add start addr of bitmap
    sta syswork+1
    rts
 }  ;end xVic
+
+textsz !byte 0,0
+textRestore = *
+   jsr aceWinSize
+   sta textsz
+   stx textsz+1
+   lda #0
+   ldx #40
+   jsr aceWinScreen
+   jsr aceGrExit
+   lda textsz
+   ldx textsz+1
+   jmp aceWinScreen
 
 ;Since the VIC-II bitmap can overwrite system memory
 ;on page $ff, we need to backup that data and restore
