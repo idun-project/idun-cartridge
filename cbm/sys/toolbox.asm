@@ -161,7 +161,16 @@ ToolwinInit1 = *
    sta toolWinPalette,x
    dex
    bpl -
-   ;** window stuff
+   ;set border/bkgd colors
+   ldx #1
+   lda toolWinPalette+7
+   sec
+   jsr aceWinOption                ;screen color
+   ldx #2
+   lda toolWinPalette+6
+   sec
+   jsr aceWinOption                ;border color
+   ;** window sizing
    jsr aceWinMax
    jsr aceWinSize
    sta toolWinRegion+0
@@ -225,11 +234,11 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNull,CmdNull       ;$8c-$8f
    !word CmdNotImp,CmdNotImp,CmdRvsOff,CmdNotImp   ;$90-$93
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdMode4    ;$94-$97
-   !word CmdMode5,CmdNotImp,CmdNotImp,CmdMode8     ;$98-$9b
+   !word CmdNotImp,CmdNotImp,CmdNotImp,CmdMode8    ;$98-$9b
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$9c-$9f
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a0-$a3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a4-$a7
-   !word CmdNotImp,CmdNotImp,CmdNotImp,CmdCapKeys  ;$a8-$ab
+   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdCapKeys  ;$a8-$ab
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$ac-$af
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b0-$b3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
@@ -455,21 +464,26 @@ CmdModeReset = *  ;full screen
    clc
    rts
    CmdDoScreen = *
-   sei
    jsr aceWinScreen
    jmp CmdModeReset
 CmdMode4 = *  ;40-cols
    lda #0
    ldx #40
    jmp CmdDoScreen
-CmdMode5 = *  ;max rows
-   lda #255
-   ldx #0
-   jmp CmdDoScreen
 CmdMode8 = *  ;80-cols
    lda #0
    ldx #80
    jmp CmdDoScreen
+CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
+   jsr aceWinSize
+   cpx #80
+   beq +
+   jsr CmdMode8
+   lda $d011
+   ora #%00010000
+   sta $d011
+   rts
++  jmp CmdMode4
 CmdRvs = *
    ldx #5
    lda #$ff
