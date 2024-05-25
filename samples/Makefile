@@ -5,7 +5,7 @@ mandelbrot.app\
 cube.app
 ACME=acme --dialect 0.94.12
 
-all: $(APPS)
+all: $(APPS) plasma
 
 hello.app: hello.asm hello.app.d/app.asm ../cbm/toolx/*/*
 	$(ACME) --cpu 6510 -f plain -o hello.app -I../cbm hello.asm
@@ -19,5 +19,8 @@ mandelbrot.app: mandelbrot.asm mandelbrot.app.d/app.asm ../cbm/toolx/*/*
 cube.app: cube.asm cube.app.d/app.asm ../cbm/toolx/*/*
 	$(ACME) --cpu 6510 -f plain -o cube.app -I../cbm cube.asm
 
+plasma: plasma.asm
+	$(ACME) --cpu 6510 plasma.asm
+	
 clean:
-	rm $(APPS)
+	rm $(APPS) plasma
