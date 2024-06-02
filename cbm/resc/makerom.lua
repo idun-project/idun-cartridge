@@ -18,8 +18,8 @@ local ocombofile = '/home/idun/U32.rom'
 local msg_k128_16k = 'Making patched C128 kernal ROM U35'
 local msg_k128_32k = 'Making patched C128 kernal ROM U32'
 -- Patched ROM checksums
-local md5_U35 = 'bee0e0997e8c836c19a21b387c48e0b8'
-local md5_U32 = 'ba531355ed62301de656cab5220ca4a9'
+local md5_U35 = '6e84d38652c147d57d320c97d75717c3'
+local md5_U32 = '4c3a5d94e6cf1f094fd4a3cc6022b9be'
 -- Critical ROM offsets
 local KERNAL_OFFS = 0x6001
 local KERNAL_ADDR = 0xe000
