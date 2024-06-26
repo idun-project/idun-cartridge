@@ -116,7 +116,7 @@ main = *
     sta bkSelect
     jmp Basic
 Catalog = *
-    lda #"P"
+    lda #"R"
     ldx #hookOpen
     jsr romcall
     ;get length of dir listing
@@ -662,7 +662,7 @@ ILoader = *
     sta kVerify
     jsr FnIsdir
     bne +
-    ldx #hookCatalog
+    ldx #hookLoad
     jmp romcall
 +   ldx #hookLoad
     jmp romcall   
