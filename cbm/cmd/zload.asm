@@ -208,7 +208,7 @@ loadRam01 = *
    sta $de00
    ; SECOND logical filenum
    ldx loadFd
-   lda $e00,x  ;Fcb->Lfn
+   lda $f00,x  ;Fcb->Lfn
    ora #$60
    nop
    nop

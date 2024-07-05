@@ -6,12 +6,12 @@
 ;
 ; System-interface declarations
 
-aceStatB      = $f00   ;(256)
+aceStatB      = $f50   ;(176)
 ; IDUN: This block re-purposed for mailbox message streaming.
-mailboxB      = $b00   ;(256)
-aceCallB      = $1303  ;(267)
+mailboxB      = $b00    ;(256)
+aceExitData   = mailboxB;shared with mailbox buffer
+aceCallB      = $1303   ;(267)
 ; IDUN: This block re-purposed for acetag data.
-;aceExitData   = $700   ;(256)
 aceAppAddress = $6000
 aceToolAddress= $6d00
 
@@ -37,6 +37,7 @@ aceMouseLimitX   = aceStatB+46         ;(2)
 aceMouseLimitY   = aceStatB+48         ;(2)
 aceMouseScaleX   = aceStatB+50         ;(1)
 aceMouseScaleY   = aceStatB+51         ;(2)
+;next StatB      = aceStatB+53         ;max. 64 bytes!
 
 open          = aceCallB+0   ;( (zp)=name, .A=mode[rwaWA] ) : .A=fd
 close         = aceCallB+3   ;( .A=fd )

@@ -25,8 +25,6 @@ TAGPTR_NEXT = 255
 ; Entry #51 at tagMemTable[250..254] is temp storage used internally.
 ; tagMemTable[255] is the index of the next free "slot" for allocation.
 
-;NOTE: Kernel startup code must `jsr zeroTagTable`.
-
 ;Randomized values used to calulate a one-byte unique hash for a tag.
 ;@see `jsr pearson`
 pearsonHash !byte $ce,$4a,$67,$b5,$3f,$2f,$5c,$c8,$fa,$53,$da,$7f,$96,$a8,$ea,$13
@@ -46,14 +44,6 @@ pearsonHash !byte $ce,$4a,$67,$b5,$3f,$2f,$5c,$c8,$fa,$53,$da,$7f,$96,$a8,$ea,$1
             !byte $1b,$e4,$0d,$a7,$df,$45,$28,$50,$0b,$ae,$c1,$b2,$60,$f7,$74,$a4
             !byte $c7,$4b,$5d,$58,$68,$f0,$15,$b8,$5e,$a1,$a2,$52,$ee,$b7,$eb,$98
 
-
-zeroTagTable = *
-   lda #0
-   ldx #0
--  sta tagMemTable,x
-   inx
-   bne -
-   rts
 
 storeMp = *
    ldx #0
@@ -556,7 +546,7 @@ internTagRead = *
    bcc +
    jmp tagReadComplete
 +  ldx tagwork+0
-   lda mmapFileBuf,x
+   lda aceSharedBuf,x
    sta (readPtr),y
    inc tagwork+0
    bne +
@@ -661,10 +651,10 @@ preFetchPage = *
    sta mp+2
    lda tagwork+0
    sta mp+0
-   ;fetch next 256 bytes into mmapFileBuf
-   lda #<mmapFileBuf
+   ;fetch next 256 bytes into aceSharedBuf
+   lda #<aceSharedBuf
    sta zp+0
-   lda #>mmapFileBuf
+   lda #>aceSharedBuf
    sta zp+1
    lda #0
    ldy #1

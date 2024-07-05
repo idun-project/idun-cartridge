@@ -57,7 +57,7 @@ resc/autoexec.bat resc/basic780 resc/prompt.lua resc/sidplay.lua resc/tpat600.pb
 resc/tpat480.pbm resc/tpat200.pbm resc/help.lua resc/commands.hlp resc/editor.hlp\
 $(wildcard resc/dos/*) $(wildcard resc/util/*)
 
-all: rel sys summary
+all: rel sys
 
 rel: $(BUILD) $(SYSDIR)
 
@@ -100,9 +100,6 @@ $(BUILD)/arcade.app: arcade.app.s $(wildcard arcade.app.d/*.asm) $(wildcard arca
 
 $(BUILD)/koala.app: koala.app.s toolx/*/*
 	$(ACME) --cpu 6510 --vicelabels $(BUILD)/koala.sym -f plain -o $(BUILD)/koala.app koala.app.s
-
-summary:
-	@grep aceToolboxEnd $(BUILD)/dos.sym
 
 clean:
 	rm -fr $(BUILD)

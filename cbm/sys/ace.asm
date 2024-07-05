@@ -176,14 +176,13 @@ fileinfoTable= $600  ;(256 bytes)
 tagMemTable  = $700  ;(256 bytes)
 freemap      = $800  ;(256 bytes)
 ram0FreeMap  = $900  ;(256 bytes)
-mailboxBuf   = $b00  ;(256 bytes)
+aceSharedBuf = $b00  ;(256 bytes)
 configBuf    = $c00  ;(256 bytes)
-mmapFileBuf  = $d00  ;(256 bytes) acetag memory-mapped file stream buf
-funkeydef    = $1000 ;(256 bytes) 16 user programmed "hotkey" defs
+ESP          = $d00  ;(512 bytes)
+funkeyDef    = $1000 ;(256 bytes) user programmed "hotkey" defs
 
 !if useC128 {
-   unusedMem1 = $e50  ;unused (176 bytes)
-   unusedMem2   = $1100 ;unused (512 bytes); usually C128 BASIC work area
+   unusedMem = $1100 ;unused (512 bytes)- usually C128 BASIC work area
    bkACE = $0e
    bkApp = $0e
    bkRam0 = $3f
@@ -205,9 +204,8 @@ funkeydef    = $1000 ;(256 bytes) 16 user programmed "hotkey" defs
    nmiExit = $ff33
    CHRGET = $380
 } else {
+   unusedMem = $1100 ;unused (512 bytes)
    basicZpSave  = $a00  ;("maxZpUse" bytes ($90))
-   unusedMem1   = $e50  ;unused (176 bytes)
-   unusedMem2   = $1100 ;unused (512 bytes)
    bkSelect = $01
    bkACE = $36
    bkApp = $36
@@ -239,11 +237,11 @@ scpuMrAll = $d077 ;mirror all
 scpuMrOff = $d076 ;mirror only BASIC screen
 
 fcbCount = 16
-lftable   =$e00
-devtable  =$e10
-satable   =$e20
-eoftable  =$e30
-pidtable  =$e40
+lftable   =$f00
+devtable  =$f10
+satable   =$f20
+eoftable  =$f30
+pidtable  =$f40
 lfnull = $ff
 cmdlf  = 66
 fcbNull = $ff
@@ -877,10 +875,13 @@ main = *
    sei
    jsr winStartup
    jsr conInit
-   ; IDUN: Init index for acetag memory pointers.
-   jsr zeroTagTable
-   ; IDUN: Parallel driver not used
-   ;jsr parInit
+   ; IDUN: Init tables for function keys and tagmem
+   lda #0
+   ldx #0
+-  sta tagMemTable,x
+   sta funkeyDef,x
+   inx
+   bne -
    lda #$01
    sta vic+$1a     ;enable VIC raster IRQ
    cli

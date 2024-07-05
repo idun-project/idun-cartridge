@@ -1437,20 +1437,8 @@ internDirChange = *
    sta aceCurDirName+0
    +ldaSCII ":"
    sta aceCurDirName+1
-   ldx #0
--  lda stringBuffer+2,x
-   sta aceCurDirName+2,x
-   beq +
-   inx
-   bne -
-+  lda aceCurDirName+1,x
-   +cmpASCII ":"
-   beq +
-   +ldaSCII ":"
-   sta aceCurDirName+2,x
-   inx
-+  lda #0
-   sta aceCurDirName+2,x
+   lda #0
+   sta aceCurDirName+2
    clc
    rts
 

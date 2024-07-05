@@ -46,8 +46,8 @@ kernMapperCommand = *
 kernMapperProcmsg = *
   sta .mapper_proc_addr+0
   sty .mapper_proc_addr+1
-  lda #<mailboxBuf
-  ldy #>mailboxBuf
+  lda #<aceSharedBuf
+  ldy #>aceSharedBuf
   ldx #0
   jsr pisvcCommonGet
   ;fetch size
@@ -70,8 +70,8 @@ kernMapperProcmsg = *
   dec zz+1
   jsr .mapperUntalk
   ; TALK for next page
-  lda #<mailboxBuf
-  ldy #>mailboxBuf
+  lda #<aceSharedBuf
+  ldy #>aceSharedBuf
   ldx #0
   jsr pisvcCommonGet
   jmp -

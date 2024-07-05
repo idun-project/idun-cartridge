@@ -7,7 +7,7 @@
 ; Idun Shell, and return the user to the shell when complete.
 ;
 ; By utilizing the Toolbox, tools can provide a simpler and more consistent
-; user and programming experinece. There are 7 APIs for the following purposes:
+; user and programming experience. There are 7 APIs for the following purposes:
 
 ; 1. user: An API for UI and decorative text
 ; 2. win: An API for defining window areas managed by tools that take over the screen.
@@ -76,8 +76,7 @@ TRUE  = $ff
 FALSE = $00
 
 ;=== Utility routines ===
-sys_zp_bkup = $e00
-
+aceZpIrqsave = aceStatB+104 ;(48)
 sysZpStore = *
    ;backup syswork
    ldx #$8f
@@ -89,7 +88,7 @@ sysZpStore = *
    ldx #$ff
 +  ldy #15
 -  lda $00,x
-   sta sys_zp_bkup,x
+   sta aceZpIrqsave,x
    dex
    dey
    bpl -
@@ -105,7 +104,7 @@ sysZpRestore = *
    ;restore zp,zw, and mp
    ldx #$ff
 +  ldy #15
--  lda sys_zp_bkup,x
+-  lda aceZpIrqsave,x
    sta $00,x
    dex
    dey
@@ -244,7 +243,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b8-$bb
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$bc-$bf
-;FIXME: Should reference addr from kernal settings
+;FIXME: Should reference addr from kernel settings
 macroUserCmds = $1000
 
 CmdNull   = *
@@ -1159,7 +1158,7 @@ toolUserLayout = *
 +  stx uiNodeWidth
    sty uiNodeHeight
 ++ bvc +
-   ;link retained layout into refresh interupt
+   ;link retained layout into refresh interrupt
    pla
    sta uiClientRts
    pla
@@ -1277,7 +1276,7 @@ toolUserEnd = *
 toolUserSeparator = *
    bit uiLayoutFlag
    bvc +
-   ;no vertial separators (yet?)
+   ;no vertical separators (yet?)
    rts
 +  lda toolUserStyles
    bpl _toolDrawSeparator
@@ -1535,7 +1534,7 @@ _tbStatlinesave !byte $ea
    lda #$20
    sta syswork+4
    rts
-   ;This can be overriden, such as by the status bar
+   ;This can be overridden, such as by the status bar
    ;to allowing drawing outside of the active window.
    _toolOverrideWindow = *
    jmp aceWinPos
@@ -1802,7 +1801,7 @@ tbFrameSync = *
    ;restore layout settings overridden in dispStatline
    ldy #4
    ldx #toolUserColor
--  lda sys_zp_bkup,x
+-  lda aceZpIrqsave,x
    sta $00,x
    inx
    dey
