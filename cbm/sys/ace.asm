@@ -179,10 +179,8 @@ ram0FreeMap  = $900  ;(256 bytes)
 aceSharedBuf = $b00  ;(256 bytes)
 configBuf    = $c00  ;(256 bytes)
 ESP          = $d00  ;(512 bytes)
-funkeyDef    = $1000 ;(256 bytes) user programmed "hotkey" defs
 
 !if useC128 {
-   unusedMem = $1100 ;unused (512 bytes)- usually C128 BASIC work area
    bkACE = $0e
    bkApp = $0e
    bkRam0 = $3f
@@ -204,7 +202,6 @@ funkeyDef    = $1000 ;(256 bytes) user programmed "hotkey" defs
    nmiExit = $ff33
    CHRGET = $380
 } else {
-   unusedMem = $1100 ;unused (512 bytes)
    basicZpSave  = $a00  ;("maxZpUse" bytes ($90))
    bkSelect = $01
    bkACE = $36
@@ -875,11 +872,10 @@ main = *
    sei
    jsr winStartup
    jsr conInit
-   ; IDUN: Init tables for function keys and tagmem
+   ; IDUN: Init table for tagmem
    lda #0
    ldx #0
 -  sta tagMemTable,x
-   sta funkeyDef,x
    inx
    bne -
    lda #$01

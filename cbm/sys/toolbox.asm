@@ -243,8 +243,6 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b8-$bb
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$bc-$bf
-;FIXME: Should reference addr from kernel settings
-macroUserCmds = $1000
 
 CmdNull   = *
 CmdNotImp = *
@@ -1810,11 +1808,12 @@ tbFrameSync = *
    _inactiveLayout = *
    rts
 
-;** these four fields MUST be retained between dos.app restarts
+;** these fields MUST be retained between dos.app restarts
 shellRedirectStdin  !byte 0
 shellRedirectStdout !byte 0
 shellRedirectStderr !byte 0
 inputFd             !byte 0
+macroCmdsStash      !word 0
 
 !if *>aceToolAddress {
    !error "Toolbox exceeds maximum address ", aceToolAddress

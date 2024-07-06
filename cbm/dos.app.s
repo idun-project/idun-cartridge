@@ -64,8 +64,17 @@ DosStartup = *
    lda #<shellName
    ldy #>shellName
    jsr aceTagStash
-   ;init user hotkey storage
-   ldx #0
+   ;init user macro storage
+   ldx #aceMemInternal
+   ldy #aceMemInternal
+   lda #1
+   jsr aceMemAlloc
+   bcs +
+   lda mp+1
+   sta macroCmdsStash+0
+   lda mp+2
+   sta macroCmdsStash+1
++  ldx #0
    lda #0
 -  sta macroUserCmds,x
    inx
@@ -118,8 +127,35 @@ dosReinit = *
    lda #<minuteTimeout
    ldy #>minuteTimeout
    jsr toolTmoSecs
-   clc
-   rts
+   ; Fetch user macros
+   jsr macrosUpdate
+   beq +
+   jsr aceMemFetch
++  rts
+macrosUpdateStash = *
+   ; Stash user macros
+   jsr macrosUpdate
+   beq +
+   jsr aceMemStash
++  rts
+macrosUpdate = *
+   lda #0
+   sta mp+0
+   lda macroCmdsStash+0
+   sta mp+1
+   ora macroCmdsStash+1
+   beq +
+   lda macroCmdsStash+1
+   sta mp+2
+   lda #aceMemInternal
+   sta mp+3
+   lda #<macroUserCmds
+   ldy #>macroUserCmds
+   sta zp+0
+   sty zp+1
+   lda #<256
+   ldy #>256
++  rts
 
 tempIndex = $3
 minuteTimeout = *
@@ -1961,7 +1997,8 @@ funkey = *
    lda #<macroUnrecognizeMsg
    ldy #>macroUnrecognizeMsg
    jmp eputs
-+  rts
++  jsr macrosUpdateStash
+   rts
 funkeyErrMsg = *
    !pet "usage: funkey <0xHH> ",chrQuote,"command",chrQuote
    !byte chrCR,0
@@ -2007,7 +2044,8 @@ doskey = *
    lda #<macroSizeMsg
    ldy #>macroSizeMsg
    jmp eputs
-+  rts
++  jsr macrosUpdateStash
+   rts
 doskeyErrMsg = *
    !pet "usage: doskey alias ",chrQuote,"command",chrQuote
    !byte chrCR,0
@@ -3080,13 +3118,14 @@ getarg = *
 UtoaNumber     !fill 11,0
 
 ;===bss===
-
+;===allow 1 kB for working buffers===
 bss           = *
 cmdBuffer     = bss+0
 copyBuffer    = bss+0
 argBuffer     = cmdBuffer+256
 argArgvBuffer = argBuffer+256
-bssAppEnd     = argArgvBuffer
+macroUserCmds = argArgvBuffer+256
+bssAppEnd     = macroUserCmds+256
 
 
 ;┌────────────────────────────────────────────────────────────────────────┐
