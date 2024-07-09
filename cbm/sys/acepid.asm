@@ -81,7 +81,7 @@ getFileinfoMode = * ;(.X=fcb) : .A=mode
   sta zz+1
   pla
 }
-; This gets and sets both the length and the remianing bytes.
+; This gets and sets both the length and the remaining bytes.
 setFileinfoLength = * ;(.X=fcb) : zz=16-bit file length
   txa
   pha
@@ -543,7 +543,28 @@ BloadPgs !byte 0
 BloadAddr !byte 0,0    ; temp. storage so won't be overwritten
 
 pidBload = *
-  lda bloadFilename+0
+  lda bloadBank
+  beq +
+  ; convert to bank configuration
+  asl
+  asl
+  asl
+  asl
+  asl
+  asl
+  ora #bkRam0
+  sta bloadBank
+  ; use bank-aware load routine
+  lda #<pidBankload
+  ldy #>pidBankload
+  sta Bloader+1
+  sty Bloader+2
+  jmp ++
++ lda #<pidGetbuf
+  ldy #>pidGetbuf
+  sta Bloader+1
+  sty Bloader+2
+++lda bloadFilename+0
   sta zp
   lda bloadFilename+1
   sta zp+1
@@ -581,14 +602,15 @@ pidBload = *
   sta readlentemp+1
   ldx #BlockLfn
   +getFileinfoLength
-  ; Set read length
+  ; Check file length vs. space
   lda zz+1
   cmp readlentemp+1
-  bmi +
-  lda readlentemp+0
-  sta zz+0
-  lda readlentemp+1
-  sta zz+1
+  bcc +
+  ; File too big
+  lda #aceErrBloadTruncated
+  sta errno
+  sec
+  rts
   ; READ file
 + sta BloadPgs
   ; TALK
@@ -603,7 +625,7 @@ pidBload = *
 - cmp #0
   beq lastPg
   ldx #0        ; this means read whole page (256 bytes)
-  jsr pidGetbuf
+  jsr Bloader
   inc readPtr+1 ; setup to read next page
   dec BloadPgs
   ldx #BlockLfn
@@ -619,10 +641,9 @@ pidBload = *
   lda BloadPgs
   jmp -
   lastPg = *
-  lda zz+0
+  ldx zz+0
   beq +
-  tax
-  jsr pidGetbuf
+  jsr Bloader
   ldx #BlockLfn
   jsr pidDoUntalk
   ; CLOSE
@@ -639,6 +660,8 @@ pidBload = *
   lda readPtr+0
   clc
 	rts
+Bloader:
+  jmp pidGetbuf
 
 ;*** convenience calls for device->channel->IEC cmd
 listenChan = *

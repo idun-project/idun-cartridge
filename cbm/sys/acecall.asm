@@ -6,6 +6,8 @@
 ;
 ; Main file/dir/other system calls
 
+kernelSetbnk = $ff68
+
 ;====== file calls ======
 
 ;*** open( zp=filenameZ, .A=mode["r","w","a","W","A"] ) : .A=fcb
@@ -765,23 +767,31 @@ kernFileRename = *
 ++ rts
 
 
-;NAME   :  aceFileBload
+;NAME   :  aceFileBload/aceFileBkload
 ;PURPOSE:  binary load
-;ARGS   :  (zp) = pathname
+;ARGS   :  .X   = RAM bank (0-3 *aceFileBkload only*)
+;          (zp) = pathname
 ;          .AY  = address to load file
 ;          (zw) = highest address that file may occupy, plus one
 ;RETURNS:  .AY  = end address of load, plus one
 ;          .CS  = error occurred flag
 ;ALTERS :  .X, errno
-
 bloadAddress = syswork
-bloadFilename = syswork+2
-bloadDevice = syswork+8
+bloadFilename= syswork+2
+bloadDevice  = syswork+8
+bloadBank    = syswork+9
 
+;*** aceFileBkload( .X=Bank (zp)=Name, .AY=Address, (zw)=Limit+1 ) : .AY=End+1
+kernFileBkload = *
+internBkload = *
+   stx bloadBank
+   jmp +
 ;*** aceFileBload( (zp)=Name, .AY=Address, (zw)=Limit+1 ) : .AY=End+1
 kernFileBload = *
 internBload = *
-   sta bloadAddress+0
+   ldx #0
+   stx bloadBank
++  sta bloadAddress+0
    sty bloadAddress+1
    jsr getDevice
    sta bloadDevice
@@ -833,7 +843,13 @@ internBload = *
    ldx bloadFilename+0
    ldy bloadFilename+1
    jsr kernelSetnam
-   lda #0
+!if useC128 {
+   lda bloadBank
+   beq +
+   ldx #0
+   jsr kernelSetbnk
+}
++  lda #0
    ldx bloadAddress+0
    ldy bloadAddress+1
    jsr kernelLoad

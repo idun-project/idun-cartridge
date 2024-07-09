@@ -77,7 +77,7 @@ jmp kernFileRename
 jmp kernFileInfo
 jmp kernFileIoctl
 jmp notImp  ;kernFileSelect
-jmp notImp  ;kernFileBlock
+jmp kernFileBkload
 
 jmp kernDirOpen
 jmp kernDirClose

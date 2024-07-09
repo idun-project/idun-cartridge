@@ -6,8 +6,9 @@
 ; It is used by both idunk and ROM bootstrap.
 
 ; Some parameters and addresses for Idun I/O interface.
-idDataport = $de00
-idRxBufLen = $de01
+!addr idDataport = $de00
+!addr idRxBufLen = $de01
+!addr STASH      = $02af
 
 !if useC128 {
   recvByte = $c8
@@ -171,6 +172,27 @@ pidReadseq = *
   sec
   rts
 + sta (readPtr),y
+  iny
+  cpy lengthBuf
+  beq +
+  dec recvAvail
+  beq --
+  jmp -
++ clc
+  rts
+pidBankload = *
+  stx lengthBuf
+  ldx #readPtr
+  stx $2b9
+  ldy #0
+  ; wait for data available
+--lda idRxBufLen
+  sta recvAvail
+  beq --
+  ; copy all available, up to lengthBuf
+- lda idDataport
+  ldx bloadBank
+  jsr STASH
   iny
   cpy lengthBuf
   beq +

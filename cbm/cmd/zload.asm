@@ -15,7 +15,6 @@ jmp main
 !byte 64,0 ;*stack,reserved
 
 ; Constants
-MAXPROG   = 53200    ;max. size Z80 binary
 FALSE     = 0x00
 bkRam0    = $3f
 bkRam1    = $7f
@@ -26,7 +25,7 @@ STASH     = $02af
 JMPFAR    = $ff71
 JSRFAR    = $ff6e
 z80Start  = $3000
-z80Load   = $3005
+z80Max    = $ff00
 zlUsage64 = *
               !pet "Usage: zload <z80program>",chrCR
               !pet "Wake up the Z80!",chrCR,0
@@ -94,6 +93,11 @@ startz80 = *
    lda #$7e    ;modify $ffd2 so ram01 is used for z80
    ldx #bkRam1
    jsr STASH
+   ;make sure we JMP $b00 after the Z80 program ends
+   lda #bkRam0
+   sta bkSelect
+   lda #>aceSharedBuf
+   sta $ffde
    lda #bkApp
    sta bkSelect
    ;copy the return from Z80 stub
@@ -103,7 +107,7 @@ startz80 = *
    sty zp+1
    ldy #0
 -  lda (zp),y
-   sta $1100,y
+   sta aceSharedBuf,y
    iny
    cpy #z80_stub_sz
    bne -
@@ -122,7 +126,7 @@ startz80 = *
    jsr JMPFAR  ;launch Z80 prog
    rts         ;return to shell
 
-;code we execute when returning from Z80 program; copy this to $1100
+;code we execute when returning from Z80 program; copy this to aceSharedBuf ($b00)
 z80ReturnStub = *
    lda #bkApp
    sta bkSelect
@@ -136,7 +140,7 @@ z80_stub_sz = *-z80ReturnStub
 
 loadz80 = *
    ;open file
-   lda #"p"
+   lda #"b"
    jsr open
    bcc +
    lda #<zlErrorMsg2    ;error opening file
@@ -157,77 +161,26 @@ loadz80 = *
    lda #<zlErrorMsg4    ;unrecognized binary
    ldy #>zlErrorMsg4
    rts
-+  ldx loadFd
-   jsr aceFileInfo      ;fetch load device/size
-   checkZ80Size = *
-   cpy #>MAXPROG
-   bcc +
-   bne +
-   cpx #<MAXPROG
++  lda loadFd
+   jsr close
+   ;get filename
++  lda #1
+   ldy #0
+   jsr getarg
+   ; z80 load from z80Start to $ff00 in RAM01
+   lda #<z80Max
+   ldy #>z80Max
+   sta zw
+   sty zw+1
+   lda #<z80Start
+   ldy #>z80Start
+   ldx #1
+   jsr aceFileBkload
    bcc +
    lda #<zlErrorMsg5    ;z80 binary too big
    ldy #>zlErrorMsg5
    sec
-   rts
-+  lda syswork+2
-   sta loadDev
-   lda syswork+0
-   sta loadSz+0
-   lda syswork+1
-   sta loadSz+1
-   lda #<z80Load
-   ldy #>z80Load        ;load prog addr in RAM bank 01
-   sta pageCnt+0
-   sty pageCnt+1
--  lda loadSz+1
-   beq +
-   lda #0
-   sta byteCnt
-   jsr loadRam01
-   dec loadSz+1
-   jmp -
-+  lda loadSz+0
-   sta byteCnt
-   jsr loadRam01
-   lda loadFd
-   jmp close
-
-;RAM bank 01 loader code
-;Warning! This is a dirty hack that
-;shamelessly bypasses idun kernel API
-loadRam01 = *
-   ldx pageCnt+0
-   ldy pageCnt+1
-   stx zp
-   sty zp+1
-   lda #zp
-   sta $2b9
-   ;TALK
-   lda loadDev
-   ora #$40
-   sta $de00
-   ; SECOND logical filenum
-   ldx loadFd
-   lda $f00,x  ;Fcb->Lfn
-   ora #$60
-   nop
-   nop
-   sta $de00
-   ldy #0
--  lda $de01
-   beq -
-   lda $de00
-   ldx #bkRam1
-   jsr STASH
-   iny
-   dec byteCnt
-   bne -
-   inc pageCnt+1
-   ;UNTALK
-   lda #$5f
-   sta $de00
-   clc
-   rts
++  rts
 
 ;load first bytes from progfile and confirm header
 checkHdr = *
@@ -243,22 +196,13 @@ checkHdr = *
    lda #<zlErrorMsg2    ;error reading file
    ldy #>zlErrorMsg2
    rts
-+  ;check hdr while copying it to bank 1
-   lda #<z80Start
-   ldy #>z80Start
-   sta testPtr+0
-   sty testPtr+1
-   lda #testPtr
-   sta $2b9
-   ldy #0
++  ;check hdr
 -  lda testHdr,y
    cmp progHdr,y
    beq +
    sec
    rts
-+  ldx #bkRam1
-   jsr STASH
-   iny
++  iny
    cpy #5
    bne -
    clc
