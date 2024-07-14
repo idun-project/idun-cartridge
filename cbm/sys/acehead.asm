@@ -11,8 +11,9 @@ aceStatB      = $f50   ;(176)
 aceSharedBuf  = $b00            ;(256)
 mailboxB      = aceSharedBuf
 aceExitData   = aceSharedBuf
+; Kernel jump table
 aceCallB      = $1303   ;(267)
-; IDUN: This block re-purposed for acetag data.
+; Load addresses for apps and tools
 aceAppAddress = $6000
 aceToolAddress= $6d00
 

@@ -76,38 +76,39 @@ TRUE  = $ff
 FALSE = $00
 
 ;=== Utility routines ===
-aceZpIrqsave = aceStatB+104 ;(48)
+aceZpIrqsave = aceStatB+104 ;(40)
+
 sysZpStore = *
-   ;backup syswork
-   ldx #$8f
-   jsr +
-   ;backup tbwork
-   ldx #$7f
-   jsr +
-   ;backup zp,zw, and mp
-   ldx #$ff
-+  ldy #15
--  lda $00,x
+   ;backup tbwork and syswork
+   ldx #$0f
+-  lda tbwork,x
    sta aceZpIrqsave,x
+   lda syswork,x
+   sta aceZpIrqsave+$10,x
    dex
-   dey
+   bpl -
+   ;backup zp,zw, and mp
+   ldx #$07
+-  lda zp,x
+   sta aceZpIrqsave+$20,x
+   dex
    bpl -
    rts
 
 sysZpRestore = *
-   ;restore syswork
-   ldx #$8f
-   jsr +
-   ;restore tbwork
-   ldx #$7f
-   jsr +
-   ;restore zp,zw, and mp
-   ldx #$ff
-+  ldy #15
+   ;restore tbwork and syswork
+   ldx #$0f
 -  lda aceZpIrqsave,x
-   sta $00,x
+   sta tbwork,x
+   lda aceZpIrqsave+$10,x
+   sta syswork,x
    dex
-   dey
+   bpl -
+   ;restore zp,zw, and mp
+   ldx #$07
+-  lda aceZpIrqsave+$20,x
+   sta zp,x
+   dex
    bpl -
    rts
 
@@ -223,7 +224,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$04-$07
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$08-$0b
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$0c-$0f
-   !word CmdNotImp,CmdNotImp,CmdRvs,CmdNotImp      ;$10-$13
+   !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$10-$13
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$14-$17
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$18-$1b
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$1c-$1f
@@ -231,7 +232,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$84-$87
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$88-$8b
    !word CmdNotImp,CmdNotImp,CmdNull,CmdNull       ;$8c-$8f
-   !word CmdNotImp,CmdNotImp,CmdRvsOff,CmdNotImp   ;$90-$93
+   !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$90-$93
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdMode4    ;$94-$97
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdMode8    ;$98-$9b
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$9c-$9f
@@ -481,20 +482,6 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
    sta $d011
    rts
 +  jmp CmdMode4
-CmdRvs = *
-   ldx #5
-   lda #$ff
-   sec
-   jsr aceWinOption
-   clc
-   rts
-CmdRvsOff = *
-   ldx #5
-   lda #$00
-   sec
-   jsr aceWinOption
-   clc
-   rts
 
 ;=== Hotkey handlers for capturing keyboard/joysticks
 
@@ -1797,13 +1784,14 @@ tbTempLayout !byte 0,0,0,0,0
 tbFrameSync = *
    jsr dispStatline
    ;restore layout settings overridden in dispStatline
-   ldy #4
+   ldy #5
    ldx #toolUserColor
--  lda aceZpIrqsave,x
+-  lda aceZpIrqsave,y
    sta $00,x
    inx
-   dey
-   bpl -
+   iny
+   cpy #10
+   bne -
    jsr _inactiveLayout
    _inactiveLayout = *
    rts

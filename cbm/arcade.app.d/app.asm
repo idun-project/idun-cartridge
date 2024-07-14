@@ -739,6 +739,7 @@ screen_colors:
 
 ;=== bss ===
 .charsetBuf = *
+macroUserCmds = *
 
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │

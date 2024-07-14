@@ -384,11 +384,13 @@ aceBootstrap = *
    sty nmiRedirect+1
    lda aceSuperCpuFlag
    pha
-   ldx #127
+   ;clear aceStatB area
+   ldx #0
    lda #0
 -  sta errno,x
-   dex
-   bpl -
+   inx
+   cpx #($1000-aceStatB)
+   bne -
    pla
    sta aceSuperCpuFlag
    lda #$68  ;"z:"
