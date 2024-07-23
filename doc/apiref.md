@@ -275,7 +275,20 @@ RETURNS:  .CS  = error occurred flag
 ALTERS :  .A, .X, .Y, errno
 ```
 
-Seeks to the given file position. Seek call will only work with special device drivers which are actually designed to randomly access files, such as memory-mapped files. see: [toolMmapLoad](toolbox.md#toolmmap) in [toolbox.md](toolbox.md).
+Seeks to the given file position. Seek call will only work with special device drivers which are actually designed to randomly access files, such as memory-mapped files. see: mmap.
+
+```
+NAME   :  mmap
+PURPOSE:  map a file into a block of expansion RAM
+ARGS   :  .AY  = tag name for the memory block (null-terminated)
+          (zp) = pointer to filename
+RETURNS:  .CS  = error occurred flag
+ALTERS :  .A, .X, .Y, errno
+```
+
+This API is for mapping files into a blob of expansion RAM, such that the file's contents are easily swappable into a working memory buffer. The memory can be retrieved using an assigned "tag" string value, which is typically just the file name, but can also be any chosen symbolic name.
+
+Additionally, tagged memory can be treated as a read-only, random-access file, when opened as `_:tag`. Opening a file with this naming convention will try to locate the file in expanded RAM, and will return a file descriptor (Fd) that can be used with the standard file I/O functions - `read`, `seek`, `close`.
 
 ```
 NAME   :  aceFileBload

@@ -24,8 +24,7 @@ aceTpaLimit       = aceStatB+97  ;(1)
 aceSuperCpuFlag   = aceStatB+98  ;(1)   ;SuperCPU/normal flag
 aceNmiWork        = aceStatB+99  ;(2)   ;for redirecting NMIs on the C64
 aceCurDirName     = aceStatB+101 ;(3)   ;name of current directory
-aceZpIrqsave      = aceStatB+104 ;(40)  ;toolbox Irq stash Zp here.
-;===end of aceStatB ($f50 - $fe0)
+;===end of aceStatB ($f00 - $f90 used; max $faf)
 
 aceMemTypes       = 4
 ;===end of kernel header info===

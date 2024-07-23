@@ -7,9 +7,8 @@ The Toolbox is a small set of reusable ML routines (~4 KiB) that are available a
 2. [win](#toolwin): An API for defining window areas managed by tools that take over the screen.
 3. [stat](#toolstat); An API for using the status bar that appears at the top of the screen when tools are running.
 4. [keys](#toolkeys): An API for programming command keys used by the tool.
-5. [mmap](#toolmmap): An API for loading data into memory and swapping cached memory with working memory. 
-6. [tmo](#tooltmo): An API for setting one-shot timeouts to invoke a callback.
-7. [sys](#toolsys): An API for calling System utilities
+5. [tmo](#tooltmo): An API for setting one-shot timeouts to invoke a callback.
+6. [sys](#toolsys): An API for calling System utilities
 
 ### toolUser
 This API works for console and full-screen tools. For console tools, it is mainly useful for creating text that stands out against the more mundane console output through the use of colors, lines, or borders. When used for a full-screen tool, it can also provide "popup" dialogs, menus, or help.
@@ -98,24 +97,6 @@ Any key code can be used by the tool. However, reusing key codes already defined
 In addition to command keys, up to 16 user-defined function key macro definitions may be created by the user with the `funkey` shell command. These user-defined keys are used to inject a macro string (up to 32 chars) any time the key is pressed from within any tool, including in the DOS shell itself.
 
 Only the keycodes $80-$8f may be used with the `funkey` command. This includes F1-F12 codes, plus SH-HELP, SH-RUN, SH-RETURN. The code for CO-1 ($81) is specifically excluded by `funkey` and is available as an application command key instead.
-
-### toolMmap
-
-This API is for mapping files into a blob of extended RAM, such that the file's contents are easily swappable into a working memory buffer. The memory can be retrieved using an assigned "tag" string value, which is typically just the file name, but can also be any chosen symbolic name.
-
-`toolMmapLoad` load contents of file into extended memory
-
-`toolMmapAlloc` allocate blob storage in extended memory
-
-`toolMmapFind` get far addr of memory blob named by tag
-
-`toolMmapFetch` retrieve whole blob into working buffer
-
-`toolMmapStash` store working buffer to backing store blob
-
-`toolMmapRealloc` deallocate and free extended memory, then alloc new blob
-
-Additionally, tagged memory can be treated as a read-only, random-access file, when opened with the device prefix `_:`. Opening a file with this prefix will try to locate the data in extended RAM using `mmapFind`, and will return a file descriptor (Fd) that can be used with the standard file I/O functions - `read`, `seek`, `close`.
 
 ### toolTmo
 

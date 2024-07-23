@@ -49,8 +49,6 @@ conHistbufScanPtr !fill 4,0
 conHistbufReplacePtr !fill 4,0
 conInitPrev = syswork+4
 
-;Defined in toolbox
-joykeyCapture      = $7f ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
 
 conInit = *
    lda #0

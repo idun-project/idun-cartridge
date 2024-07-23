@@ -8,7 +8,7 @@
 ; boundaries.
 
 ; Only a single byte "Pearson Hash" value is used to identify
-; the block. Hash collissions are possible, but unlikely. Attempts
+; the block. Hash collisions are possible, but unlikely. Attempts
 ; to alloc a new block with an existing hash value will error.
 
 mpsave      = $88 ;(4)
@@ -25,7 +25,7 @@ TAGPTR_NEXT = 255
 ; Entry #51 at tagMemTable[250..254] is temp storage used internally.
 ; tagMemTable[255] is the index of the next free "slot" for allocation.
 
-;Randomized values used to calulate a one-byte unique hash for a tag.
+;Randomized values used to calculate a one-byte unique hash for a tag.
 ;@see `jsr pearson`
 pearsonHash !byte $ce,$4a,$67,$b5,$3f,$2f,$5c,$c8,$fa,$53,$da,$7f,$96,$a8,$ea,$13
             !byte $dd,$7e,$1e,$ec,$e3,$0f,$8b,$86,$8f,$cb,$a6,$37,$c9,$ef,$4e,$83
@@ -145,7 +145,7 @@ kernTagAlloc = *  ;( (zp)=tag, zw=bytes : .CS=error,errno)
    sec
    rts
    ;allocate target memory 
-+   lda #$fd      ;reuse ProcId from acerd driver
++  lda #$fd      ;reuse ProcId from acerd driver
    sta allocProcID   
    lda zw+0
    cmp #0
@@ -155,7 +155,7 @@ kernTagAlloc = *  ;( (zp)=tag, zw=bytes : .CS=error,errno)
    adc #1
    jmp ++
 +  lda zw+1
-++ ldx #aceMemNull
+++ ldx #aceMemInternal
    ldy #aceMemInternal
    jsr kernPageAlloc
    bcc +
@@ -217,11 +217,11 @@ kernTagRealloc = *  ;( (zp)=tag, zw=bytes : .CS=error,errno)
    adc #1
    jmp ++
 +  lda zw+1
-++ ldx #aceMemNull
+++ ldx #aceMemInternal
    ldy #aceMemInternal
    jsr kernPageAlloc
    bcc +
-   jsr restoreMp  ;far mem allocaton fail
+   jsr restoreMp  ;far mem allocation fail
    rts
    ;insert memory ptr/size into slot
 +  ldx tagwork+3
@@ -242,27 +242,8 @@ kernTagRealloc = *  ;( (zp)=tag, zw=bytes : .CS=error,errno)
    rts
 
 getMemTypeFromBank = *  ;( (mp) : (mp))
-   ;first REU bank is...
-!if useC128 {
-   ldx #166
-} else {
-   ldx #194
-}
-   lda configBuf,x
-   cmp mp+2
-   bcc +
-   beq +
+   ;always use internal memory
    lda #aceMemInternal
-   sta mp+3
-   rts
-+  inx
-   lda configBuf,x
-   cmp mp+2
-   bcc +
-   lda #aceMemREU
-   sta mp+3
-   rts
-+  lda #aceMemTagged
    sta mp+3
    rts
 
@@ -330,6 +311,99 @@ kernTagStash = * ;( (zp)=src, (.AY)=tag : .CS=error)
 +  jsr kernMemStash
    jsr restoreMp
    clc
+   rts
+
+
+;=== mmap ===
+; An API for loading files and other data into extended RAM
+; for fast, random access (seek) and transfer into work buffers.
+mmap_tag  !byte 0,0
+mmap_file !byte 0,0
+mmap_size !byte 0,0
+kernTagMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
+   sta mmap_tag+0
+   sty mmap_tag+1
+   lda zp+0
+   ldy zp+1
+   sta mmap_file+0
+   sty mmap_file+1
+   ;check file on a virtual device
+   jsr kernMiscDeviceInfo
+   bcs +
+   lda #aceErrIllegalDevice
+   jmp .mmap_err
+   ;open file using pid driver
++  lda syswork+1
+   sta openDevice
+   lda #BlockLfn
+   sta openFcb
+   lda #2
+   sta openNameScan
+   lda #"P"
+   sta openMode
+   jsr pidOpen
+   bcc +
+   jmp .mmap_err
+   ;get the file's size
++  ldx #(BlockLfn*8+1)
+   lda fileinfoTable,x
+   sta mmap_size+0
+   sta zw+0
+   inx
+   lda fileinfoTable,x
+   sta mmap_size+1
+   sta zw+1
+   ;close file
+   lda #BlockLfn
+   sta closeFd
+   jsr pidClose
+   ;(re)alloc the extended mem
+   lda mmap_tag+0
+   sta zp+0
+   lda mmap_tag+1
+   sta zp+1
+   jsr kernTagRealloc
+   bcc +
+   ;failed allocation
+   lda #aceErrInsufficientMemory
+   jmp .mmap_err
+   ;get far ptr to mmap
++  lda mmap_tag+0
+   ldy mmap_tag+1
+   jsr pearson
+   jsr getTagFarPtr
+   ;reopen, read, and cache the file
+   lda mmap_file+0
+   ldy mmap_file+1
+   sta zp+0
+   sty zp+1
+   lda #"B"
+   jsr open
+   sta mmap_file+0
+   lda #<stringBuffer   ;using $400 (stringBuffer) as buf
+   ldy #>stringBuffer   ;for streaming in the file...
+   sta zp+0
+   sty zp+1
+-  jsr .setBuffer
+   ldx mmap_file+0
+   jsr read
+   jsr kernMemStash
+   inc mp+1
+   dec mmap_size+1
+   bpl -
+   lda mmap_file+0
+   jmp close
+.mmap_err:
+   sta errno
+   sec
+   rts
+.setBuffer:
+   bne +
+   lda mmap_size+0
+   ldy #0
+   rts
++  lda #0
+   ldy #1
    rts
 
 
@@ -681,17 +755,6 @@ internTagSeek = *
    bcc +
    lda #aceErrInvalidFilePos
    jmp tagReadError
-   ;set new position
-   lda seekPtr+0
-   ldx fcbIndex
-   inx
-   sta fileinfoTable,x
-   inx
-   lda seekPtr+1
-   cmp fileinfoTable,x
-   beq +
-   sta fileinfoTable,x
-   jsr preFetchPage
 +  rts
 
 

@@ -22,15 +22,14 @@ toolWinRestore	= toolCallB + 42
 toolStatTitle 	= toolCallB + 45     ;(.AY=title)
 toolStatMenu   = toolCallB + 48     ;(.AY=menu)
 toolStatEnable = toolCallB + 51     ;(.A=true || false)
-toolMmapLoad	= toolCallB + 54	;(.AY=tagname, (zp)=filename : .CS=error)
-toolTmoJifs	= toolCallB + 57	;(.AY=callback, .X=jifs)
-toolTmoSecs	= toolCallB + 60	;(.AY=callback, .X=seconds)
-toolTmoCancel 	= toolCallB + 63
-toolSyscall    = toolCallB + 66     ;( (zp)=system cmd, .AY=args)
+toolTmoJifs	= toolCallB + 54	      ;(.AY=callback, .X=jifs)
+toolTmoSecs	= toolCallB + 57	      ;(.AY=callback, .X=seconds)
+toolTmoCancel 	= toolCallB + 60
+toolSyscall    = toolCallB + 63     ;( (zp)=system cmd, .AY=args)
 }
 
 ;=== Tool Data Structs ===
-toolWinB		= toolCallB + 69
+toolWinB		= toolCallB + 66
 toolWinRegion     = toolWinB+0  ;(4)
 toolWinScroll 	= toolWinB+4  ;(4)
 toolWinPalette    = toolWinB+8  ;(8)
@@ -67,11 +66,6 @@ toolWinPalette    = toolWinB+8  ;(8)
 !byte .num              ;number of menu items
 .keycode: !byte 0       ;item keycode returned by menu
 }
-
-;=== Tool User Attributes (Zp) ===
-toolUserColor     = $75 ;(1)    b6..4=border pen, b2..0=text pen
-toolUserStyles    = $76 ;(1)    b7..0 = b|a|r|u|f|c|>|<
-joykeyCapture     = $7f ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
 
 ;=== Tool constants
 TRUE  = $ff

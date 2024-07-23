@@ -47,7 +47,6 @@ jmp toolWinRestore
 jmp toolStatTitle		; Set title in status line
 jmp toolStatMenu     ; Set pupop menu for HotkeyMenu
 jmp toolStatEnable   ; Enable/disable status line
-jmp toolMmapLoad
 jmp toolTmoJifs
 jmp toolTmoSecs
 jmp toolTmoCancel
@@ -60,24 +59,13 @@ toolWinScroll 	      !fill 4,0   ;modified by vt-100 emulation (tty)
 toolWinPalette       !fill 8,0
 
 ;=== Tool zero-page and ui vars 
-tbwork             = $70 ;(5)    tbwork+0..4
-toolUserColor      = $75 ;(1)    x|bor|x|txt
-toolUserStyles     = $76 ;(1)    b|a|r|u|f|c|>|<
-uiLayoutFlag       = $77 ;(1)    h|r|o|x|x|x|x|x|
-uiNodeWidth        = $78 ;(1)
-uiNodeHeight       = $79 ;(1)
-uiNodePos          = $7a ;(2)    X, Y
-uiClientRts        = $7c ;(2)    AddrL, AddrH
-uiGadgetFlags      = $7e ;(1)    f|s|x|x|x|pen
-joykeyCapture      = $7f ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
+tbwork             = $90 ;(6)    tbwork+0..5
 
 ;=== Tool constants
 TRUE  = $ff
 FALSE = $00
 
 ;=== Utility routines ===
-aceZpIrqsave = aceStatB+104 ;(40)
-
 sysZpStore = *
    ;backup tbwork and syswork
    ldx #$0f
@@ -1047,7 +1035,6 @@ toolUserMenu = *
    rts
 
 ;for joystick controls
-joy1save !byte $ff
 joy2save !byte $ff
 joyDelayCounter !byte 0
 _toolJoyDelay = *
@@ -1085,7 +1072,6 @@ _toolJoystick = *
    bcs +
    lda #$11    ;HotkeyDown
    rts 
-   ;check joy1 left
 +  lsr
    bcs +
    lda #$9d    ;HotkeyLeft
@@ -1104,28 +1090,17 @@ _toolReadInput = *
    bcs +
    jmp aceConGetkey
 +  jsr aceConJoystick
-   ;check joy1
-   cmp #$ff
-   beq ++
-   cmp joy1save
-   beq +
-   sta joy1save
-   jsr _toolJoyDelay
--  jsr _toolJoystick
-   bcs _toolReadInput
-   rts
-   ;repeat delay
-+  dec joyDelayCounter
-   bne _toolReadInput
-   jmp -
    ;check joy2
-++ txa
+   txa
    cmp #$ff
    beq _toolReadInput
    cmp joy2save
    beq +
    sta joy2save
    jsr _toolJoyDelay
+-  jsr _toolJoystick
+   bcs _toolReadInput
+   rts
    ;repeat delay
 +  dec joyDelayCounter
    bne _toolReadInput
@@ -1594,65 +1569,6 @@ div32 = *
   sta     divn+5     ; and high byte.
 ++rts
 
-;=== mmap routines ===
-; An API for loading files and other data into extended RAM
-; for fast access and transfer to/from working buffers.
-toolMmapLoad = *       ;(.AY=tagname, (zp)=filename : .CS=error)
-   sta tbwork+2
-   sty tbwork+3
-   lda zp+0
-   sta tbwork+0
-   lda zp+1
-   sta tbwork+1
-   ldy #1
-   lda (tbwork),y
-   +cmpASCII ":"
-   bne +
-   ; skip over ".:" prefix in tag name
-   lda tbwork+0
-   clc
-   adc #2
-   sta tbwork+0
-   lda tbwork+1
-   adc #0
-   sta tbwork+1
-   ;try to load the file above dos.app
-+  lda aceMemTop+0
-   sta zw+0
-   lda aceMemTop+1
-   sta zw+1
-   lda #<bssAppEnd
-   ldy #>bssAppEnd
-   jsr aceFileBload
-   bcc +
-   ;fail on loading
-   rts
-   ;Determine size of file
-+  sta zw+0
-   sty zw+1
-   sec
-   sbc #<bssAppEnd
-   sta zw+0
-   lda zw+1
-   sbc #>bssAppEnd
-   sta zw+1
-   ;alloc tagged
-   lda tbwork+2
-   sta zp+0
-   lda tbwork+3
-   sta zp+1
-   jsr aceTagRealloc
-   bcc +
-   rts
-   ;stash file in tagged memory
-+  lda #<bssAppEnd
-   sta zp+0
-   lda #>bssAppEnd
-   sta zp+1
-   lda tbwork+2
-   ldy tbwork+3
-   jmp aceTagStash
-
 
 ;=== tmo routines ===
 ; An API for setting one-shot timeouts to invoke a callback.
@@ -1782,16 +1698,19 @@ toolSyscall = *
 tbActiveLayout = _inactiveLayout-2
 tbTempLayout !byte 0,0,0,0,0
 tbFrameSync = *
+   ;store layout settings
+   ldx #4
+-  lda toolUserColor,x
+   sta tbTempLayout,x
+   dex
+   bpl -
    jsr dispStatline
-   ;restore layout settings overridden in dispStatline
-   ldy #5
-   ldx #toolUserColor
--  lda aceZpIrqsave,y
-   sta $00,x
-   inx
-   iny
-   cpy #10
-   bne -
+   ;restore layout settings
+   ldx #4
+-  lda tbTempLayout,x
+   sta toolUserColor,x
+   dex
+   bpl -
    jsr _inactiveLayout
    _inactiveLayout = *
    rts

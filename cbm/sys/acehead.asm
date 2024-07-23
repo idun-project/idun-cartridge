@@ -6,7 +6,7 @@
 ;
 ; System-interface declarations
 
-aceStatB      = $f50   ;(176)
+aceStatB      = $f00   ;(176)
 ; IDUN: This block re-purposed for various data-sharing uses
 aceSharedBuf  = $b00            ;(256)
 mailboxB      = aceSharedBuf
@@ -39,7 +39,18 @@ aceMouseLimitX   = aceStatB+46         ;(2)
 aceMouseLimitY   = aceStatB+48         ;(2)
 aceMouseScaleX   = aceStatB+50         ;(1)
 aceMouseScaleY   = aceStatB+51         ;(2)
-;next StatB      = aceStatB+53         ;max. 64 bytes!
+;toolbox variables
+toolUserColor    = aceStatB+53         ;(1)    x|bor|x|txt
+toolUserStyles   = aceStatB+54         ;(1)    b|a|r|u|f|c|>|<
+uiLayoutFlag     = aceStatB+55         ;(1)    h|r|o|x|x|x|x|x|
+uiNodeWidth      = aceStatB+56         ;(1)
+uiNodeHeight     = aceStatB+57         ;(1)
+uiNodePos        = aceStatB+58         ;(2)    X, Y
+uiClientRts      = aceStatB+60         ;(2)    AddrL, AddrH
+uiGadgetFlags    = aceStatB+62         ;(1)    f|s|x|x|x|pen
+joykeyCapture    = aceStatB+63         ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
+;private kernel vars to aceStatb+103
+aceZpIrqsave     = aceStatB+104        ;(40) toolbox Irq stash Zp here.
 
 open          = aceCallB+0   ;( (zp)=name, .A=mode[rwaWA] ) : .A=fd
 close         = aceCallB+3   ;( .A=fd )
@@ -51,7 +62,7 @@ aceFileRemove = aceCallB+18  ;( (zp)=name )
 aceFileRename = aceCallB+21  ;( (zp)=oldName, (zw)=newName )
 aceFileInfo   = aceCallB+24  ;( .X=fd ) : .A=devType,.X=cols,.Y=rows,sw+0=remain,.XY=size
 aceFileIoctl  = aceCallB+27  ;( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
-aceFileSelect = aceCallB+30  ;( .A=conFlags, .X=fdCount, sw=... ) : .A=fl,.X=fd
+mmap          = aceCallB+30  ;(.AY=tagname, (zp)=filename : .CS=error)
 aceFileBkload = aceCallB+33  ;( .X=bank (zp)=name, .AY=loadAddr, (zw)=limit+1):.AY=end+1
 
 aceDirOpen    = aceCallB+36  ;( (zp)=dirName ) : .A=fd

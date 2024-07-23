@@ -190,7 +190,7 @@ ashrc = *
    ;** mmap load the batch file
    lda #<memBatchTag
    ldy #>memBatchTag
-   jsr toolMmapLoad
+   jsr mmap
    bcc +
    jmp ashrcError
    ;** open mmap file
@@ -1887,7 +1887,7 @@ exec_batch = *
    ;** mmap load the batch file
    lda #<memBatchTag
    ldy #>memBatchTag
-   jsr toolMmapLoad
+   jsr mmap
    bcc +
    jmp handleScriptError
 +  ldy #0
@@ -1935,7 +1935,7 @@ resident = *
    adc #0
    tay
    lda reTagName
-   jmp toolMmapLoad
+   jmp mmap
 
 
 ;===funkey===
@@ -2050,7 +2050,7 @@ doskeyErrMsg = *
    !pet "usage: doskey alias ",chrQuote,"command",chrQuote
    !byte chrCR,0
 macroSizeMsg = *
-   !pet "error: diskey macro memory space limit."
+   !pet "error: doskey macro memory space limit."
    !byte chrCR,0
 
 

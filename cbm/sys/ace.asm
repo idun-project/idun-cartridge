@@ -9,33 +9,25 @@
 ; tools and applications, such as the Shell.
 
 ;* system zero-page memory usage:
-;*   $02-$7f = application work area
+;*   $02-$6f = application work area
+;*   $70-$7f = toolbox work area (available to apps not run from shell)
 ;*   $80-$8f = system work area
 ;*   $f8-$ff = system parameter area
 
 ;* regular RAM0 organization
 ;*   $0100-$01ff = processor stack (0.25K)
-;*   $0200-$0eff = system storage (3.25K)
+;*   $0200-$0aff = system storage (2.25K)
+;*   $0b00-$0cff = kernel shared data/config buffers (0.5K)
+;*   $0d00-$0eff = Reserved for ESP (0.5K)
 ;*   $0f00-$0fff = kernel-interface variables (0.25K)
-;*   $1000-$12ff = system storage / free on the C64 (0.75K)
-;*   $1300-$6fff = ACE kernel and device drivers (23.25K)
-;*   $7000-$bfff = application area & stack (20K / configurable size)
-;*   $c000-$eeff = free memory (11.25K)
-;*   $ef00-$efff = modem transmit buffer (0.25K)
+;*   $1000-$12ff = Reserved kernel code space (0.75K)
+;*   $1300-$5fff = ACE kernel and device drivers (19.25K)
+;*   $6000-$bfff = application area & stack (24K / configurable size)
+;*   $c000-$efff = free memory (12K)
 ;*   $f000-$f7ff = regular character set (2K)
 ;*   $f800-$fbff = vic 40-column screen (1K)
 ;*   $fc00-$feff = free memory (0.75K)
 ;*   $ff00-$ffff = system storage (0.25K)
-
-;* high-RAM0 organization for C64 with soft-80 screen configured:
-;*   $c000-$c2ff = free memory (0.75K)
-;*   $c300-$c3ff = modem transmit buffer (0.25K)
-;*   $c400-$cbff = soft-80 char storage (2K)
-;*   $cc00-$cfff = vic 40-column screen (1K)
-;*   $d000-$d7ff = regular character set (2K)
-;*   $d800-$dfff = soft-80 4-bit character set (2K)
-;*   $e000-$ff3f = bitmapped screen (7.81K)
-;*   $ff40-$ffff = system storage (0.19K)
 
 ;*** Essential header files
 !source "sys/acehead.asm"
@@ -76,7 +68,7 @@ jmp kernFileRemove
 jmp kernFileRename
 jmp kernFileInfo
 jmp kernFileIoctl
-jmp notImp  ;kernFileSelect
+jmp kernTagMmap
 jmp kernFileBkload
 
 jmp kernDirOpen
@@ -234,11 +226,11 @@ scpuMrAll = $d077 ;mirror all
 scpuMrOff = $d076 ;mirror only BASIC screen
 
 fcbCount = 16
-lftable   =$f00
-devtable  =$f10
-satable   =$f20
-eoftable  =$f30
-pidtable  =$f40
+lftable   =$fb0
+devtable  =$fc0
+satable   =$fd0
+eoftable  =$fe0
+pidtable  =$ff0
 lfnull = $ff
 cmdlf  = 66
 fcbNull = $ff
@@ -389,7 +381,7 @@ aceBootstrap = *
    lda #0
 -  sta errno,x
    inx
-   cpx #($1000-aceStatB)
+   cpx #(lftable-aceStatB)
    bne -
    pla
    sta aceSuperCpuFlag
