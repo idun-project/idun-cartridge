@@ -319,7 +319,6 @@ kernTagStash = * ;( (zp)=src, (.AY)=tag : .CS=error)
 ; for fast, random access (seek) and transfer into work buffers.
 mmap_tag  !byte 0,0
 mmap_file !byte 0,0
-mmap_size !byte 0,0
 kernTagMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
    sta mmap_tag+0
    sty mmap_tag+1
@@ -327,37 +326,14 @@ kernTagMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
    ldy zp+1
    sta mmap_file+0
    sty mmap_file+1
-   ;check file on a virtual device
-   jsr kernMiscDeviceInfo
-   bcs +
-   lda #aceErrIllegalDevice
-   jmp .mmap_err
-   ;open file using pid driver
-+  lda syswork+1
-   sta openDevice
-   lda #BlockLfn
-   sta openFcb
-   lda #2
-   sta openNameScan
-   lda #"P"
-   sta openMode
-   jsr pidOpen
+   ;get the file's size (aceFileStat)
+   jsr kernFileStat 
    bcc +
+   lda #aceErrFileNotFound
    jmp .mmap_err
-   ;get the file's size
-+  ldx #(BlockLfn*8+1)
-   lda fileinfoTable,x
-   sta mmap_size+0
-   sta zw+0
-   inx
-   lda fileinfoTable,x
-   sta mmap_size+1
-   sta zw+1
-   ;close file
-   lda #BlockLfn
-   sta closeFd
-   jsr pidClose
    ;(re)alloc the extended mem
++  sta zw+0
+   sty zw+1
    lda mmap_tag+0
    sta zp+0
    lda mmap_tag+1
@@ -389,7 +365,7 @@ kernTagMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
    jsr read
    jsr kernMemStash
    inc mp+1
-   dec mmap_size+1
+   dec aceDirentBytes+1
    bpl -
    lda mmap_file+0
    jmp close
@@ -399,7 +375,7 @@ kernTagMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
    rts
 .setBuffer:
    bne +
-   lda mmap_size+0
+   lda aceDirentBytes+0
    ldy #0
    rts
 +  lda #0

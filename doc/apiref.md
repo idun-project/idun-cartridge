@@ -325,19 +325,15 @@ ALTERS :  .A, .X, .Y, errno
 Renames a file or directory.  If a file with the new name already exists, then the operation will be aborted and a "file exists" error will be returned.  On most devices, the file to be renamed must be in the current directory and the new name may not include any path, just a filename.
 
 ```
-NAME   :  aceFileInfo
-PURPOSE:  give information about file/device
-ARGS   :  .X   = file descriptor number
-RETURNS:  .A   = device type code (0=console, 1=char-dev, 2=disk-dev)
-          .X   = number of columns on device for console or char-dev
-          .Y   = number of rows per "page" of device for console/char
-      -OR- in the case of virtual drive files
-          sw+0 = remaining read bytes for file (LSB,MSB)
-          sw+2 = virtual device channel
-          .XY  = total size of file (LSB,MSB)
+NAME   :  aceFileStat
+PURPOSE:  give information about file
+ARGS   :  (zp) = pathname
+RETURNS:  .AY  = size of file in bytes
           .CS  = error occurred flag
-ALTERS :  errno
+ALTERS :  .A, .X, .Y, errno, aceDirentBuffer
 ```
+
+Reads the directory information for a single file on a virtual drive or floppy. If the file exists, then all the metadata for the file is retrieved and the aceDirentBuffer is filled with that metadata.
 
 ```
 NAME   :  aceFileIoctl

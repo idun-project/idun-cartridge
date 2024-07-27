@@ -60,7 +60,7 @@ seek          = aceCallB+12  ;( .X=fd, .AY=newpos : .CS=error,errno)
 aceFileBload  = aceCallB+15  ;( (zp)=name, .AY=loadAddr, (zw)=limit+1):.AY=end+1
 aceFileRemove = aceCallB+18  ;( (zp)=name )
 aceFileRename = aceCallB+21  ;( (zp)=oldName, (zw)=newName )
-aceFileInfo   = aceCallB+24  ;( .X=fd ) : .A=devType,.X=cols,.Y=rows,sw+0=remain,.XY=size
+aceFileStat   = aceCallB+24  ;( (zp)=path ) : .AY=filesz,.CS=error,errno,fills aceDirentBuffer
 aceFileIoctl  = aceCallB+27  ;( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
 mmap          = aceCallB+30  ;(.AY=tagname, (zp)=filename : .CS=error)
 aceFileBkload = aceCallB+33  ;( .X=bank (zp)=name, .AY=loadAddr, (zw)=limit+1):.AY=end+1

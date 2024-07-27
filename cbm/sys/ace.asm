@@ -66,7 +66,7 @@ jmp kernFileLseek
 jmp kernFileBload
 jmp kernFileRemove
 jmp kernFileRename
-jmp kernFileInfo
+jmp kernFileStat
 jmp kernFileIoctl
 jmp kernTagMmap
 jmp kernFileBkload

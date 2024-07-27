@@ -885,63 +885,36 @@ internBload = *
    ldy bloadAddress+1
    rts
 
-;*** aceFileInfo ( .X=fd ) : .A=devType,.X=cols,.Y=rows
-;***                         -or- sw+0=remains,sw+2=virt.dev,.(XY)=size
-
-kernFileInfo = *
-   stx syswork+3
-   lda devtable,x
-   tax
-   lda configBuf+0,x
-   cmp #2
-   bne +
-   jsr kernWinSize
-   tay
-   lda #0
-   rts
-+  cmp #1
-   bne +
--  ldx #80
-   ldy #66
-   rts
-+  cmp #4
-   beq +
-   cmp #7
-   beq +
-   lda #1
-   jmp -
-   ;for virtual drive files, get size
-+  lda syswork+3
-   asl
-   asl
-   asl
-   tax
-   lda fileinfoTable,x
-   sta syswork+2 
-   inx
-   lda fileinfoTable,x
-   sta syswork+0
-   inx
-   lda fileinfoTable,x
-   sta syswork+1
-   inx
-   lda fileinfoTable,x
-   sta syswork+3
-   inx
-   lda fileinfoTable,x
-   tay
-   ldx syswork+3 
-   lda #2
-   clc
-   rts
-
-;*** aceFileStat( ... ) : ...
+;*** aceFileStat ( (zp)=path ) : .AY=file size,.CS=error,errno
+;                                .CC=filled aceDirentBuffer
 
 kernFileStat = *
-   lda #aceErrNotImplemented
+   jsr kernMiscDeviceInfo
+   bcs +
+   lda #aceErrIllegalDevice
    sta errno
-   sec
    rts
++  lda syswork+1
+   sta openDevice
+   lda #"r"
+   sta openMode
+   lda #"#"
+   sta cmdPrefix
+   lda #2
+   sta openNameScan
+   jsr pidCommandSend
+   lda #<statRespHandler
+   ldy #>statRespHandler
+   jmp pidCommandResponse
+statRespHandler = *
+   lda #<aceDirentBuffer
+   ldy #>aceDirentBuffer
+   ldx #aceDirentLength
+   jsr kernModemGet
+   lda aceDirentBytes+0
+   ldy aceDirentBytes+1
+   rts
+
 
 ;*** aceFileIoctl ( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
 

@@ -296,10 +296,9 @@ shell = *
 shellReady2 !pet "> ",0
 
 shellCheckPromptability = *
-   ldx inputFd
-   jsr aceFileInfo
+   lda inputFd
    ldx #$ff
-   cmp #0
+   cmp #stdin
    beq +
    ldx #0
 +  stx shellPromptFlag
@@ -2202,17 +2201,13 @@ cat = *
    lda #0
    sta catAbort
    jsr getBufferParms
-   ldx #stdout
-   jsr aceFileInfo
-   cmp #0
-   bne +
    lda catBufferLength+1
    beq +
    lda #<254
    ldy #>254
    sta catBufferLength+0
    sty catBufferLength+1
-+  lda #1
+   lda #1
    ldy #0
    sta catArg+0
    sty catArg+1
@@ -2585,25 +2580,21 @@ dir = *
    bne dirLsLong
 
 dirLsShort = *
-   ldx #1
-   jsr aceFileInfo
+   ldx toolWinScroll+1
    stx dirChCols
-   cmp #0
-   bne +
    txa
-   ldx #$ff
+   ldx #0
 -  inx
    sbc #20
    bcs -
    txa
    bne ++
-+  lda #1
+   lda #1
 ++ sta dirColumns
    jmp dirCommon
 
 dirLsLong = *
-   ldx #1
-   jsr aceFileInfo
+   ldx toolWinScroll+1
    stx dirChCols
    lda #1
    sta dirColumns
@@ -3015,8 +3006,7 @@ dirPutInDate = *
 
 
 dirFile = *
-   ldx #stdout
-   jsr aceFileInfo
+   ldx toolWinScroll+1
    cpx #60
    bcc +
    lda #<dirFileLongMsg

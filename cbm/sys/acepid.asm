@@ -202,6 +202,7 @@ pidDoUnlisten = *
   lda #$3F
   jsr pidChOut
   ; Get errno
+pidContUnlisten = *
 - jsr pidChIn
   bcs -
   sta errno
@@ -806,9 +807,16 @@ pidCommandStart = *
   ora #$60
   jsr pidChOut
 + rts
+pidCommandResponse = *
+  sta .pidCmdHandler+1
+  sty .pidCmdHandler+2
+  jmp +
 pidCommandFinish = *
+  lda #<pidContUnlisten
+  ldy #>pidContUnlisten
+  jmp pidCommandResponse
   ; send command prefix
-  lda cmdPrefix
++ lda cmdPrefix
   jsr pidChOut
   ; followed by rest of command
   ldy openNameScan
@@ -824,7 +832,10 @@ pidCommandFinish = *
   jsr pidChOut
   lda #0
   jsr pidChOut
-  jmp pidDoUnlisten
+  lda #$3F
+  jsr pidChOut
+.pidCmdHandler:
+  jmp pidContUnlisten
 pidCommandClose = *
 +	lda #CommandLfn
   sta closeFd
