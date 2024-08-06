@@ -12,6 +12,8 @@
     CHRGOT = $0386
     RUNMOD = $7f
     TXTPTR = $3d
+    PATCH_ROM_JUMP = $e600   ;for patched ROMs
+    jump_offset    = $0b
 } else {
     useC128 = 0
     useC64  = 1
@@ -21,6 +23,8 @@
     CHRGOT = $79
     MSGFLG = $9d
     TXTPTR = $7a
+    PATCH_ROM_JUMP = $f730   ;for patched ROMs
+    jump_offset    = $3b
 }
 ; Local vars stored at the end of RAM-resident block
 RAMVAR      = RAMR+$f8
@@ -35,9 +39,7 @@ MyDevice    = $9b       ;(1)
 IdunDrive   = $9c       ;(1)
 
 ;** ROM entry points
-PATCH_ROM_JUMP = $e600  ;for patched ROMs
 HOOK_ROM_JUMP  = $8000   ;for EXROM
-jump_offset    = $0b
 hookOpen       = <jump_offset+0
 hookLoad       = <jump_offset+3
 hookSave       = <jump_offset+6
@@ -761,7 +763,6 @@ Install = *
     sta IERROR+0
     sty IERROR+1
     ;check for patched ROM
-!if useC128 {
     lda $ff80
     bpl +
     ;Using patched ROM
@@ -771,7 +772,6 @@ Install = *
     lda $81ff
     lda $8000
     jmp CopyRUNR
-}
     ;Install hook driver
 +   lda ILOAD+0
     ldy ILOAD+1
@@ -816,7 +816,6 @@ CopyRAMR = *
     cpx #<RAMVAR    ;stop when reach vars area
     bne -
     ;check for patched ROM
-!if useC128 {
     lda $ff80
     bpl +
     ;Using patched ROM
@@ -825,7 +824,6 @@ CopyRAMR = *
     ldy #>patchcall
     sta enPatchRom+0
     sty enPatchRom+1
-}
 +   cli
     ;** RAM_START area relocated, then
     ;** overwritten with the config blob
