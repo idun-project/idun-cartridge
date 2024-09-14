@@ -59,7 +59,7 @@ toolWinScroll 	      !fill 4,0   ;modified by vt-100 emulation (tty)
 toolWinPalette       !fill 8,0
 
 ;=== Tool zero-page and ui vars 
-tbwork             = $90 ;(6)    tbwork+0..5
+tbwork             = $78 ;(6)    tbwork+0..5
 
 ;=== Tool constants
 TRUE  = $ff
@@ -1080,10 +1080,8 @@ _toolJoystick = *
 toolUserMenuNav = *
    ;prevent FIRE button repeating
    jsr aceConJoystick
-   cmp #$ef
-   beq toolUserMenuNav
    txa
-   cmp #$6f
+   and #$10
    beq toolUserMenuNav
 _toolReadInput = *
    jsr aceConKeyAvail
@@ -1092,7 +1090,8 @@ _toolReadInput = *
 +  jsr aceConJoystick
    ;check joy2
    txa
-   cmp #$ff
+   and #$1f
+   cmp #$1f
    beq _toolReadInput
    cmp joy2save
    beq +
