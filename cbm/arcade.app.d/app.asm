@@ -360,7 +360,7 @@ appRunLoop = *
 	bcs +
 	jsr updateSearchBox
 	jmp ++
-+	jsr aceConGetkey
++	jsr toolUserMenuNav
 	cmp #HotkeyDown
 	beq selectNext
 	cmp #HotkeyUp

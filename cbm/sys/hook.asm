@@ -259,7 +259,7 @@ idunMount = *
 +   lda IdunDrive
     sta configDrv
     lda #4
-    sta IdunDrive   ;^: device
+    sta IdunDrive   ;d: device
     jsr idunCmdOpen
     beq +
     jmp idunCmdError
@@ -273,6 +273,10 @@ idunMount = *
     lda configDrv
     clc
     adc #"@"
+    jsr idunChOut
+    lda #","
+    jsr idunChOut
+    lda #"w"        ;mount as read/write
     jsr idunChOut
     lda #0
     jsr idunChOut

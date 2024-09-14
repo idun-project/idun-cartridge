@@ -1,7 +1,7 @@
 
 start tok128 resc/boot128.prg
 10 COLOR 0,12:COLOR 4,12:COLOR 5,16:COLOR 6,1
-20 c=5770:iec=155:drv=156:PRINT CHR$(142);CHR$(147)
+20 c=5780:iec=155:drv=156:PRINT CHR$(142);CHR$(147)
 30 PRINT"{yellow}{cm r}{cm a}CI{cm r} {cm r}UCI{space*16}basic commands"
 40 PRINT"BB {125*2} B{125} {125} {light gray}drive {reverse on}c:{reverse off}{space*7}cd";CHR$(34);"/directory";CHR$(34)
 50 PRINT"{yellow}BB {125}B B{125} {125}{space*19}{light gray}";CHR$(34);":disk.img";CHR$(34)
@@ -29,7 +29,7 @@ start tok128 resc/boot128.prg
 217 PRINT "{space*10}"
 218 PRINT "{yellow}"+ver$+" "+rom$+"{white}"
 219 PRINT CHR$(17);CHR$(17);
-220 SYS6201
+220 SYS6211
 230 PRINT CHR$(19);CHR$(18);CHR$(17);CHR$(17);SPC(17);CHR$((PEEK(drv)+64));
 240 PRINT CHR$(157);CHR$(17);CHR$(17);
 250 PRINT USING ">##";STR$(PEEK(iec))
