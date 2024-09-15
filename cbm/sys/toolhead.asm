@@ -28,6 +28,16 @@ toolTmoCancel 	= toolCallB + 60
 toolSyscall    = toolCallB + 63     ;( (zp)=system cmd, .AY=args)
 }
 
+;=== Tool zero-page and ui vars
+toolUserColor    = $6f         ;(1)    x|bor|x|txt
+toolUserStyles   = $70         ;(1)    b|a|r|u|f|c|>|<
+uiLayoutFlag     = $71         ;(1)    h|r|o|x|x|x|x|x|
+uiNodeWidth      = $72         ;(1)
+uiNodeHeight     = $73         ;(1)
+uiNodePos        = $74         ;(2)    X, Y
+uiClientRts      = $76         ;(2)    AddrL, AddrH
+uiGadgetFlags    = $78         ;(1)    f|s|x|x|x|pen
+
 ;=== Tool Data Structs ===
 toolWinB		= toolCallB + 66
 toolWinRegion     = toolWinB+0  ;(4)

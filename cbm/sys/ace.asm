@@ -9,8 +9,8 @@
 ; tools and applications, such as the Shell.
 
 ;* system zero-page memory usage:
-;*   $02-$79 = application work area
-;*   $7a-$7f = toolbox work area (available to apps not run from shell)
+;*   $02-$6e = application work area
+;*   $6f-$7f = toolbox work area (available to apps not run from shell)
 ;*   $80-$8f = system work area
 ;*   $f8-$ff = system parameter area
 

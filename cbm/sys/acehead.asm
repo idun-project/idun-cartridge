@@ -39,17 +39,9 @@ aceMouseLimitX   = aceStatB+46         ;(2)
 aceMouseLimitY   = aceStatB+48         ;(2)
 aceMouseScaleX   = aceStatB+50         ;(1)
 aceMouseScaleY   = aceStatB+51         ;(2)
-;toolbox variables
-toolUserColor    = aceStatB+53         ;(1)    x|bor|x|txt
-toolUserStyles   = aceStatB+54         ;(1)    b|a|r|u|f|c|>|<
-uiLayoutFlag     = aceStatB+55         ;(1)    h|r|o|x|x|x|x|x|
-uiNodeWidth      = aceStatB+56         ;(1)
-uiNodeHeight     = aceStatB+57         ;(1)
-uiNodePos        = aceStatB+58         ;(2)    X, Y
-uiClientRts      = aceStatB+60         ;(2)    AddrL, AddrH
-uiGadgetFlags    = aceStatB+62         ;(1)    f|s|x|x|x|pen
-joykeyCapture    = aceStatB+63         ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
-;private kernel vars to aceStatb+103
+joykeyCapture    = aceStatB+53         ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
+;free public kernel vars from +54 through +63
+;private kernel vars from +64 through +103
 aceZpIrqsave     = aceStatB+104        ;(40) toolbox Irq stash Zp here.
 
 open          = aceCallB+0   ;( (zp)=name, .A=mode[rwaWA] ) : .A=fd

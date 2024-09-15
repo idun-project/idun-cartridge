@@ -58,8 +58,16 @@ toolWinRegion        !fill 4,0   ;#rows, #cols, top, left
 toolWinScroll 	      !fill 4,0   ;modified by vt-100 emulation (tty)
 toolWinPalette       !fill 8,0
 
-;=== Tool zero-page and ui vars 
-tbwork             = $78 ;(6)    tbwork+0..5
+;=== Tool zero-page and ui vars
+toolUserColor    = $6f         ;(1)    x|bor|x|txt
+toolUserStyles   = $70         ;(1)    b|a|r|u|f|c|>|<
+uiLayoutFlag     = $71         ;(1)    h|r|o|x|x|x|x|x|
+uiNodeWidth      = $72         ;(1)
+uiNodeHeight     = $73         ;(1)
+uiNodePos        = $74         ;(2)    X, Y
+uiClientRts      = $76         ;(2)    AddrL, AddrH
+uiGadgetFlags    = $78         ;(1)    f|s|x|x|x|pen
+tbwork           = $79 ;(5)    tbwork+0..4 is zp $79-$7d
 
 ;=== Tool constants
 TRUE  = $ff
@@ -67,9 +75,9 @@ FALSE = $00
 
 ;=== Utility routines ===
 sysZpStore = *
-   ;backup tbwork and syswork
+   ;backup tb vars and syswork
    ldx #$0f
--  lda tbwork,x
+-  lda toolUserColor,x
    sta aceZpIrqsave,x
    lda syswork,x
    sta aceZpIrqsave+$10,x
@@ -84,10 +92,10 @@ sysZpStore = *
    rts
 
 sysZpRestore = *
-   ;restore tbwork and syswork
+   ;restore tb vars and syswork
    ldx #$0f
 -  lda aceZpIrqsave,x
-   sta tbwork,x
+   sta toolUserColor,x
    lda aceZpIrqsave+$10,x
    sta syswork,x
    dex
