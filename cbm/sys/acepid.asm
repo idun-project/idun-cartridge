@@ -603,15 +603,14 @@ pidBload = *
   sta readlentemp+1
   ldx #BlockLfn
   +getFileinfoLength
-  ; Check file length vs. space
+  ; Set read length
   lda zz+1
   cmp readlentemp+1
   bcc +
-  ; File too big
-  lda #aceErrBloadTruncated
-  sta errno
-  sec
-  rts
+  lda readlentemp+0
+  sta zz+0
+  lda readlentemp+1
+  sta zz+1
   ; READ file
 + sta BloadPgs
   ; TALK
