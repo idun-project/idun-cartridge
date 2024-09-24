@@ -99,7 +99,9 @@ mainInit = *
    sta charColor
    ;IDUN: Setup hotkeys
    jsr HotKeyInit
-   jmp term
+   jsr term    ;only returns on terminal quit
+   jsr modemClose
+   jmp die
 
 modemOpen = *
    ;** open modem file

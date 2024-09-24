@@ -713,19 +713,25 @@ pidRename = *
 
 ;*** (.X=device, (zp)=name) : .CS=error, errno
 pidChDir = *
-	+ldaSCII "/"
-	sta cmdPrefix
-	jsr pidCommandStart
-  bcs +
+  lda #0
+  sta openNameScan
+  ldy #1
+  lda #":"
+  cmp (zp),y
+  bne +
+  lda #2
+  sta openNameScan
++ lda chdirDevice
+  sta openDevice
+  lda #"r"
+  sta openMode
+  lda #"/"
+  sta cmdPrefix
+  jsr pidCommandSend
   jsr pidCommandFinish
   bcs +
   jsr pidCommandClose
-  lda openDevice
-  sta chdirDevice
-  lda #0
-  sta stringBuffer+2
 	jmp chdirSetName
-  rts
 + pha
   jsr pidCommandClose
   pla

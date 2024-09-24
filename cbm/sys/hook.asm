@@ -194,14 +194,6 @@ ChDir = *
     beq ++
     sta IdunDrive
     jmp ReturnBasic
-+   cmp #"/"
-    bne +
-    ;first, ChDir to root
-    lda #0
-    sta (TXTPTR),y
-    jsr idunChDir
-    inc dirNameOffset
-    jmp ++
 +   cmp #":"
     bne ++
     inc dirNameOffset
@@ -219,10 +211,7 @@ ReturnBasic = *
     clc
     jmp basicPrompt
 idunChDir = *
-    jsr idunCmdOpen
-    beq +
-    jmp idunCmdError
-+   lda #"/"
+    lda #"/"
     jsr idunCmdSend
     beq +
     jmp idunCmdError
