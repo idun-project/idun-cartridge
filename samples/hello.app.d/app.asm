@@ -13,3 +13,6 @@ appRunLoop = *
    sta zp+1
    lda #aceRestartApplReset
    jmp aceRestart
+
+;=== bss ===
+macroUserCmds = * ;not used

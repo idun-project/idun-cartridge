@@ -45,3 +45,6 @@ restartEvt !byte .MENU_SELECT,2,$20
    sta zp+1
    lda #aceRestartApplReset
    jmp aceRestart
+
+;=== bss ===
+macroUserCmds = * ;not used
