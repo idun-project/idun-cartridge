@@ -136,7 +136,7 @@ end
 -- Main
 local wants32k = false
 local prom_fname, md5sum
--- sys.chdir(os.getenv('IDUN_SYS_DIR'))
+sys.chdir(os.getenv('IDUN_SYS_DIR')..'/sys')
 
 -- Ensure we have unpatched rom file
 local romf = io.open(kcomborom, 'rb')
