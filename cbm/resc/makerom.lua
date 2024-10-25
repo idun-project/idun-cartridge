@@ -21,9 +21,9 @@ local msg_k128_16k = 'Making patched C128 kernal ROM U35'
 local msg_k64_16k = 'Making patched C64 kernal ROM U32'
 local msg_k128_32k = 'Making patched C128 combined kernal ROM U32'
 -- Patched ROM checksums
-local md5_U35 = 'f3fa9ce4b04c31f3e120aa75bc95bcf4'
-local md5_U32 = '536a206b1b986074ce113491d629f43d'
-local md5_U32_combo = '01d98366e151ff09b022d2af753e46f1'
+local md5_U35 = '07652c7540ad4019acbbcdfb57dc486e'
+local md5_U32 = '383f7ca0652c595404897fd42f3a35cd'
+local md5_U32_combo = '3f34c25445aaa1142c205ebf86a4fe03'
 -- Critical ROM offsets
 local KERNAL_128_OFFS = 0x6001
 local KERNAL_64_OFFS = 0x2001

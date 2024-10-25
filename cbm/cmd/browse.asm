@@ -1022,7 +1022,7 @@ mountImageStd = *
    jsr aceDirClose
 +  pla
    tax
-   lda #FALSE
+   lda #TRUE
    jsr aceMountImage
    bcs +
    lda #$1e

@@ -44,7 +44,7 @@ mountD64 = *
     asl
     asl
     tax
-    lda #FALSE
+    lda #TRUE
     jsr aceMountImage
     bcc +
     jmp .error
@@ -77,9 +77,12 @@ load_typ !byte 0
     jsr aceMiscDeviceInfo
     sta $102
     stx load_typ
+    sta $9b        ;Pass $ba and $9b/$9c values to BASIC
+    sta $ba
     lda syswork+1
     lsr
     lsr
+    sta $9c
     ldx #255            ;CMD_STREAM_CHANNEL
     jsr aceMapperCommand
     jsr toolUserLayoutEnd
