@@ -17,6 +17,7 @@ jmp main
 
 ; Constants
 FALSE     = 0x00
+TRUE      = 0xff
 ldUsage64 = *
               !pet "Usage: go64 <image>",chrCR
               !pet "Supports T64 and D64 image.",chrCR,0
@@ -91,7 +92,7 @@ mountImageFile = *
    sta zp
    pla
    sta zp+1
-   lda #FALSE
+   lda #TRUE
    jsr aceMountImage
    lda errno
    beq mtDone
