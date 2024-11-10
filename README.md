@@ -84,6 +84,16 @@ The idun-cartridge software in this repository is self-hosting. All of the assem
 
 See the [Makefile](cbm/Makefile) for details.
 
+### Patched Commodore Kernal (Optional)
+
+The latest ROM kernal patch can be created easily with idun v1.1.9 and above using the command `lua makerom.lua` from within the Idun Shell. The patched ROM file(s) will be found in your home directory on the cartridge, and most easily copied using the web file browser or a network command like scp.
+
+The patches to the C128 kernal (U35) overwrite the kernal's support for RS-232 devices. This code is frequently unused by native software anyway. If you also update the C64 kernal (U32), then you lose both RS-232 and cassette tape support in C64 mode.
+
+With the kernal patches in place, things work pretty much the same, except that you can access cartridge functionality easily through standard Commodore ROM kernal routines, rather than loading Idun's own kernel into RAM. So, in theory, native Commodore software that is programmed to use kernal routines for file access can "transparently" access files via the cartridge and at "breakneck speed". Think of it as basically a hard drive for the Commodore without having to go through the Idun software drivers in RAM. So now those drivers can just be overwritten by some program.
+
+You really only need to know about two zero-page variables to control the ROM patch - $9b/$9c (155/156). So you can POKE 155, 10, for example, to setup the cartridge as IEC device #10. And, you can POKE 156, 3 to setup the cartridge to use idun's C: device, which is default configured to the Linux home directory. Using other values let's you easily switch to any Idun device mapped as any IEC device. This opens up the cartridge to native software that can use it for virtually anything without requiring RAM drivers. By the way, setting values in $9b/$9c is just what the little booter program the cartridge starts up with does - When you use the cursor keys to modify the IEC and Idun device selection, you are changing these two memory locations. 
+
 ### Programming applications
 
 The idun-cartridge works with many legacy applications. Single-file loaders in particular work very well and load instantly in either C128 or C64 mode. But the point is to enhance both the user and programmer experience with applications that integrate into the idun-cartridge. There are currently 3 well-supported ways to create software for the idun-cartridge.
