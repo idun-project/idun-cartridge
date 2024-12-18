@@ -24,7 +24,7 @@
     MSGFLG = $9d
     TXTPTR = $7a
     PATCH_ROM_JUMP = $f730   ;for patched ROMs
-    jump_offset    = $3b
+    jump_offset    = $0b
 }
 ; Local vars stored at the end of RAM-resident block
 RAMVAR      = RAMR+$f8
@@ -40,11 +40,11 @@ IdunDrive   = $9c       ;(1)
 
 ;** ROM entry points
 HOOK_ROM_JUMP  = $8000   ;for EXROM
-hookOpen       = <jump_offset+0
-hookLoad       = <jump_offset+3
-hookSave       = <jump_offset+6
-hookClose      = <jump_offset+9
-hookCatalog    = <jump_offset+12
+hookOpen       = jump_offset+0
+hookLoad       = jump_offset+3
+hookSave       = jump_offset+6
+hookClose      = jump_offset+9
+hookCatalog    = jump_offset+12
 
 ;** kernal vectors
 ILOAD = $0330
@@ -699,6 +699,12 @@ enPatchRom = *+1
     tya
     rts
 patchcall = *
+!if useC64 {
+    txa
+    clc
+    adc #$30
+    tax
+}
     tya
     stx *+4
     jmp PATCH_ROM_JUMP
