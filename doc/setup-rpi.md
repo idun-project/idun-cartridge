@@ -48,12 +48,12 @@ Use connmanctl CLI command to configure wi-fi
 [Connman Wiki](https://wiki.archlinux.org/title/ConnMan)
 
 
-### Download (or `git clone`) open source code
+### Build open source code (optional)
 
-1. `wget https://github.com/idun-project/idun-cartridge/archive/refs/tags/latest.tar.gz` -or- `git clone https://github.com/idun-project/idun-cartridge`
-2. `tar xvfz latest.tar.gz`, if you downloaded the archive.
-3. `cd idun-cartridge && ./build.sh`
+1. Clone this repository to your idun home directory: `git clone https://github.com/idun-project/idun-cartridge`
+2. `cd idun-cartridge && ./setup.sh` -installs additional packages such as acme and idun-zcc.
+3. `cd cbm && make` -builds cartridge software and updates the `sys` directroy (`z:` device in the idun-shell)
 
-### (Optional)
+### Emulation of the cartridge on the Raspberry Pi (optional)
 
-1. Install patched VICE emulator from [idun-vice](https://github.com/idun-project/idun-vice).
+1. Install patched VICE emulator- `sudo pacman -Sy idun-vice`, and see [idun-vice](https://github.com/idun-project/idun-vice).
