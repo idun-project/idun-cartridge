@@ -49,7 +49,8 @@ build/mousetest\
 build/liner\
 build/go64\
 build/browse\
-build/zload
+build/zload\
+build/eram
 
 RESC=\
 resc/chrset-commodore resc/chrset-standard resc/chrset-ansi resc/chrset-browse\

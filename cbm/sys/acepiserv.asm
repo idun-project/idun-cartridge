@@ -21,11 +21,6 @@ pisvcCommonListen = *
   ; SECOND $7F
   lda #$7F
   jmp pidChOut
-pisvcCommonDone = *
-- jsr pidChIn
-  bcs -
-  sta errno
-  rts
 
 ;*** (.X=Command, .A=Param)
 kernMapperCommand = *
@@ -39,8 +34,8 @@ kernMapperCommand = *
   pla
   jsr pidChOut
   pla
-  jsr pidChOut
-  jmp pisvcCommonDone
+  jmp pidChOut
+  
 
 ;*** (.AY=proc callback)
 kernMapperProcmsg = *
@@ -130,8 +125,7 @@ pisvcPutJoystick = *
   lda #10
   jsr pisvcCommonListen
   ldx #10
-  jsr pidPutbuf
-  jmp pisvcCommonDone
+  jmp pidPutbuf
 
 ;*** (keycode, shiftValue)
 pisvcPutKeyboard = *
@@ -151,7 +145,6 @@ pisvcPutKeyboard = *
   jsr pidChOut
   lda shiftValue
   jsr pidChOut
-  jsr pisvcCommonDone
 + rts
 keyboardRepeat = *
   lda delayCountdown
@@ -211,10 +204,9 @@ pisvcPutDebugLog = *
   bne ++
   ;send byte param
   pla
-  jsr pidChOut
-  jmp pisvcCommonDone
+  jmp pidChOut
 ++pla
-  jmp pisvcCommonDone
+  rts
 dbg_byte_count !byte 0
 
 ;┌────────────────────────────────────────────────────────────────────────┐
