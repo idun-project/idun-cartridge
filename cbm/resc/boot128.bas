@@ -29,7 +29,7 @@ start tok128 resc/boot128.prg
 217 PRINT "{space*10}"
 218 PRINT "{yellow}"+ver$+" "+rom$+"{white}"
 219 PRINT CHR$(17);CHR$(17);
-220 SYS6186
+220 SYS6178
 230 PRINT CHR$(19);CHR$(18);CHR$(17);CHR$(17);SPC(17);CHR$((PEEK(drv)+64));
 240 PRINT CHR$(157);CHR$(17);CHR$(17);
 250 PRINT USING ">##";STR$(PEEK(iec))

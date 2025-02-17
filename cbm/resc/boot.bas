@@ -26,7 +26,7 @@ start tok64 resc/boot.prg
 217 PRINT "{up}          "
 218 PRINT "{yellow}"+ver$+" "+rom$+"{white}"
 219 PRINT CHR$(17);CHR$(17);
-220 SYS50606
+220 SYS50590
 230 PRINT CHR$(19);CHR$(18);CHR$(17);CHR$(17);SPC(17);CHR$((PEEK(drv)+64));
 240 PRINT CHR$(157);CHR$(17);CHR$(17);
 250 i$=STR$(PEEK(iec)):IF LEN(i$)<3 THEN i$=i$+" "

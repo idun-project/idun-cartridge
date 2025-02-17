@@ -306,16 +306,8 @@ entryPoint = *
    lda #0
    pha
    plp
+   ;disable ROM
    sta $de7e
-!if useFastClock {
-   ldx vic+$30
-   sta vic+$30
-}
-   lda $81ff
-   lda $8000
-!if useFastClock {
-   stx vic+$30
-}
    jsr kernelRestor
    ;remove wedge
    lda #$e6

@@ -766,10 +766,7 @@ Install = *
     bpl +
     ;Using patched ROM
     ; disable idun boot rom
-    lda #0
     sta $de7e
-    lda $81ff
-    lda $8000
     jmp CopyRUNR
     ;Install hook driver
 +   lda ILOAD+0
@@ -879,10 +876,7 @@ runProg = *
     bcc +
     jmp basicError
     ; disable EXROM
-+   lda #$00
-    sta $de7e
-    lda $81ff
-    lda $8000
++   sta $de7e
     jsr kernelRESTOR
     ;$2d (VARTAB) must point to top of basic text
     lda kCurraddr+0

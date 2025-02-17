@@ -9,6 +9,8 @@
 !addr idDataport = $de00
 !addr idRxBufLen = $de01
 !addr STASH      = $02af
+!addr romlOff    = $de7e
+!addr romlOn     = $de7f
 
 !if useC128 {
   recvByte = $c8
@@ -57,6 +59,10 @@ nmiMmap = *             ;33 cycles (in kernal)
   sta $d030             ;4
 + lda #bkExtrom         ;2
   sta bkSelect          ;4
+!if useC64 {
+  ;soft-switch enable ROM
+  sta romlOn            ;4
+}
   ;Check for ROM preamble
   ldx #2                ;2
 - lda rom_sig,x         ;4
@@ -76,10 +82,7 @@ nmiMmap = *             ;33 cycles (in kernal)
   ;FIXME return value in .A to MemMapper process
   ;
   ;soft-switch disable ROM
-  lda #0                ;2
-  sta $de7e             ;4
-  lda $81ff             ;4
-  lda $8000             ;4
+  sta romlOff           ;4
   ; Restore 2MHz
   bit winDriver         ;4
   bpl +                 ;2
@@ -87,6 +90,8 @@ nmiMmap = *             ;33 cycles (in kernal)
   sta $d030             ;4
 + jmp nmiExit
   nmiOther = *
+  ;soft-switch disable ROM
+  sta romlOff           ;4
   ; Restore 2MHz
   bit winDriver         ;4
   bpl +                 ;2
