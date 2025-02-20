@@ -301,14 +301,13 @@ entryPoint = *
    ;code disables the EXROM soft-switch; causes
    ;ROM bootstrap code to be replaced with NMI
    ;handler code (dynamically loaded).
-   lda #bkExtrom
-   sta bkSelect
+   sta $de7e
    lda #0
    pha
    plp
-   ;disable ROM
-   sta $de7e
-   ;remove wedge
+   ;remove intf vectors overridden by booter
+   jsr kernelRestor
+   ;remove wedge setup by booter
    lda #$e6
    sta CHRGET+0
 !if useC128 {
@@ -1040,14 +1039,19 @@ kernViceEmuCheck = *    ;() : .ZS=emulator detected
    rts
 
 shellApp = *
+   ;On kernel startup only, we check for a default app
+   ;name in the aceSharedBuf. If found, overwrite the
+   ;default shell name in the config w/ this name.
    lda aceSharedBuf
    beq +
-   lda #<aceSharedBuf
-   ldy #>aceSharedBuf
-   jmp ++
+   ldx #255
+-  inx
+   lda aceSharedBuf,x
+   sta configBuf+$d0,x
+   bne -
 +  lda #<configBuf+$d0    ;configured dos app
    ldy #>configBuf+$d0
-++ sta shellName+0
+   sta shellName+0
    sty shellName+1
 startupApp = *
    sta zp
