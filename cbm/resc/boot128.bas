@@ -1,14 +1,14 @@
 
 start tok128 resc/boot128.prg
 10 COLOR 0,12:COLOR 4,12:COLOR 5,16:COLOR 6,1
-20 c=5755:iec=155:drv=156:PRINT CHR$(142);CHR$(147)
+20 c=5812:iec=155:drv=156:PRINT CHR$(142);CHR$(147)
 30 PRINT"{yellow}{cm r}{cm a}CI{cm r} {cm r}UCI{space*16}basic commands"
 40 PRINT"BB {125*2} B{125} {125} {light gray}drive {reverse on}c:{reverse off}{space*7}cd";CHR$(34);"/directory";CHR$(34)
 50 PRINT"{yellow}BB {125}B B{125} {125}{space*19}{light gray}";CHR$(34);":disk.img";CHR$(34)
-60 PRINT"{brown}BB {125}B B{125} {125} {light gray}iec{space*3}{reverse on}10{reverse off}{space*7}dos=goto shell"
+60 PRINT"{brown}BB {125}B B{125} {125} {light gray}iec{space*3}{reverse on}10{reverse off}{space*7}go <appname>"
 70 PRINT"{brown}{cm e}{cm z}CKJCK{cm e} {cm e}{space*16}{light gray}@$=directory{space*2}"
 80 PRINT"cursor to change,{space*9}@<drv> switch "
-90 PRINT"<return> to accept.{space*7}run ";CHR$(34);"prgname";CHR$(34)
+90 PRINT"<return> to accept.{space*7}%";CHR$(34);"prgname";CHR$(34);" run"
 100 GOSUB230
 110 GETa$:IF a$="" THEN 110
 120 IF a$="{up}" THEN POKE iec,PEEK(iec)+1
@@ -19,7 +19,7 @@ start tok128 resc/boot128.prg
 170 GOSUB 230:GOTO 110
 180 KEY 3,"catalog u"+STR$(PEEK(iec))+CHR$(13)
 190 KEY 5,"run"+CHR$(34)+"*"+CHR$(34)+",u"+STR$(PEEK(iec))+CHR$(13)
-200 KEY 7,"dos"+CHR$(13)
+200 KEY 7,"go"+CHR$(34)+"dos"+CHR$(34)+CHR$(13)
 210 PRINT CHR$(19);CHR$(17);CHR$(14);"{yellow}Commodore "
 211 rf=PEEK(65408):IFrfAND128 THEN rom$="ROM":ELSE rom$="CBM"
 212 IFrf=0 THEN rom$="JIF"
@@ -29,7 +29,7 @@ start tok128 resc/boot128.prg
 217 PRINT "{space*10}"
 218 PRINT "{yellow}"+ver$+" "+rom$+"{white}"
 219 PRINT CHR$(17);CHR$(17);
-220 SYS6178
+220 SYS6294
 230 PRINT CHR$(19);CHR$(18);CHR$(17);CHR$(17);SPC(17);CHR$((PEEK(drv)+64));
 240 PRINT CHR$(157);CHR$(17);CHR$(17);
 250 PRINT USING ">##";STR$(PEEK(iec))

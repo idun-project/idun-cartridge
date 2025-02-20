@@ -124,19 +124,6 @@ __idun_main_menu !word 0
 }
 
 __lua_init = *
-   ;build lua script path
-   ldy #255
--  iny 
-   lda (__work),y
-   sta luaProg,y
-   bne -
-   ldx #255
-   dey
--  inx
-   iny
-   lda luaDirs,x
-   sta luaProg,y
-   bne -
    ;launch lua script
    lda #<luaPath
    ldy #>luaPath
@@ -180,7 +167,7 @@ __forever = *
    jmp __forever
 
 luaPath !pet "l:"
-luaProg !fill 32,0
+APPNAME !pet "arcade.app"
 luaDirs !pet ".d/main.lua",0
 
 getarg = *

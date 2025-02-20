@@ -12,6 +12,11 @@
     CHRGOT = $0386
     RUNMOD = $7f
     TXTPTR = $3d
+    KEYBUF = $34a
+    RUNR_BASE = $800
+    RUNR_MAX = $850
+    NDX = $d0
+    basicWarmStart = $a00
     PATCH_ROM_JUMP = $e600   ;for patched ROMs
     jump_offset    = $0b
 } else {
@@ -23,9 +28,17 @@
     CHRGOT = $79
     MSGFLG = $9d
     TXTPTR = $7a
+    KEYBUF = $277
+    RUNR_BASE = $2a7
+    RUNR_MAX = $2ff
+    NDX = $c6
+    basicWarmStart = $a002
     PATCH_ROM_JUMP = $f730   ;for patched ROMs
     jump_offset    = $0b
 }
+TXTBUF = $200
+TOK_RUN = $8a
+TOK_GO = $cb
 ; Local vars stored at the end of RAM-resident block
 RAMVAR      = RAMR+$f8
 temp        = RAMVAR+0  ;(2)
@@ -184,7 +197,7 @@ ChDir = *
     lda #bkExtrom
     sta bkSelect
     ;(TXTPTR),y points to dirname
-    sty dirNameOffset
+    sty nameOffset
     lda (TXTPTR),y
     cmp #"."
     bne +
@@ -196,7 +209,7 @@ ChDir = *
     jmp ReturnBasic
 +   cmp #":"
     bne ++
-    inc dirNameOffset
+    inc nameOffset
     jsr idunMount
     jmp ReturnBasic
 ++  jsr idunChDir
@@ -218,7 +231,7 @@ idunChDir = *
 +   rts
 idunMount = *
     ;set kernel filename=image file
-    ldy dirNameOffset
+    ldy nameOffset
 -   lda (TXTPTR),y
     beq +
     cmp #$22
@@ -227,11 +240,11 @@ idunMount = *
     jmp -
 +   tya
     sec
-    sbc dirNameOffset
+    sbc nameOffset
     pha
     lda TXTPTR
     clc
-    adc dirNameOffset
+    adc nameOffset
     tax
     lda TXTPTR+1
     adc #0
@@ -355,7 +368,7 @@ idunCmdError = *
     rts
 errorMessage !pet "I/O error #"
 sendDirname = *
-    ldy dirNameOffset
+    ldy nameOffset
 -   lda (TXTPTR),y
     beq +
     cmp #$22
@@ -370,7 +383,7 @@ sendDirname = *
     lda #0
     jsr idunChOut
     rts
-dirNameOffset !byte 0
+nameOffset !byte 0
 
 idDataport = $de00
 idRxBufLen = $de01
@@ -407,10 +420,13 @@ idunWedge = *
     lda #$d0
     sta CHRGET+2
     jmp CHRGOT
-    ;is direct mode, check for "@"
+    ;is direct mode, check for "@" or "%"
 +   ldy #0
     lda (TXTPTR),y
-    cmp #"@"
+    cmp #"%"
+    bne +
+    jmp runProg
++   cmp #"@"
     bne wedgeOut
     ;might be a wedge command
     +incTXTPTR
@@ -460,11 +476,35 @@ dirSymbol !pet "$"
 invdiskMsg !pet "?not a virtual disk",13,0
 
 ;BASIC extensions handled via IError trap
+locateName = *
+    ldx #0
+    ldy #0
+    ;find open quote
+-   inx
+    lda TXTBUF,x
+    beq +
+    cmp #$22
+    bne -
+    inx
+    stx nameOffset
+    ;find close quote or NUL
++   txa
+    tay
+-   lda TXTBUF,y
+    beq +
+    cmp #$22
+    beq +
+    iny
+    jmp -
++   lda #0
+    sta TXTBUF,y
+    rts
+
 OnSyntaxErr = *
     ldy #0
     lda (TXTPTR),y
     cmp #$22    ;a quote
-    bne ++
+    bne OnTypeErr
     ;check for "CD" cmd
     ldx #0
 -   inx
@@ -474,52 +514,38 @@ OnSyntaxErr = *
     beq -
     cmp #"D"
     beq +
-    jmp basicError
+    jmp OnTypeErr
 +   inx
     +decTXTPTR
     lda (TXTPTR),y
     cmp #"C"
     beq +
-    jmp basicError
+    jmp OnTypeErr
 +   inx
     txa
     tay
     jmp ChDir
-!if useC128 {
-++  cmp #"S"
-    bne +
-    +decTXTPTR
-    lda (TXTPTR),y
-    cmp #$eb    ;"DOS"
-    bne +
-    jmp OnStartDos
-+   jmp basicError
-} else {
-++  ldy #0
-    +decTXTPTR
-    lda (TXTPTR),y
-    cmp #"S"
-    bne +
-    +decTXTPTR
-    lda (TXTPTR),y
-    cmp #"O"
-    bne +
-    +decTXTPTR
-    lda (TXTPTR),y
-    cmp #"D"    ;DOS
-    bne +
-    jmp OnStartDos
-+   jmp basicError
-}
+
+OnTypeErr = *
+    lda TXTBUF
+    cmp #TOK_GO
+    bne ++
+    jsr locateName
+    ;copy the app name to aceSharedBuf ($b00)
+    ldy #0
+-   lda TXTBUF,x
+    sta $b00,y
+    beq +
+    inx
+    iny
+    jmp -
++   jmp Go
+++  jmp basicError
 
 OnUndefErr = *
 !if useC64 {
-    ldy #0
--   +decTXTPTR
-    lda (TXTPTR),y
-    cmp #$20    ;skip spaces
-    beq -
-    cmp #$8a    ;RUN
+    lda TXTBUF
+    cmp #TOK_RUN
     bne +
     jmp runProg
 }
@@ -531,6 +557,9 @@ IError = *
 +   cpx #$11    ;is undef'd statement error?
     bne +
     jmp OnUndefErr
++   cpx #$16    ;is type mismatch error?
+    bne +
+    jmp OnTypeErr
 +   jmp basicError
 
 Basic = *
@@ -584,7 +613,6 @@ Basic = *
     sta $d018   ;VIC-II char base
     lda #0
     sta 208     ;empty the key buffer
-    jsr $af87   ;C128 lnkprg
     jmp basicRun
 } else {
     jsr $e453   ;basic INITV
@@ -611,10 +639,10 @@ idunk !pet "idun-64"
 RAM_START = *
 
 !pseudopc (RAMR) {
-OnStartDos = *
-    lda $eb
-    sta $200
+Go = *
     ; boot idun kernel
+    lda IdunDrive
+    pha
     lda #26     ;Z:
     sta IdunDrive
     lda MyDevice
@@ -634,7 +662,13 @@ OnStartDos = *
     ldx #$00
     ldy #$13    
     lda #0
+!if useC128 {
     jsr kernelLoad
+} else {
+    jsr ILoader     ;avoids "go" undef'd error on C64
+}
+    pla
+    sta IdunDrive
     jmp $1300
 IOpen = *
     lda kLastDevice
@@ -719,22 +753,20 @@ FnIsdir = *
 }
     cmp #"$"
     rts
-!if useC64 {
 magic = *
-    ldx #7
+    ldx #4
 -   lda exit_magic,x
-    sta $277,x
+    sta KEYBUF,x
     dex
     bpl -
     lda #5
-    sta $c6
+    sta NDX
     lda #0
-    jmp $27c
+    jmp (basicWarmStart)
     ;Here's how we exit:
     ;JMP ($a002)
     ;and keyb buffer contains "RUN:\r"
-exit_magic !pet "run:",13,$6c,$02,$a0
-}
+exit_magic !pet "run:",13
 }   ;END RAM-resident part
 
 !if *-RAM_START > 248 {
@@ -794,15 +826,13 @@ Install = *
     sta IOPEN+0
     sty IOPEN+1
 CopyRUNR = *
-    ;** copy C64 RUN command handler to $2a7-$2ff
-!if useC64 {
+    ;** copy RUN command handler to RUNR_BASE to RUNR_MAX
     ldx #0
 -   lda RUN_START,x
-    sta $2a7,x
+    sta RUNR_BASE,x
     inx
     cpx #(RUNR_END-RUN_START)
     bne -
-}
 CopyRAMR = *
     ;** copy RAM-resident part
     ldx #0
@@ -845,32 +875,17 @@ LoadConfig = *
     jmp -
 +   clc
     rts
-!if useC64 {
 RUN_START = *
-!pseudopc($2a7) {
+!pseudopc(RUNR_BASE) {
 runProg = *
-    ;parse name of prog
-    ldx #0
--   inx
-    lda $200,x
-    cmp #$20    ;skip over spaces
-    beq -
-    cmp #$22    ;RUN "
-    beq +
-    jmp basicError
-+   stx $2ff
--   inx
-    lda $200,x
-    cmp #$22    ;RUN "<name>"
-    bne -
-    dex
-    txa
+    jsr locateName
+    tya
     sec
-    sbc $2ff
-    ldx $2ff
-    inx
+    sbc nameOffset
     ldy #>$200
     jsr kernelSetnam
+    lda #1
+    sta kSecaddr
     ldx #hookLoad
     jsr romcall
     bcc +
@@ -878,6 +893,14 @@ runProg = *
     ; disable EXROM
 +   sta $de7e
     jsr kernelRESTOR
+!if useC128 {
+    ;$1210 must point to top of basic text
+    lda kCurraddr+0
+    sta $1210
+    lda kCurraddr+1
+    sta $1211
+    jsr basicRun
+} else {
     ;$2d (VARTAB) must point to top of basic text
     lda kCurraddr+0
     sta $2d
@@ -886,11 +909,12 @@ runProg = *
     jsr $a533   ;lnkprg
     jmp magic
 }
+}
 RUNR_END = *
-!if *-RUN_START>($2ff-$2a7) {
-        !error("C64 RUN handler exceeds memory limit!")
+!if *-RUN_START > (RUNR_MAX-RUNR_BASE) {
+    !error "RUN handler exceeds memory limit!"
 }
-}
+
 InstallWedge = *
     lda #$4c
     sta CHRGET

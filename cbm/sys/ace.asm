@@ -308,7 +308,6 @@ entryPoint = *
    plp
    ;disable ROM
    sta $de7e
-   jsr kernelRestor
    ;remove wedge
    lda #$e6
    sta CHRGET+0
@@ -377,7 +376,9 @@ aceBootstrap = *
    bne -
    pla
    sta aceSuperCpuFlag
-   lda #$68  ;"z:"
+   lda $9c
+   asl
+   asl
    sta aceCurrentDevice
    lda #0
    jsr kernelSetmsg
@@ -1039,9 +1040,14 @@ kernViceEmuCheck = *    ;() : .ZS=emulator detected
    rts
 
 shellApp = *
-   lda #<configBuf+$d0    ;configured dos app
+   lda aceSharedBuf
+   beq +
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jmp ++
++  lda #<configBuf+$d0    ;configured dos app
    ldy #>configBuf+$d0
-   sta shellName+0
+++ sta shellName+0
    sty shellName+1
 startupApp = *
    sta zp

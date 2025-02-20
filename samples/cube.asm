@@ -80,19 +80,6 @@ __idun_main_menu = *
 }
 
 __lua_init = *
-   ;build lua script path
-   ldy #255
--  iny 
-   lda (__work),y
-   sta __luaProg,y
-   bne -
-   ldx #255
-   dey
--  inx
-   iny
-   lda __luaDirs,x
-   sta __luaProg,y
-   bne -
    ;launch lua script
    lda #<luaPath
    ldy #>luaPath
@@ -122,7 +109,7 @@ __forever = *
    jmp __forever
 
 luaPath !pet "l:"
-__luaProg !fill 32,0
+APPNAME !pet "cube.app"
 __luaDirs !pet ".d/main.lua",0
 
 __getarg = *
