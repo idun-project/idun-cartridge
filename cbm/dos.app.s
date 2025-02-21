@@ -30,7 +30,7 @@ ssaverCountdown !byte 10
 regsave !byte 0,0,0
 
 shellTitle !pet "Idun Shell      "
-shellName: !pet "dos.app",0
+shellName: !byte 0,0
 
 
 ;=== Dos Startup. Makes Dos resident for fast reload. ===
@@ -50,19 +50,23 @@ DosStartup = *
    lda zw+1
    adc #0
    sta zw+1
-   lda #0
-   ldy #0
-   jsr getarg
+   ldx #15
+   clc
+   jsr aceConOption     ;get default shell app
+   lda zp+0
+   sta shellName+0
+   lda zp+1
+   sta shellName+1
    ;allocate tagged memory to hold loadable code
    jsr aceTagRealloc
    bcc +
    rts
-+  lda #<aceToolAddress
-   sta zp+0
-   lda #>aceToolAddress
-   sta zp+1
-   lda #<shellName
-   ldy #>shellName
++  lda shellName+0
+   ldy shellName+1
+   ldx #<aceToolAddress
+   stx zp+0
+   ldx #>aceToolAddress
+   stx zp+1
    jsr aceTagStash
    ;init user macro storage
    ldx #aceMemInternal

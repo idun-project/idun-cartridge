@@ -395,14 +395,14 @@ internTagBload = *
    rts
 +  sta tagwork+0     ;store size
    sty tagwork+1
-   ;check if found 1st entry, which is *always* dos.app
+   ;check if found 1st entry, which is *always* the shell app
    lda tagMemTable+3
    cmp mp+1
    bne +
    lda tagMemTable+4
    cmp mp+2
    bne +
-   ;reloading dos.app is a special case...
+   ;reloading shell app is a special case...
    lda #<aceToolAddress
    sta bloadAddress+0
    lda #>aceToolAddress

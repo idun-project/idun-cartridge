@@ -949,7 +949,7 @@ PURPOSE:  read/modify console configuration settings
 ARGS   :  .X=option from list below
           .A=new value (if modify)
           .CS=set/modify value
-RETURNS:  .A=current value
+RETURNS:  .A=current value -or- .zp pointer value
 ALTERS :  .A, .X
 ```
 
@@ -957,7 +957,7 @@ ALTERS :  .A, .X
 2=character color, 3=character attributes, 4=fill color, 5=fill attribute,
 6=cursor color, 7=force cursor wrap, 8=shift-keys for scrolling,
 9=mouse scaling, 10=key-repeat delay, 11=key-repeat rate, 12=prescrool override,
-13=screensaver timeout
+13=screensaver timeout, 14=screensaver tool (zp), 15=default shell (zp)
 
 ```
 NAME   :  aceConPutchar

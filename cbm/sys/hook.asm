@@ -899,7 +899,7 @@ runProg = *
     sta $1210
     lda kCurraddr+1
     sta $1211
-    jsr basicRun
+    jmp basicRun
 } else {
     ;$2d (VARTAB) must point to top of basic text
     lda kCurraddr+0

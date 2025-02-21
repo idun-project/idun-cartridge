@@ -2537,6 +2537,17 @@ kernConOption = *
    sty zp+1
    clc
    rts
+   ;** 15.default shell app
+++ dex
+   bne ++
+   bcc +
+   rts
++  lda #<(configBuf+$d0)
+   ldy #>(configBuf+$d0)
+   sta zp
+   sty zp+1
+   clc
+   rts
 ++ jmp notImp
 
 ;┌────────────────────────────────────────────────────────────────────────┐

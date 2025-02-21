@@ -1069,6 +1069,7 @@ kernProcExecSub = *
    pha
    plp
    jsr aceEnter
+   ;TODO: why override process' return value?
    lda #0
    ldx #0
    jmp internExit
@@ -1223,10 +1224,10 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    jsr internBload
    jsr getloadRestoreZp
    bcs execLoadError
-   ;IDUN: Special case for dos.app reload
+   ;IDUN: Special case for reload shell
    jsr isDosReload
    bcc +
-   ;Normally, dos.app is loaded at aceAppAddress ($6000)
+   ;Normally, shell is loaded at aceAppAddress ($6000)
    lda #$00
    sta st
    lda #$60
@@ -1246,18 +1247,17 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    clc
    rts
    isDosReload = *
-   ldx #0
+   ldx #2
 -  lda stringBuffer,x
    bne +
    sec
    rts
-+  cmp dosappfn,x
++  cmp configBuf+$d0-2,x
    bne +
    inx
    jmp -
 +  clc
    rts
-dosappfn !pet "_:dos.app"
    execLoadError = *
    lda errno
    cmp #aceErrFileNotFound
