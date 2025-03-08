@@ -49,7 +49,9 @@ build/mousetest\
 build/liner\
 build/go64\
 build/browse\
-build/zload\
+build/zload
+
+TEST=\
 build/eram
 
 RESC=\
@@ -62,6 +64,8 @@ $(wildcard resc/dos/*) $(wildcard resc/util/*)
 all: rel sys
 
 rel: $(BUILD) $(SYSDIR)
+
+test: $(TEST)
 
 $(BUILD): $(ACESYS)
 	mkdir -p $@
@@ -92,6 +96,10 @@ resc/boot.prg : resc/boot.bas
 
 $(CMDS): $(BUILD)/%: cmd/%.asm $(ACEHDRS) sys/toolhead.asm toolx/*/*
 	$(ACME) --cpu 6510 --vicelabels $@.sym -f plain -o $@ $<
+
+$(TEST): $(BUILD)/%: cmd/%.asm $(ACEHDRS)
+	$(ACME) --cpu 6510 --vicelabels $@.sym -f plain -o $@ $<
+	@$(foreach f,$(TEST), cp $(f) $(SYSDIR);)
 
 $(BUILD)/dos.app: dos.app.s $(ACEHDRS) sys/toolbox.asm
 	$(ACME) --cpu 6510 --vicelabels $(BUILD)/dos.sym -f plain -o $(BUILD)/dos.app dos.app.s
