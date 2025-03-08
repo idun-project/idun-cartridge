@@ -11,7 +11,7 @@ x0    = $6
 x1    = $7
 strX  = $8
 
-diag_list !pet "rdwr","aloc","addp","mmap","fsig","fill","save","garb"
+diag_list !pet "aloc","rdwr","addp","mmap","fsig","fill","save","garb"
 is_ok !pet ":ok",13,0
 is_fail !pet ":fail",13,0
 fail_accum !pet ":fail with ",0
@@ -75,17 +75,32 @@ Main = *
    sta utoa+3
    sta x0
    sta x1
+   ;allocate block #127
+alloc_block = *
+   ldx #127
+   lda aceStatB+75
+   jsr allocBlk
+   lda #$01
+   sta $defe
+-  bit $defe
+   bvc -
+   ldx #0
+   lda $df7f
+   cmp aceStatB+75
+   beq +
+   jmp Failure
++  jsr Ok
    ;this part does a stress test of page read/write
-   ;select block #127
+   ;using 127/0 and 127/1
    lda #127
    jsr setBlk
 -  jsr fill0
    lda x0
-   beq alloc_block
+   beq add_pages
    jsr fill1
    jsr accum
    ;verify accumulates to zero
-   ldx #0
+   ldx #4
    lda utoa+0
    ora utoa+1
    beq +
@@ -93,27 +108,11 @@ Main = *
    jmp -
 +  jsr Iter
    jmp -
-alloc_block = *
+;this part tests adding a page in the block
+add_pages = *
    lda #0
    sta utoa+2
    sta utoa+3
-   ;alloc block #0 in BAM
-   ldx #0
-   lda aceStatB+75
-   jsr allocBlk
-   lda #$01
-   sta $defe
--  bit $defe
-   bvc -
-   ldx #4
-   lda $df00
-   cmp aceStatB+75
-   beq +
-   jmp Failure
-+  jsr Ok
-   ;this part tests adding a page in the block
-   lda #0
-   jsr setBlk
    lda #$80
    sta $defe
 -  bit $defe
@@ -126,8 +125,8 @@ alloc_block = *
    ldx #8
    lda #255
    jsr setBlk
-   lda $df00
-   cmp #63
+   lda $df7f
+   cmp #62
    beq +
    jsr Failure
    jmp mmap_file
@@ -147,7 +146,7 @@ mmap_file = *
    bcc +
    ldx #12
    jmp Failure
-   ;mmap to block #0
+   ;mmap to block #127
 +  jsr aceMiscDeviceInfo   ;device number -> sw+1
    lda #$20                ;LISTEN #0
    jsr pidChOut
@@ -159,15 +158,15 @@ mmap_file = *
    lsr
    lsr
    jsr pidChOut            ;device
-   lda #0                  ;destination block
+   lda #127                ;destination block
    jsr pidChOut
    ;wait for mmap to be completed
    lda #255
    jsr setBlk
    ;check for correct pages free
    ldx #12
-   lda $df00
-   cmp #45
+   lda $df7f
+   cmp #44
    beq +
    sta utoa+0
    lda #0
@@ -176,9 +175,9 @@ mmap_file = *
    jmp ++
 +  jsr Ok
    ;also check file signature
-++ lda #0
+++ lda #127
    jsr setBlk
-   lda #1
+   lda #2
    sta $defe
 -  bit $defe
    bvc -
@@ -246,7 +245,7 @@ gcollect = *
    lda #$ff
    jsr setBlk
    ldx #28
-   lda $df00
+   lda $df7f
    cmp #64
    beq +
    jsr Failure
@@ -258,7 +257,7 @@ gcollect = *
 -  bit $defe
    bvc -
    ldx #28
-   lda $df00
+   lda $df7f
    beq +
    jsr Failure             ;end tests
    rts
