@@ -81,9 +81,7 @@ alloc_block = *
    lda aceStatB+75
    jsr allocBlk
    lda #$01
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    ldx #0
    lda $df7f
    cmp aceStatB+75
@@ -114,9 +112,7 @@ add_pages = *
    sta utoa+2
    sta utoa+3
    lda #$80
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    ldx #128
    lda #$42
 -  sta $df00,x
@@ -178,9 +174,7 @@ mmap_file = *
 ++ lda #127
    jsr setBlk
    lda #2
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    ldx #16
    ldy #0
 -  lda fsig,y
@@ -232,6 +226,8 @@ save_block = *
    jmp gcollect
 +  jsr Ok
 gcollect = *
+   lda #0
+   jsr setBlk
    ;do garbage collection
    lda #$20                ;LISTEN #0
    jsr pidChOut
@@ -253,9 +249,7 @@ gcollect = *
 +  jsr Ok
    ;check block deallocated
 ++ lda #1
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    ldx #28
    lda $df7f
    beq +
@@ -265,10 +259,27 @@ gcollect = *
    rts
 
 setBlk = *
+   ldy $d030
+   sty $0a37
+   ldy #0
+   sty $d030
    sta $deff
-   nop
 -  bit $defe
    bvc -
+   ldy $0a37
+   sty $d030
+   rts
+
+setPage = *
+   ldy $d030
+   sty $0a37
+   ldy #0
+   sty $d030
+   sta $defe
+-  bit $defe
+   bvc -
+   ldy $0a37
+   sty $d030
    rts
 
 allocBlk = *    ;.X=blk, .A=procId
@@ -277,10 +288,8 @@ allocBlk = *    ;.X=blk, .A=procId
    lda #$ff
    jsr setBlk
    ;select BAM block for write
-   ldy #$81
-   sty $defe
--  bit $defe
-   bvc -
+   lda #$81
+   jsr setPage
    pla
    sta $df00,x
    rts
@@ -288,9 +297,7 @@ allocBlk = *    ;.X=blk, .A=procId
 fill_page = *  ;.A=page num.
    pha
    ora #$80
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    ldy #0
 -  sta $df00,y
    iny
@@ -298,9 +305,7 @@ fill_page = *  ;.A=page num.
    pla
    rts
 cmp_page = *  ;.A=page num.
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    ora #$80
    sta cmp_val
    ldy #0
@@ -317,9 +322,7 @@ cmp_val !byte 0
 
 aa2 = *
    lda #$82
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    lda #$aa
    ldx #0
 -  sta $df00,x
@@ -328,9 +331,7 @@ aa2 = *
    rts
 aa1 = *
    lda #$81
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    lda #$aa
    ldx #0
 -  sta $df00,x
@@ -339,9 +340,7 @@ aa1 = *
    rts
 fill0 = *
    lda #$80
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    lda x0
    clc
    adc #16
@@ -353,9 +352,7 @@ fill0 = *
    rts
 fill1 = *
    lda #$81
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    lda x1
    sec
    sbc #16
@@ -369,14 +366,10 @@ accum = *
    lda #0
    sta utoa+0
    sta utoa+1
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
    jsr +
    lda #1
-   sta $defe
--  bit $defe
-   bvc -
+   jsr setPage
 +  ldx #0
 -  lda $df00,x
    clc
@@ -394,16 +387,6 @@ pidChOut = *
    clc
    rts
 
-peekPage = *
-   sta $defe
--  bit $defe
-   bvc -
-   lda #$00
-   ldy #$df
-   jsr puts
-   lda #13
-   jsr putchar
-   ;fall-through
 die = *
    lda #1
    ldx #0
