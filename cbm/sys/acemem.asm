@@ -14,7 +14,8 @@
 temp1 = $93
 
 bkSelectRam0 = $ff01
-reu = $df00
+edat         = $df00
+cpuspd       = $0a37
 
 ;***startup
 
@@ -166,38 +167,61 @@ comCopyFromRam0 = *
    rts
 comCodeEnd = *
 
+seBank = *
+!if useFastClock {
+   ldy $d030
+   sty cpuspd
+   ldy #0
+   sty $d030
+}
+   sta $deff
+-  bit $defe
+   bvc -
+!if useFastClock {
+   ldy cpuspd
+   sty $d030
+}
+   rts
+
+sePage = *
+!if useFastClock {
+   ldy $d030
+   sty cpuspd
+   ldy #0
+   sty $d030
+}
+   sta $defe
+-  bit $defe
+   bvc -
+!if useFastClock {
+   ldy cpuspd
+   sty $d030
+}
+   rts
+
 ;*** aceMemZpload( [mp]=Source, .X=ZpDest, .Y=Length ) : .CS=err
 
 kernMemZpload = *
    lda mp+3
    beq nullPtrError
    cmp #aceMemInternal
-   bcc +
+   bne +
    jmp comZpLoad-comCodeStart+comCodeBuffer
-+  tya
-   ldy #$91
 
-zeroPageReuOp = *
-   sta reu+7
+zeroPageEramload = *
++  sty temp1
    lda mp+2
-   sta reu+6
-   stx reu+2
-   lda #0
-   sta reu+3
-   sta reu+8
-   lda mp+0
-   sta reu+4
+   jsr seBank
    lda mp+1
-   sta reu+5
-!if useFastClock {
-   lda vic+$30
-   ldx #$00
-   stx vic+$30
-}
-   sty reu+1
-!if useFastClock {
-   sta vic+$30
-}
+   beq +
+   jsr sePage
++  ldy #255
+-  iny
+   lda edat,y
+   sta $00,x
+   inx
+   dec temp1
+   bne -
    clc
    rts
 
@@ -207,6 +231,11 @@ nullPtrError = *
    sec
    rts
 
+memSizeError = *
+   lda #aceErrMemorySize
+   sta errno
+   sec
+   rts
 
 ;*** aceMemZpstore( .X=ZpSource, [mp]=Dest, .Y=Length ) : .CS=err
 
@@ -216,27 +245,49 @@ zpstore = *   ;;internally called operation
    bne +
    jmp nullPtrError
 +  cmp #aceMemInternal
-   bcc +
+   bne +
    jmp comZpStore-comCodeStart+comCodeBuffer
-+  tya
-   ldy #$90
-   jmp zeroPageReuOp
+
+zeroPageEramstore = *
++  sty temp1
+   lda mp+2
+   jsr seBank
+   lda mp+1
+   beq +
+   jsr sePage
++  ldy #255
+-  iny
+   lda $00,x
+   sta edat,y
+   inx
+   dec temp1
+   bne -
+   clc
+   rts
 
 
 ;*** aceMemFetch( [mp]=FarSource, (zp)=Ram0Dest, .AY=Length )
 
-fetchLength     !byte 0,0
-fetchSaveSource !byte 0
-fetchSaveDest   !byte 0
+opLength     !byte 0,0
+opSaveSource !byte 0
+opSaveDest   !byte 0
 
 kernMemFetch = *
 fetch = *    ;;internally called operation
+   sta opLength
+   sty opLength+1
    ldx mp+3
    beq fetchNullPtrError
-   cpx #aceMemInternal
-   bcs +
-   ldx #$91
-   jmp doReu
+   cpy #64
+   bcc +
+   beq +
+   jmp memSizeError
++  cpx #aceMemERAM
+   bne +
+   lda mp+2
+   jsr seBank
+   lda opLength
+   ldy opLength+1
 +  cpy #0
    bne fetchLong
    tay
@@ -248,7 +299,11 @@ fetch = *    ;;internally called operation
    jmp nullPtrError
 
    fetchPage = *  ;( [mp]=from, (zp)=to, .Y=len(0=256) )
-   ldx mp+2
+   ldx mp+3
+   cpx #aceMemInternal
+   beq +
+   jmp fetchEram
++  ldx mp+2
    cpx #0
    beq +
    ;xx don't have to worry about the 64 having more than one bank yet
@@ -273,47 +328,62 @@ fetch = *    ;;internally called operation
    rts
 
    fetchLong = *
-   sta fetchLength
-   sty fetchLength+1
    lda mp+1
-   sta fetchSaveSource
+   sta opSaveSource
    lda zp+1
-   sta fetchSaveDest
-   lda fetchLength+1
+   sta opSaveDest
+   lda opLength+1
    beq fetchLongExit
 -  ldy #0
    jsr fetchPage
    inc mp+1
    inc zp+1
-   dec fetchLength+1
+   dec opLength+1
    bne -
 
    fetchLongExit = *
-   ldy fetchLength
+   ldy opLength
    beq +
    jsr fetchPage
-+  lda fetchSaveSource
++  lda opSaveSource
    sta mp+1
-   lda fetchSaveDest
+   lda opSaveDest
    sta zp+1
    clc
    rts
 
+   fetchEram = *  ;( [mp]=from, (zp)=to, .Y=len(0=256) )
+   sty temp1
+   lda mp+1
+   jsr sePage
+   ldx mp+0
+   ldy #0
+-  lda edat,x
+   sta (zp),y
+   inx
+   iny
+   dec temp1
+   bne -
+   rts
 
 ;*** aceMemStash( (zp)=Ram0Source, [mp]=FarDest, .AY=length )
 
-stashLength     !byte 0,0
-stashSaveSource !byte 0
-stashSaveDest   !byte 0
-
 kernMemStash = *
 stash = *        ;;internally called operation
+   sta opLength
+   sty opLength+1
    ldx mp+3
    beq stashNullPtrError
-   cpx #aceMemInternal
-   bcs +
-   ldx #$90
-   jmp doReu
+   cpy #64
+   bcc +
+   beq +
+   jmp memSizeError
++  cpx #aceMemERAM
+   bne +
+   lda mp+2
+   jsr seBank
+   lda opLength
+   ldy opLength+1
 +  cpy #0
    bne stashLong
    tay
@@ -325,7 +395,11 @@ stash = *        ;;internally called operation
    jmp nullPtrError
 
    stashPage = *
-   ldx mp+2
+   ldx mp+3
+   cpx #aceMemInternal
+   beq +
+   jmp stashEram
++  ldx mp+2
    cpx #0
    beq +
    ;xx don't have to worry about the 64 having more than one bank yet
@@ -350,59 +424,44 @@ stash = *        ;;internally called operation
    rts
 
    stashLong = *
-   sta stashLength
-   sty stashLength+1
    lda zp+1
-   sta stashSaveSource
+   sta opSaveSource
    lda mp+1
-   sta stashSaveDest
-   lda stashLength+1
+   sta opSaveDest
+   lda opLength+1
    beq stashLongExit
 -  ldy #0
    jsr stashPage
    inc mp+1
    inc zp+1
-   dec stashLength+1
+   dec opLength+1
    bne -
 
    stashLongExit = *
-   ldy stashLength
+   ldy opLength
    beq +
    ldx mp+2
    jsr stashPage
-+  lda stashSaveSource
++  lda opSaveSource
    sta zp+1
-   lda stashSaveDest
+   lda opSaveDest
    sta mp+1
    clc
    rts
 
-
-;*** ram0 load/store(.X) expansion memory [mp] <- -> (zp) for .AY bytes
-
-doReu = *
-   sta reu+7
-   sty reu+8
-   lda zp+0
-   ldy zp+1
-   sta reu+2
-   sty reu+3
-   lda mp+0
-   ldy mp+1
-   sta reu+4
-   sty reu+5
-   lda mp+2
-   sta reu+6
-!if useFastClock {
-   ldy vic+$30
-   lda #0
-   sta vic+$30
-}
-   stx reu+1
-!if useFastClock {
-   sty vic+$30
-}
-   clc
+   stashEram = *
+   sty temp1
+   lda mp+1
+   ora #$80
+   jsr sePage
+   ldx mp+0
+   ldy #0
+-  lda (zp),y
+   sta edat,x
+   inx
+   iny
+   dec temp1
+   bne -
    rts
 
 ;*** memory-allocation routines
@@ -410,32 +469,6 @@ doReu = *
 freemapBank     !byte 0,0
 freemapDirty    !byte 0
 freemapPage     !byte 0
-searchMinFail   !fill aceMemTypes,0
-
-initMemoryAlloc = *
-   ldx #0
-   ldy #0
-   stx freemapPage
-   stx freemapDirty
--  lda ram0FreeMap,x
-   sta freemap,x
-   bne +
-   iny
-+  inx
-   bne -
-   lda #0
-   ldy #aceMemInternal
-   sta freemapBank+0
-   sty freemapBank+1
-   lda #$00
-   ldx #0
--  sta searchMinFail,x
-   inx
-   cpx #aceMemTypes
-   bcc -
-   clc
-   rts
-
 freemapBankSave !byte 0,0
 
 getFreemap = *  ;( .AY=bank )
@@ -507,16 +540,13 @@ locateBankFreemap = *  ;( .AY=bank ) : [mp]
    ldy #>$0400
    jmp -
 
-searchTypeStart !byte 0
-searchTypeStop  !byte 0
 searchSize      !byte 0
 allocProcID     !byte 0
-searchTypeJmp   !word 0,pageAllocREU,pageAllocInternal,0
 
 ;kernel procids for pages: $00=free,$01=kernel,$ff=malloc,$fe=tpa,$fd=tag ram,
 ;                          $fc=devices,$fb=reservedRamdisk,$fa=console history
 
-kernMemAlloc = *  ;( .A=pages, .X=stType, .Y=endType ) : [mp]=farPtr
+kernMemAlloc = *  ;( .A=pages, .X=memType ) : [mp]=farPtr
    pha
    lda aceProcessID
    sta allocProcID
@@ -528,59 +558,23 @@ kernPageAlloc = *
    jsr pageAllocFail
    clc
    rts
-+  cpx #aceMemREU
-   bcs +
-   ldx #aceMemREU
-+  cpy #aceMemInternal
-   beq +
-   bcc +
-   ldy #aceMemInternal
-+  stx searchTypeStart
-   sty searchTypeStop
--  lda searchTypeStart
-   cmp searchTypeStop
-   beq +
++  cpx #aceMemERAM
+   bne +
+   jmp pageAllocEram
++  cpx #aceMemInternal
+   bne pageAllocFail
+   jsr pageAllocInternal
    bcs pageAllocFail
-+  ldx searchTypeStart
-   lda searchMinFail,x
-   beq +
-   cmp searchSize
-   beq pageAllocNext
-   bcc pageAllocNext
-+  lda searchTypeStart
-   asl
-   tax
-   lda searchTypeJmp+0,x
-   sta mp+0
-   lda searchTypeJmp+1,x
-   beq pageAllocNext
-   sta mp+1
-   jsr pageAllocDispatch
-   bcc ++
-   ldx searchTypeStart
-   lda searchMinFail,x
-   beq +
-   cmp searchSize
-   bcc pageAllocNext
-+  lda searchSize
-   sta searchMinFail,x
-
-   pageAllocNext = *
-   inc searchTypeStart
-   jmp -
-++ ldx mp+3
+   ldx mp+3
    lda mp+2
-   cmp minUsedBank,x
+   cmp minUsedBank
    bcs +
-   sta minUsedBank,x
-+  cmp maxUsedBank,x
+   sta minUsedBank
++  cmp maxUsedBank
    bcc +
-   sta maxUsedBank,x
+   sta maxUsedBank
 +  clc
    rts
-
-   pageAllocDispatch = *
-   jmp (mp)
 
    pageAllocFail = *
    lda #aceErrInsufficientMemory
@@ -593,15 +587,91 @@ kernPageAlloc = *
    sec
    rts
 
-pageAllocREU = *  ;( ) : .X=page, freemapBank, .CC=ok
-   lda #aceMemREU
-   sta mp+3
-   lda aceReuCur
-   ldx aceReuStart
-   ldy aceReuBanks
-   jsr searchType
-   sta aceReuCur
+pageAllocEram = *  ;( searchSize ) : [mp]=farPtr, .CC=ok
+   lda searchSize
+   cmp #65    ;max 64 pages for ERAM alloc
+   bcc +
+   jmp pageAllocFail
++  ldx #aceMemERAM
+   stx mp+3
+   jsr scanEramBAM
+   bcc +
+   jmp pageAllocFail
++  rts
+
+scanCursor !byte 0
+
+scanEramBAM = *
+   lda aceEramCur
+   sta scanCursor
+   ;check if "system allocation"; if so allocate from end
+   lda #$ff
+   cmp allocProcID
+   bne +
+   sta scanCursor
++  jsr seBank
+-  lda #1
+   jsr sePage
+   ldx scanCursor
+   lda edat,x
+   beq new_bank
+   cmp allocProcID
+   beq +
+   sec
    rts
+   ;check sufficient space in current bank
++  lda #0
+   jsr sePage
+   sec
+   lda edat,x
+   sbc searchSize
+   bcs current_bank
+   lda #$ff
+   cmp allocProcID
+   bne +
+   dec scanCursor
+   jmp -
++  inc scanCursor
+   inc aceEramCur
+   jmp -
+
+   ;space sufficient; alloc in current bank
+   current_bank = *
+   lda #64
+   sbc edat,x
+   sta mp+1
+   ;IF alloc size is greater than remaining, then
+   ;we advance to the next bank for next alloc
+   adc searchSize
+   cmp #64
+   bcc finish_scan
+   inc aceEramCur
+   jmp finish_scan
+   
+   new_bank = *
+   lda #0
+   sta mp+1
+   jsr allocBAM
+   
+   finish_scan = *
+   stx mp+2
+   lda #0
+   sta mp+0
+   clc
+   rts
+
+allocBAM = *   ;(.X=block)
+   lda #$81
+   jsr sePage
+   lda allocProcID
+   sta edat,x
+   sec
+   lda aceFreeMemory+1
+   sbc #$40
+   sta aceFreeMemory+1
+   bcs +
+   dec aceFreeMemory+2
++  rts
 
 pageAllocInternal = *
    lda #aceMemInternal
@@ -726,6 +796,10 @@ kernPageFree = *
    bne +
    lda #aceErrNullPointer
    jmp pageFreeFail
+   ;free for eram done by garbage collection
++  cmp #aceMemERAM
+   bne +
+   jmp pageFreeExit
 +  lda #aceErrInvalidFreeParms
    ldx mp+0
    bne pageFreeFail
@@ -762,21 +836,7 @@ kernPageFree = *
    cmp freemapPage
    bcs +
    sta freemapPage
-   ;** assume 2*(min-1)+len+1 new min
-+  ldx mp+3
-   lda searchMinFail,x
-   beq ++
-   sec
-   sbc #1
-   asl
-   bcs +
-   sec
-   adc freeLen
-   bcc ++
-+  lda #0
-++ sta searchMinFail,x
-
-   clc
++  clc
    lda aceFreeMemory+1
    adc freeLen
    sta aceFreeMemory+1
@@ -808,26 +868,49 @@ kernMemStat = *
    clc
    rts
 
-reclaimMemType !byte 0
-
 reclaimProcMemory = *
-   ldx #0
--  lda minUsedBank,x
-   cmp maxUsedBank,x
+   jsr reclaimProcEram
+   lda minUsedBank
+   cmp maxUsedBank
    beq +
    bcs ++
-+  stx reclaimMemType
-   lda minUsedBank,x
-   ldy maxUsedBank,x
-   tax
-   lda reclaimMemType
++  ldx minUsedBank
+   ldy maxUsedBank
+   lda #aceMemInternal
    jsr reclaimProcType
-   ldx reclaimMemType
-++ inx
-   cpx #aceMemTypes
-   bcc -
-   rts
+++ rts
 
+reclaimProcEram = *
+   lda #$ff
+   jsr seBank
+   lda #1
+   jsr sePage
+   ldx #255
+-  inx
+   lda edat,x
+   beq +
+   cmp aceProcessID
+   bne -
++  stx aceEramCur
+   jsr reclaimEramBlocks
+   ;run garbage collector
+   ldx #CMD_GCOLLECT
+   lda aceProcessID
+   jmp kernMapperCommand
+reclaimEramBlocks = *
+-  lda edat,x
+   beq ++
+   cmp aceProcessID
+   bne ++
+   clc
+   lda aceFreeMemory+1
+   adc #$40
+   sta aceFreeMemory+1
+   bcc +
+   inc aceFreeMemory+2
++  inx
+   jmp -
+++ rts
 rpBank  !byte 0,0
 rpEnd   !byte 0
 
@@ -864,8 +947,6 @@ reclaimProcFreemap = *  ;( ) : .Y=pagesRemoved
    beq +
    lda #0
    sta freemapPage
-   ldx freemapBank+1
-   sta searchMinFail,x
    lda #$ff
    sta freemapDirty
    tya
@@ -879,17 +960,14 @@ reclaimProcFreemap = *  ;( ) : .Y=pagesRemoved
 +  clc
    rts
 
-minUsedBank !fill aceMemTypes,0
-maxUsedBank !fill aceMemTypes,0  ;plus 1
+minUsedBank !byte 0
+maxUsedBank !byte 0  ;plus 1
 
 clearMemoryInfo = *
-   ldx #aceMemTypes-1
--  lda #$ff
-   sta minUsedBank,x
+   lda #$ff
+   sta minUsedBank
    lda #$00
-   sta maxUsedBank,x
-   dex
-   bpl -
+   sta maxUsedBank
    rts
 
 ;*** process primitives
@@ -1024,9 +1102,9 @@ kernProcExecSub = *
    lda reloadFlag
    sta execFrame+23
    ldx #7
--  lda minUsedBank,x
+-  lda minUsedBank
    sta execFrame+28,x
-   lda maxUsedBank,x
+   lda maxUsedBank
    sta execFrame+36,x
    dex
    bpl -
@@ -1118,9 +1196,9 @@ internExit = *
    dec aceProcessID
    ldx #7
 -  lda execFrame+28,x
-   sta minUsedBank,x
+   sta minUsedBank
    lda execFrame+36,x
-   sta maxUsedBank,x
+   sta maxUsedBank
    dex
    bpl -
 

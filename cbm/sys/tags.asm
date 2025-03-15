@@ -11,10 +11,8 @@
 ; the block. Hash collisions are possible, but unlikely. Attempts
 ; to alloc a new block with an existing hash value will error.
 
-mpsave      = $88 ;(4)
-tagwork     = $8c ;(4)
-TAGPTR_WORK = 250 ;(5) temp space in tagMemTable
-TAGPTR_NEXT = 255
+mpsave      = syswork+8    ;(4)
+tagwork     = syswork+12   ;(4)
 
 ; Each tag requires 5 bytes for tag(1), size(2), and page addr(2).
 ;   TAGPTR_ENTRY = TYYMM
@@ -45,15 +43,6 @@ pearsonHash !byte $ce,$4a,$67,$b5,$3f,$2f,$5c,$c8,$fa,$53,$da,$7f,$96,$a8,$ea,$1
             !byte $c7,$4b,$5d,$58,$68,$f0,$15,$b8,$5e,$a1,$a2,$52,$ee,$b7,$eb,$98
 
 
-storeMp = *
-   ldx #0
--  lda mp,x
-   sta mpsave,x
-   inx
-   cpx #4
-   bne -
-   rts
-
 restoreMp = *
    ldx #0
 -  lda mpsave,x
@@ -81,13 +70,10 @@ pearson = *       ;( (.AY)=tag : .A=hash)
 +  lda tagwork+0
    rts
 
-locateEntry = *   ;(.A=hash : .X=index of entry,.CS=not found)
+locateMemTag = *   ;(.A=hash : .X=index,.CS=not found)
    sta tagwork+0  ;hash value to locate
-   ldx #TAGPTR_NEXT
-   lda tagMemTable,x
-   sta tagwork+1  ;first unused tag entry
    ldx #0
--  cpx tagwork+1
+-  cpx aceTagsCur
    beq +
    lda tagMemTable,x
    cmp tagwork+0
@@ -102,155 +88,33 @@ locateEntry = *   ;(.A=hash : .X=index of entry,.CS=not found)
 ++ clc            ;found .X=entry
    rts
 
-addEntry = *      ;move temp slot to next open and increment
-   ldx #TAGPTR_NEXT
-   lda tagMemTable,x
-   tay
-   ldx #TAGPTR_WORK+0
--  lda tagMemTable,x
-   sta tagMemTable,y
-   iny
+addMemTag = *  ;(.A=hash, zw=size, (mp)) : .CS=error
+   ldx aceTagsCur
+   cpx #255
+   bcc +
+   rts
++  sta tagMemTable,x
+   lda zw
    inx
-   cpx #TAGPTR_NEXT
-   bne -
-   ldx #TAGPTR_NEXT
-   lda tagMemTable,x
-   clc
-   adc #5
    sta tagMemTable,x
-   rts
-
-kernTagAlloc = *  ;( (zp)=tag, zw=bytes : .CS=error,errno)
-   ;check there is space in tag memory
-   ldx #TAGPTR_NEXT
-   lda tagMemTable,x
-   cmp #250
-   bpl +
-   lda #aceErrInsufficientMemory
-   sta errno
-   sec
-   rts
-+  jsr storeMp
-   ;compute tag hash and store in temp
-   lda zp+0
-   ldy zp+1
-   jsr pearson
-   ldx #TAGPTR_WORK+0
-   sta tagMemTable,x
-   ;check tag is unused
-   jsr locateEntry
-   bcs +
-   lda #aceErrFileExists
-   sta errno
-   sec
-   rts
-   ;allocate target memory 
-+  lda #$fd      ;reuse ProcId from acerd driver
-   sta allocProcID   
-   lda zw+0
-   cmp #0
-   beq +
    lda zw+1
-   clc
-   adc #1
-   jmp ++
-+  lda zw+1
-++ ldx #aceMemInternal
-   ldy #aceMemInternal
-   jsr kernPageAlloc
-   bcc +
-   jsr restoreMp  ;far mem allocaton fail
-   rts
-   ;insert size/ptr into temp. slot
-+  ldx #TAGPTR_WORK+1   ;size (LSB)
-   lda zw+0
+   inx
    sta tagMemTable,x
-   ldx #TAGPTR_WORK+2   ;size (MSB)
-   lda zw+1
-   sta tagMemTable,x
-   ldx #TAGPTR_WORK+3   ;bank (LSB)
    lda mp+1
+   inx
    sta tagMemTable,x
-   ldx #TAGPTR_WORK+4   ;bank (MSB)
    lda mp+2
+   inx
    sta tagMemTable,x
-   ;move temp slot to next open slot
-   jsr addEntry
-   jsr restoreMp
+   inx
+   stx aceTagsCur
    clc
    rts
 
-kernTagRealloc = *  ;( (zp)=tag, zw=bytes : .CS=error,errno)
-   jsr storeMp
-   lda #$fd      ;reuse ProcId from acerd driver
-   sta allocProcID    ;locate existing entry
-   lda zp+0
-   ldy zp+1
+tagMemPtr = *
    jsr pearson
-   sta tagwork+2     ;store hash
-   jsr locateEntry
-   stx tagwork+3     ;store slot
+   jsr locateMemTag
    bcc +
-   ;no existing entry, so create it
-   lda tagwork+2
-   sta tagMemTable,x
-   txa
-   clc
-   adc #5
-   ldx #TAGPTR_NEXT
-   sta tagMemTable,x
-   jmp ++
-   ;free existing far memory
-+  lda tagwork+2
-   jsr getTagFarPtr
-   cmp #0
-   beq +
-   iny
-+  tya
-   jsr kernPageFree
-   ;re-allocate target memory 
-++ lda zw+0
-   cmp #0
-   beq +
-   lda zw+1
-   clc
-   adc #1
-   jmp ++
-+  lda zw+1
-++ ldx #aceMemInternal
-   ldy #aceMemInternal
-   jsr kernPageAlloc
-   bcc +
-   jsr restoreMp  ;far mem allocation fail
-   rts
-   ;insert memory ptr/size into slot
-+  ldx tagwork+3
-   inx                  ;size (LSB)
-   lda zw+0
-   sta tagMemTable,x
-   inx                  ;size (MSB)
-   lda zw+1
-   sta tagMemTable,x
-   inx                  ;bank (LSB)
-   lda mp+1
-   sta tagMemTable,x
-   inx                  ;bank (MSB)
-   lda mp+2
-   sta tagMemTable,x
-   jsr restoreMp
-   clc
-   rts
-
-getMemTypeFromBank = *  ;( (mp) : (mp))
-   ;always use internal memory
-   lda #aceMemInternal
-   sta mp+3
-   rts
-
-getTagFarPtr = * ;( .A=hash : (mp), (.AY)=size, .CS=error)
-   jsr locateEntry
-   bcc +
-   jsr restoreMp
    rts
 +  inx
    lda tagMemTable,x
@@ -259,136 +123,32 @@ getTagFarPtr = * ;( .A=hash : (mp), (.AY)=size, .CS=error)
    lda tagMemTable,x
    sta tagwork+1
    inx
-   lda tagMemTable,x     ;bank (LSB)
+   lda tagMemTable,x
    sta mp+1
    inx
-   lda tagMemTable,x     ;bank (MSB)
-   sta mp+2
-   jsr getMemTypeFromBank
-   ;check if valid far ptr
+   lda tagMemTable,x
+   sta mp+1
+   jsr setMemType
    lda #0
    sta mp+0
-   ora mp+1
-   ora mp+2
-   ora mp+3
+   clc
+   rts
+
+setMemType = *
+   ldx #aceMemERAM
+   lda aceEramBanks
    bne +
-   sec
-   rts
-+  lda tagwork+0
-   ldy tagwork+1
-   clc
+   ldx #aceMemInternal
++  stx mp+3
    rts
 
-kernTagFind = *  ;( (.AY)=tag : (mp), (.AY)=size, .CS=error)
-   jsr pearson
-   sta tagwork+0
-   jsr storeMp
-   lda tagwork+0
-   jmp getTagFarPtr
-
-kernTagFetch = * ;( (zp)=dst, (.AY)=tag : .CS=error, .AY=sz)
-   jsr kernTagFind
-   bcc +
-   jsr restoreMp
-   rts
-   ;fetch
-+  jsr kernMemFetch
-   bcc +
-   jsr restoreMp
-   rts
-+  jsr restoreMp
-   lda tagwork+0
-   ldy tagwork+1
-   clc
-   rts
-
-kernTagStash = * ;( (zp)=src, (.AY)=tag : .CS=error)
-   jsr kernTagFind
-   bcc +
-   jsr restoreMp
-   rts
-   ;stash
-+  jsr kernMemStash
-   jsr restoreMp
-   clc
-   rts
-
-
-;=== mmap ===
-; An API for loading files and other data into extended RAM
-; for fast, random access (seek) and transfer into work buffers.
-mmap_tag  !byte 0,0
-mmap_file !byte 0,0
-kernTagMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
-   sta mmap_tag+0
-   sty mmap_tag+1
-   lda zp+0
-   ldy zp+1
-   sta mmap_file+0
-   sty mmap_file+1
-   ;get the file's size (aceFileStat)
-   jsr kernFileStat 
-   bcc +
-   lda #aceErrFileNotFound
-   jmp .mmap_err
-   ;(re)alloc the extended mem
-+  sta zw+0
-   sty zw+1
-   lda mmap_tag+0
-   sta zp+0
-   lda mmap_tag+1
-   sta zp+1
-   jsr kernTagRealloc
-   bcc +
-   ;failed allocation
-   lda #aceErrInsufficientMemory
-   jmp .mmap_err
-   ;get far ptr to mmap
-+  lda mmap_tag+0
-   ldy mmap_tag+1
-   jsr pearson
-   jsr getTagFarPtr
-   ;reopen, read, and cache the file
-   lda mmap_file+0
-   ldy mmap_file+1
-   sta zp+0
-   sty zp+1
-   lda #"B"
-   jsr open
-   sta mmap_file+0
-   lda #<stringBuffer   ;using $400 (stringBuffer) as buf
-   ldy #>stringBuffer   ;for streaming in the file...
-   sta zp+0
-   sty zp+1
--  jsr .setBuffer
-   ldx mmap_file+0
-   jsr read
-   jsr kernMemStash
-   inc mp+1
-   dec aceDirentBytes+1
-   bpl -
-   lda mmap_file+0
-   jmp close
-.mmap_err:
-   sta errno
-   sec
-   rts
-.setBuffer:
-   bne +
-   lda aceDirentBytes+0
-   ldy #0
-   rts
-+  lda #0
-   ldy #1
-   rts
-
-
+;---------------------- File API support ------------------------
 ;*** (bloadDevice, bloadAddress, bloadFilename, zw=limit addr.+1)
 ;     : .AY=end addr.+1, .CS=error, errno
 internTagBload = *
    lda bloadFilename+0
    ldy bloadFilename+1
-   jsr kernTagFind
+   jsr tagMemPtr
    bcc +
    lda #aceErrFileNotFound
    sta errno
@@ -416,7 +176,6 @@ internTagBload = *
    ldy tagwork+1
    jsr kernMemFetch
    bcc +
-   jsr restoreMp
    lda #aceErrInsufficientMemory
    sta errno
    sec
@@ -429,7 +188,6 @@ internTagBload = *
    lda bloadAddress+1
    adc tagwork+1
    sta tagwork+1
-   jsr restoreMp
    lda tagwork+0
    ldy tagwork+1
    clc
@@ -498,7 +256,7 @@ internTagOpen = *
    tay
    lda zp+0
    jsr pearson
-   jsr locateEntry
+   jsr locateMemTag
    bcc +
    lda #aceErrFileNotFound
    jmp tagOpenError
@@ -690,7 +448,7 @@ preFetchPage = *
    inx
    lda fileinfoTable,x
    sta mp+2
-   jsr getMemTypeFromBank
+   jsr setMemType
    ;add current pos to base ptr
    lda mp+1
    clc

@@ -12,11 +12,11 @@ aceInternalBanks  = aceStatB+84  ;(1)
 aceInternalCur    = aceStatB+85  ;(1)
 aceRam0Freemap    = aceStatB+86  ;(2)
 aceRam1Freemap    = aceStatB+88  ;(1)
-aceReuStart       = aceStatB+89  ;(1)
-aceReuBanks       = aceStatB+90  ;(1)
-aceReuCur         = aceStatB+91  ;(1)
+aceEramStart      = aceStatB+89  ;(1)
+aceEramBanks      = aceStatB+90  ;(1)
+aceEramCur        = aceStatB+91  ;(1)
 aceSystemType 	  = aceStatB+92  ;(1)   ;$80=C128,$40=C64
-aceRestoreStack   = aceStatB+93  ;(1)
+aceTagsCur        = aceStatB+93  ;(1)
 aceSoft80Allocated= aceStatB+94  ;(1)  ;$ff=yes,$00=no
 aceCharSetPage    = aceStatB+95  ;(1)
 aceVic40Page      = aceStatB+96  ;(1)
@@ -26,5 +26,4 @@ aceNmiWork        = aceStatB+99  ;(2)   ;for redirecting NMIs on the C64
 aceCurDirName     = aceStatB+101 ;(3)   ;name of current directory
 ;===end of aceStatB ($f00 - $f90 used; max $faf)
 
-aceMemTypes       = 4
 ;===end of kernel header info===

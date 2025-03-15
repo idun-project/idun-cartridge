@@ -68,7 +68,7 @@ jmp kernFileRemove
 jmp kernFileRename
 jmp kernFileStat
 jmp kernFileIoctl
-jmp kernTagMmap
+jmp notImp
 jmp kernFileBkload
 
 jmp kernDirOpen
@@ -139,16 +139,17 @@ jmp kernConSetHotkeys
 jmp kernModemAvail
 jmp kernModemGet
 jmp kernModemPut
-jmp kernTagAlloc
-jmp kernTagStash
-jmp kernTagFetch
-jmp kernTagRealloc
+jmp kernNew
+jmp kernMemtag
+jmp kernMmap
+jmp notImp
 jmp kernMiscSysType
 jmp kernMiscRobokey
 jmp kernMountImage
 jmp kernMiscDeviceInfo
 jmp kernCopyHost
 jmp kernRestart
+jmp kernMapperSetreg
 jmp kernMapperCommand
 jmp kernMapperProcmsg
 jmp kernWinGrChrPut
@@ -628,32 +629,6 @@ nmiExit = *
 ;C128 NMI overhead=76 cycles: int=7, maxLatency=6, ROMenter=33, ROMexit=30
 ;C64  NMI overhead=76 cycles: int=7, maxLatency=6, ROMenter=34, ROMexit=29
 
-aceIrqInit = *
-   php
-   sei
-!if useC64 {
-   ldx #5
--  lda c64IntVecs,x
-   sta $fffa,x
-   dex
-   bpl -
-}
-   lda #<irqHandler
-   ldy #>irqHandler
-   sta $314
-   sty $315
-   ;use the VIC raster interrupt as the timer
-   lda vic+$11
-   and #$7f
-   sta vic+$11
-   lda #252
-   sta vic+$12
-   plp
-   rts
-
-c64IntVecs = *
-   !word nmiIntDispatch,resetIntDispatch,irqIntDispatch
-
 irqIntDispatch = *  ;for C64 only, RAM0
    pha
    txa
@@ -786,8 +761,9 @@ aceExitBasic = *
    brk
 
 ; bkACE
+!source "sys/tags.asm"
+!source "sys/eram.asm"
 !source "sys/acemem.asm"
-!source "sys/acetag.asm"
 !source "sys/acewin.asm"
 !if useVdc {
    !source "sys/acevdc.asm"
@@ -833,37 +809,23 @@ main = *
    jsr aceBootstrap
    jsr initMemory
    ; IDUN: Init syswork vars to 0 to prevent weird side-effects
-   ldy #0
+   ldy #15
    lda #0
 -  sta syswork,y
-   iny
-   cpy #16
-   bmi -
-   ; IDUN: Must init RPi I/O before aceConfig since the config
-   ; code will access I: and T: devices.
-   jsr pidInit
+   dey
+   bpl -
    jsr aceConfig
    bcc +
    jmp configErrMainExit
-+  jsr aceIrqInit
-   ; IDUN: pidInit once more to ensure fileinfotable zero'd
-   jsr pidInit
-   jsr aceStartup
++  jsr aceStartup
    bit aceSuperCpuFlag
    bpl +
    sta scpuHwOn
    sta scpuMrOff
    sta scpuHwOff
-+  jsr initMemoryAlloc
-   sei
++  sei
    jsr winStartup
    jsr conInit
-   ; IDUN: Init table for tagmem
-   lda #0
-   ldx #0
--  sta tagMemTable,x
-   inx
-   bne -
    lda #$01
    sta vic+$1a     ;enable VIC raster IRQ
    cli
@@ -1114,7 +1076,7 @@ aceBss = *
 }
 
 !if aceBssEnd>aceAppAddress {
-   !error "Kernel exceeds maximum address ",aceAppAddress, " by ", *-aceAppAddress, " bytes."
+   !error "Kernel exceeds maximum address ",aceAppAddress, " by ", aceBssEnd-aceAppAddress, " bytes."
 }
 
 

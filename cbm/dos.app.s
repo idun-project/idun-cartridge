@@ -35,42 +35,41 @@ shellName: !byte 0,0
 
 ;=== Dos Startup. Makes Dos resident for fast reload. ===
 DosStartup = *
-   ;determine size of Dos above aceToolAddress
-   lda #<bss
+   ;get default shell app
+   ldx #15
+   clc
+   jsr aceConOption
+   lda zp+0
+   sta shellName+0
+   lda zp+1
+   sta shellName+1
+   ;check fast reload code in ERAM
+   ldx #0
+   jsr aceSearchPath
+   jsr open
+   bcs +
+   jsr close
+   jmp idunMacroStorage
+   ;determine size of dos.app above aceToolAddress
++  lda #<bss+1
    sec
    sbc #<aceToolAddress
    sta zw+0
    lda #>bss
    sbc #>aceToolAddress
    sta zw+1
-   lda zw+0
-   clc
-   adc #1
-   sta zw+0
-   lda zw+1
-   adc #0
-   sta zw+1
-   ldx #15
-   clc
-   jsr aceConOption     ;get default shell app
-   lda zp+0
-   sta shellName+0
-   lda zp+1
-   sta shellName+1
-   ;allocate tagged memory to hold loadable code
-   jsr aceTagRealloc
+   ;allocate and tag mem holding fast reload code
+   lda #<aceToolAddress
+   ldy #>aceToolAddress
+   jsr new
    bcc +
    rts
 +  lda shellName+0
    ldy shellName+1
-   ldx #<aceToolAddress
-   stx zp+0
-   ldx #>aceToolAddress
-   stx zp+1
-   jsr aceTagStash
+   jsr memtag
    ;init user macro storage
+idunMacroStorage = *
    ldx #aceMemInternal
-   ldy #aceMemInternal
    lda #1
    jsr aceMemAlloc
    bcs +
@@ -1456,13 +1455,11 @@ mount = *
 ;===mem===
 gmTpa       = 2  ;(4)
 gmDynFree   = 6  ;(4)
-gmDynTotal  = 10 ;(4)
-gmTotalRAM  = 14 ;(4)
-gmOption    = 18 ;(1)
-gmTemp      = 19 ;(4)
+gmTotal     = 10 ;(4)
+gmOption    = 14 ;(1)
+gmTemp      = 15 ;(4)
 
 ;             |---------1---------2---------3---------4|
-gmDynMsg !pet "xxxxxk total dynamic RAM.",chrCR,0
 gmTpaMsg !pet "xxxxx application bytes available.",chrCR,0
 gmUsageMsg = *
    !pet  "mem [/s]"
@@ -1505,18 +1502,11 @@ getmem = *
    ; get dynamic memory free/total
 ++ ldx #gmDynFree
    jsr aceMemStat
-   ; calculate total RAM as a 4-byte quantity
-   jsr aceMiscSysType
-   sty gmTotalRAM+2
-   txa
-   clc
-   adc gmTotalRAM+2
-   sta gmTotalRAM+2
    lda #<gmMemMsg
    sta zp+0
    lda #>gmMemMsg
    sta zp+1
-   ldx #gmTotalRAM
+   ldx #gmTotal
    jsr getKb
    +ldaSCII "k"
    ldx #5
@@ -1551,21 +1541,8 @@ gmMemMsg !pet "xxxxxk RAM System        xxxxxk free.",0
    +cmpASCII "s"
    bne +
    rts
-   ; show total dynamic memory
-+  lda #<gmDynMsg
-   sta zp+0
-   lda #>gmDynMsg
-   sta zp+1
-   ldx #gmDynTotal
-   jsr getKb
-   +ldaSCII "k"
-   ldx #5
-   sta gmDynMsg,x
-   lda #<gmDynMsg
-   ldy #>gmDynMsg
-   jsr puts
    ; calculate and show application memory
-   sec
++  sec
    lda aceMemTop+0
    sbc #<aceAppAddress
    sta gmTpa+0

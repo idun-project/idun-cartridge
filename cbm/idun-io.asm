@@ -28,27 +28,6 @@
   kernelNmiHandler = $fe47
 }
 
-; Initialization
-pidInit = *
-  ; init fileinfoTable
-  ldx #0
-  lda #0
-- sta fileinfoTable,x
-  inx
-  bne -
-!if romsize=0 {
-pidInitNmi = *
-  sei
-  lda #<nmiMmap
-  sta nmiRedirect+0
-  lda #>nmiMmap
-  sta nmiRedirect+1
-  cli
-} else {
-  pidInitNmi = *
-}
-  jmp pidFlushbuf
-
 !if romsize=0 {
 rom_sig !pet "CBM"
 nmiMmap = *             ;33 cycles (in kernal)

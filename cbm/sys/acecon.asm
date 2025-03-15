@@ -72,8 +72,7 @@ conInit = *
 +  lda #$fa
    sta allocProcID
    lda #1
-   ldx #$00  ;xxx go for the slow
-   ldy #$ff
+   ldx #aceMemInternal
    jsr kernPageAlloc
    bcs conInitCleanHist
    ;** check first line

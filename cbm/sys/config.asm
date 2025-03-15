@@ -33,24 +33,101 @@ configMain = *
    sta aceTotalMemory+1
    sta totalBanks+0
    sta totalBanks+1
+   jsr pidInit          ;Before accessing cart devices!
    jsr loadConfig
    bcs +
    jsr screenInit
    jsr setDate
    jsr internalMemory
-   jsr reuMemory
+   lda aceInternalBanks
+   sta totalBanks+0
+   jsr reserveRam0HiMem
+   jsr reserveTPA
+   jsr eramMemory
    lda totalBanks+0
    ldy totalBanks+1
    sta aceTotalMemory+2
    sty aceTotalMemory+3
-   jsr totalMemory
-   ldx #3
--  lda aceFreeMemory,x
-   sta aceTotalMemory,x
+   jsr loadCharset
+   bcs +
+   jmp Inits
++  rts
+
+Inits = *
+   jsr pidInit
+   jsr aceIrqInit
+   jsr initMemoryAlloc
+   jsr initTags
+   clc
+   rts
+
+pidInit = *
+  ; init fileinfoTable
+  ldx #0
+  lda #0
+- sta fileinfoTable,x
+  inx
+  bne -
+!if romsize=0 {
+pidInitNmi = *
+  sei
+  lda #<nmiMmap
+  sta nmiRedirect+0
+  lda #>nmiMmap
+  sta nmiRedirect+1
+  cli
+} else {
+  pidInitNmi = *
+}
+  jmp pidFlushbuf
+aceIrqInit = *
+   php
+   sei
+!if useC64 {
+   ldx #5
+-  lda c64IntVecs,x
+   sta $fffa,x
    dex
    bpl -
-   jmp loadCharset
-+  rts
+}
+   lda #<irqHandler
+   ldy #>irqHandler
+   sta $314
+   sty $315
+   ;use the VIC raster interrupt as the timer
+   lda vic+$11
+   and #$7f
+   sta vic+$11
+   lda #252
+   sta vic+$12
+   plp
+   rts
+c64IntVecs = *
+   !word nmiIntDispatch,resetIntDispatch,irqIntDispatch
+initMemoryAlloc = *
+   ldx #0
+   ldy #0
+   stx freemapPage
+   stx freemapDirty
+-  lda ram0FreeMap,x
+   sta freemap,x
+   bne +
+   iny
++  inx
+   bne -
+   lda #0
+   ldy #aceMemInternal
+   sta freemapBank+0
+   sty freemapBank+1
+   clc
+   rts
+initTags = *
+   lda #0
+   ldx #0
+-  sta tagMemTable,x
+   inx
+   bne -
+   rts
 
 testMemoryType = *  ;( .A=type, .X=bankLimit ) : .A=bankCount
    sta mp+3
@@ -590,111 +667,96 @@ reserveTPA = *
    sta aceFreeMemory+3
    rts
 
-reuBleedSaveBuf !fill 16,0
-
-reuBleedSave = *
-   bit sysType
-   bpl +
-   lda #$3f
-   sta $ff00
-   jmp ++
-+  lda #$30
-   sta $01
-++ nop
-   ldx #15
--  lda $df00,x
-   sta reuBleedSaveBuf,x
-   dex
-   bpl -
-   bit sysType
-   bpl +
-   lda #$0e
-   sta $ff00
-   jmp ++
-+  lda #$36
-   sta $01
-++ nop
+eramBank = *
+!if useFastClock {
+   ldy $d030
+   sty $44
+   ldy #0
+   sty $d030
+}
+   sta $deff
+-  bit $defe
+   bvc -
+!if useFastClock {
+   ldy $44
+   sty $d030
+}
    rts
-
-reuBleedRestore = *
-   bit sysType
-   bpl +
-   lda #$3f
-   sta $ff00
-   jmp ++
-+  lda #$30
-   sta $01
-++ ldx #15
--  lda reuBleedSaveBuf,x
-   sta $df00,x
-   dex
-   bpl -
-   bit sysType
-   bpl +
-   lda #$0e
-   sta $ff00
-   jmp ++
-+  lda #$36
-   sta $01
-++ nop
+eramDetect = *
+   ;detect ERAM presence
+!if useFastClock {
+   ldy $d030
+   sty $44
+   ldy #0
+   sty $d030
+}
+   ldy #1
+   sty $defe
+-  iny
+   beq eramDetectFail
+   bit $defe
+   bvc -
+!if useFastClock {
+   ldy $44
+   sty $d030
+}
+   lda $defe
+   cmp #65
+   bne eramDetectFail
+   lda $df00
+   cmp #255
+   beq eramDetectFail
+   lda $dfff
+   cmp #255
+   bne eramDetectFail
+   clc
    rts
-
-reuMemory = *
-   lda #$00
-   jsr reuBleedSave
-   lda #aceMemREU
-   ldx #255
-   jsr testMemoryType
-   pha
-   jsr reuBleedRestore
-   lda #0
-   sta $45
-   pla
-   sta aceReuBanks
-   tax
+eramDetectFail:
+!if useFastClock {
+   ldy $44
+   sty $d030
+}
+   sec
+   rts
+availEram = *
    jsr resetFree
-   lda #aceMemREU
-   sta mp+3
-   ldy #$a6
-   bit sysType
-   bmi +
-   ldy #$c2
-+  lda (.configBuf),y
-   sta aceReuStart
-   sta aceReuCur
-   ldy #$a7
-   bit sysType
-   bmi +
-   ldy #$c3
-+  lda (.configBuf),y
-   ldx aceReuBanks
-   jsr min
-   sta aceReuBanks
-   lda #$00
-   ldy #$ff
-   ldx aceReuStart
-   sta mp+0
-   sty mp+1
-   stx mp+2
-   lda aceReuBanks
-   ldx #$00
-   ldy #$ff
-   jsr initBanks
-   jsr addToFree
-   rts
-
-totalMemory = *
-   ldx totalBanks
-   lda totalBanks+1
+   ldx aceEramStart
+-  lda $df00,x
+   clc
+   adc $45
    sta $45
-   ldx #3
--  lda aceFreeMemory,x
-   sta $44,x
-   dex
-   bpl -
-   jsr reserveRam0HiMem
-   jsr reserveTPA
+   bcc +
+   inc $46
++  inx
+   bne -
    rts
+eramMemory = *
+   lda #0
+   sta aceEramBanks
+   sta aceEramCur
+   sta aceEramStart
+   jsr eramDetect
+   bcc +
+   rts            ;ERAM not present
++  lda #255
+   jsr eramBank   ;select the freemap
+   ;TODO
+   ;It may be worthwhile to use the config values
+   ;for REU bank low/high and apply them to Eram blocks.
+   ;This would allow some Eram blocks to be reserved for
+   ;use outside of the kernel usage. The values are in
+   ;configBuf+$c2 and configBuf+$c3 for the C128 and in
+   ;configBuf+$a7 for the C64.
+   lda #255
+   sta aceEramBanks
+   lda #$40       ;256 16k blocks = 64 banks = 4,096K
+   clc
+   adc totalBanks+0
+   sta totalBanks+0
+   bcc +
+   inc totalBanks+1
++  jsr availEram
+   jsr addToFree
    rts
 
 endBank   = 10  ;(1)

@@ -22,6 +22,25 @@ pisvcCommonListen = *
   lda #$7F
   jmp pidChOut
 
+settingRegister !byte 0
+;*** (.X=Register, .AY=Value)
+kernMapperSetreg = *
+  stx settingRegister
+  pha
+  tya
+  pha
+  ; LISTEN channel @:
+  lda #0
+  jsr pisvcCommonListen
+  ; Send 3-byte message
+  lda settingRegister
+  jsr pidChOut
+  pla
+  tay
+  pla
+  jsr pidChOut
+  tya
+  jmp pidChOut
 ;*** (.X=Command, .A=Param)
 kernMapperCommand = *
   pha

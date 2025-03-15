@@ -54,7 +54,7 @@ aceFileRemove = aceCallB+18  ;( (zp)=name )
 aceFileRename = aceCallB+21  ;( (zp)=oldName, (zw)=newName )
 aceFileStat   = aceCallB+24  ;( (zp)=path ) : .AY=filesz,.CS=error,errno,fills aceDirentBuffer
 aceFileIoctl  = aceCallB+27  ;( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
-mmap          = aceCallB+30  ;(.AY=tagname, (zp)=filename : .CS=error)
+aceReserved1  = aceCallB+30
 aceFileBkload = aceCallB+33  ;( .X=bank (zp)=name, .AY=loadAddr, (zw)=limit+1):.AY=end+1
 
 aceDirOpen    = aceCallB+36  ;( (zp)=dirName ) : .A=fd
@@ -135,19 +135,19 @@ aceTtyGet        = aceCallB+213 ;( .AY=RecvBuffer, .X=RecvBytes,
                                 ;  : .CS, error
 aceTtyPut        = aceCallB+216 ;( .AY=SendBuffer, .X=SendBytes,
                                 ;  : .CS, error
-; IDUN: Add aceTag far memory management interface
-aceTagAlloc      = aceCallB+219 ;( (zp)=tag, zw=bytes  : .CS=error,errno)
-aceTagStash      = aceCallB+222 ;( (zp)=src, (.AY)=tag  : .CS=error)
-aceTagFetch      = aceCallB+225 ;( (zp)=dst, (.AY)=tag  : .CS=error, .AY=sz)
-aceTagRealloc    = aceCallB+228 ;( (zp)=tag, zw=bytes  : .CS=error,errno)
+; IDUN: New API far memory management with ERAM
+new              = aceCallB+219 ;( (.AY)=data, zw=bytes : (mp), .CS=error )
+memtag           = aceCallB+222 ;( (.AY)=tag, (mp) : .CS=error )
+mmap             = aceCallB+225 ;( (zp)=fname : .CS=error, .AY=sz)
+aceReserved2     = aceCallB+228
 ; IDUN: Add function to get key system type values
-aceMiscSysType   = aceCallB+231 ;( : .A=model, .X=int. banks, .Y=reu banks)
+aceMiscSysType   = aceCallB+231 ;( : .A=model, .X=int. banks, .Y=eram banks)
 ; IDUN: Add function to inject keystrokes; support user-defined macro keys
 aceMiscRobokey   = aceCallB+234 ;( .A=key )
-; IDUN: Add function to mount a disk image file (from Vitual Drives only!)
+; IDUN: Add function to mount a disk image file (from Virtual Drives only!)
 aceMountImage    = aceCallB+237 ;( (zp)=image file, .X=target device,
                                 ;  .A=read/write flag) : .CS, errno
-; IDUN: Add functon to retrieve device attributes
+; IDUN: Add function to retrieve device attributes
 aceMiscDeviceInfo= aceCallB+240 ;( (zp)=path: .A=iec addr,.X=type,
 ;                                  sw=flags,sw+1=device,.CS=virt.dev )
 ; IDUN: Fast,local copy of (large) files between virtual drives ONLY!
@@ -158,34 +158,30 @@ aceRestartWarmReset     = $80
 aceRestartApplReset     = $81
 aceRestartExitBasic     = $82
 aceRestartLoadPrg       = $83
-; Cont. jmp table
 aceRestart       = aceCallB+246 ;(.A=flag,.X=device,(zp)=appname) : no RTS!
 ; IDUN: Communicate with the RPi Memory Mapper process
-aceMapperCommand = aceCallB+249 ;(.X=Command, .A=Param)
-aceMapperProcmsg  = aceCallB+252 ;(.AY=proc callback)
-; IDUN: Put characers from graphical set
-aceWinGrChrPut  = aceCallB+255
+aceMapperSetreg = aceCallB+249  ;(.X=Register, .AY=Value)
+aceMapperCommand = aceCallB+252 ;(.X=Command, .A=Param)
+aceMapperProcmsg  = aceCallB+255 ;(.AY=proc callback)
+; IDUN: Put characters from graphical set
+aceWinGrChrPut  = aceCallB+258
 ; IDUN: Read/write by Track/Sector to Virtual Floppy devices
-aceDirectRead   = aceCallB+258 ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len, .CS=error
-aceDirectWrite  = aceCallB+261 ;( .X=fd, (zp)=buf, .A=# sector) : .CS=error
+aceDirectRead   = aceCallB+261 ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len, .CS=error
+aceDirectWrite  = aceCallB+264 ;( .X=fd, (zp)=buf, .A=# sector) : .CS=error
 ; IDUN: Detect when running in emulator.
 ; Custom version of Vice Emulator can connect
 ; to Idun services over the network.
-aceViceEmuCheck = aceCallB+264 ;() : .ZS=emulator detected
+aceViceEmuCheck = aceCallB+267 ;() : .ZS=emulator detected
 ; IDUN: Use search path to determine full filename
-aceSearchPath   = aceCallB+267 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
+aceSearchPath   = aceCallB+270 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
                                ;                                .CS=end of path
 aceID1 = $cb
 aceID2 = $06
 aceID3 = 16
 
 aceMemNull     = $00
-aceMemREU      = $01
-;IDUN: Deprecate support for RAMLink
-;aceMemRL       = $02
-aceMemInternal = $02
-;IDUN: Add support for TagRAM
-aceMemTagged   = $03 
+aceMemInternal = $01
+aceMemERAM     = $02
 
 aceErrStopped = 0
 aceErrTooManyFiles = 1
@@ -205,6 +201,7 @@ aceErrNoChannel = 70
 aceErrDiskFull = 72
 aceErrInsufficientMemory = 128
 aceErrOpenDirectory = 129
+aceErrMemorySize = 130
 aceErrDiskOnlyOperation = 131
 aceErrNullPointer = 132
 aceErrInvalidFreeParms = 133

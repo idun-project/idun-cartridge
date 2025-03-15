@@ -8,7 +8,7 @@ ACME=acme --dialect 0.94.12
 
 ACESYS=\
 sys/ace.asm sys/config.asm sys/acecall.asm sys/acemem.asm \
-sys/acewin.asm sys/acecon.asm sys/acetag.asm \
+sys/acewin.asm sys/acecon.asm sys/tags.asm sys/eram.asm \
 $(ACEHDRS) $(ACEDRVS)
 
 ACEHDRS=\

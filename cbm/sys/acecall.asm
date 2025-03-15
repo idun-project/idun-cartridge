@@ -1801,11 +1801,11 @@ kernMiscIoPoke = *
    pla
    rts
 
-;*** aceMiscSysType () : .A=model, .X=int. banks, .Y=REU banks
+;*** aceMiscSysType () : .A=model, .X=int. banks, .Y=ERAM banks
 ;                        .sw+0=vdc mem.
 kernMiscSysType = *
    ldx aceInternalBanks
-   ldy aceReuBanks
+   ldy aceEramBanks
    lda configBuf+$aa
    sta syswork+0
    lda aceSystemType

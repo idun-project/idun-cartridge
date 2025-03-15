@@ -144,18 +144,22 @@ mmap_file = *
    jmp Failure
    ;mmap to block #127
 +  jsr aceMiscDeviceInfo   ;device number -> sw+1
-   lda #$20                ;LISTEN #0
-   jsr pidChOut
-   lda #$7F                ;SECOND #31
-   jsr pidChOut
-   lda #$fb                ;CMD_MMAP
-   jsr pidChOut
+   ;set destination to 7f/0
+   lda #0
+   ldy #$7f
+   ldx #$f5                ;SET_DESTINATION=$7f/0
+   jsr aceMapperSetreg
+   ;set device
    lda syswork+1
    lsr
    lsr
-   jsr pidChOut            ;device
-   lda #127                ;destination block
-   jsr pidChOut
+   ldy #0
+   ldx #$f4                ;SET_DEVICE
+   jsr aceMapperSetreg
+   ;send Mmap command
+   ldx #$fb                ;CMD_MMAP
+   lda aceStatB+75
+   jsr aceMapperCommand
    ;wait for mmap to be completed
    lda #255
    jsr setBlk
