@@ -869,8 +869,10 @@ kernMemStat = *
    rts
 
 reclaimProcMemory = *
+   lda aceEramBanks
+   beq +
    jsr reclaimProcEram
-   lda minUsedBank
++  lda minUsedBank
    cmp maxUsedBank
    beq +
    bcs ++

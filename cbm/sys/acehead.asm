@@ -136,9 +136,11 @@ aceTtyGet        = aceCallB+213 ;( .AY=RecvBuffer, .X=RecvBytes,
 aceTtyPut        = aceCallB+216 ;( .AY=SendBuffer, .X=SendBytes,
                                 ;  : .CS, error
 ; IDUN: New API far memory management with ERAM
-new              = aceCallB+219 ;( (.AY)=data, zw=bytes : (mp), .CS=error )
+new              = aceCallB+219 ;( (.AY)=data, .X=$ff?, zw=#bytes : (mp), .CS=error )
+                                ;set .X=$ff to mmap to system area
 memtag           = aceCallB+222 ;( (.AY)=tag, (mp) : .CS=error )
-mmap             = aceCallB+225 ;( (zp)=fname : .CS=error, .AY=sz)
+mmap             = aceCallB+225 ;( (.AY)=tag, (zp)=fname, .X=$ff? : .CS=error)
+                                ;set .X=$ff to mmap to system area
 aceReserved2     = aceCallB+228
 ; IDUN: Add function to get key system type values
 aceMiscSysType   = aceCallB+231 ;( : .A=model, .X=int. banks, .Y=eram banks)

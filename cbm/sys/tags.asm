@@ -127,7 +127,7 @@ tagMemPtr = *
    sta mp+1
    inx
    lda tagMemTable,x
-   sta mp+1
+   sta mp+2
    jsr setMemType
    lda #0
    sta mp+0
@@ -153,10 +153,8 @@ internTagBload = *
    lda #aceErrFileNotFound
    sta errno
    rts
-+  sta tagwork+0     ;store size
-   sty tagwork+1
    ;check if found 1st entry, which is *always* the shell app
-   lda tagMemTable+3
++  lda tagMemTable+3
    cmp mp+1
    bne +
    lda tagMemTable+4

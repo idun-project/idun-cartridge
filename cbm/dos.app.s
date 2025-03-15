@@ -61,6 +61,7 @@ DosStartup = *
    ;allocate and tag mem holding fast reload code
    lda #<aceToolAddress
    ldy #>aceToolAddress
+   ldx #$ff       ;using system area
    jsr new
    bcc +
    rts
@@ -193,6 +194,7 @@ ashrc = *
    ;** mmap load the batch file
    lda #<memBatchTag
    ldy #>memBatchTag
+   ldx #$ff    ;using system area
    jsr mmap
    bcc +
    jmp ashrcError
@@ -1867,6 +1869,7 @@ exec_batch = *
    ;** mmap load the batch file
    lda #<memBatchTag
    ldy #>memBatchTag
+   ldx #$ff       ;using system area
    jsr mmap
    bcc +
    jmp handleScriptError
@@ -1915,6 +1918,7 @@ resident = *
    adc #0
    tay
    lda reTagName
+   ldx #$ff       ;using system area
    jmp mmap
 
 

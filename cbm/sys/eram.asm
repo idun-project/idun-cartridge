@@ -25,8 +25,11 @@ CMD_ALLOCATE    = $f9
 CMD_MMAP        = $fb
 CMD_GCOLLECT    = $fa
 
-;=== new === (.AY)=data, zw=bytes : (mp), .CS=error
+;=== new === (.AY)=data, .X=$ff? zw=bytes : (mp), .CS=error
+sys_area_alloc !byte 0
+
 kernNew = *
+    stx sys_area_alloc
     sta syswork
     sty syswork+1
     ldy zw+1
@@ -71,18 +74,13 @@ kernNew = *
     lda aceEramBanks
     bne +
     ldx #aceMemInternal
+    ;check for system alloc
++   lda sys_area_alloc
+    cmp #$ff
+    beq +
     lda aceProcessID
-    sta allocProcID
-    jmp ++
-    ;For ERAM, if aceProcessID < 3, then system alloc
-+   lda aceProcessID
-    cmp #3
-    bcc +
-    sta allocProcID
-    jmp ++
-+   lda #$ff
-    sta allocProcID
-++  pla
++   sta allocProcID
+    pla
     jmp kernPageAlloc
 
 ;=== memtag === (.AY)=tag, zw=size, (mp) : .CS=error
@@ -99,7 +97,9 @@ kernMemtag = *
 ;=== mmap ===
 mmap_tag !byte 0
 mmap_tmp !byte 0
-kernMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
+
+kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename : .CS=error)
+    stx sys_area_alloc
     jsr kernHashTag
     pha
     jsr locateMemTag
@@ -136,18 +136,17 @@ kernMmap = *       ;(.AY=tagname, (zp)=filename : .CS=error)
     ldy #0
     ldx #SET_DEVICE
     jsr kernMapperSetreg
-    ;if aceProcessID < 3, then system alloc
+    ;check system alloc
+    lda sys_area_alloc
+    cmp #$ff
+    beq +
     lda aceProcessID
-    cmp #3
-    bcc +
--   ldx #CMD_MMAP
++   ldx #CMD_MMAP
     jmp kernMapperCommand
-+   lda #$ff        ;use system area
-    jmp -
 
 mmapEramDest = *
     lda zw+1
-    cmp #65
+    cmp #64
     bcc +
     jmp multiBlockDest
 +   jsr newPageAlloc
@@ -181,18 +180,30 @@ mmapEramDest = *
 
 
 mmapInternalRam = *
+    ;store (zp), since kernNew may modify it!
+    lda zp
+    ldy zp+1
+    sta loadZpSave
+    sty loadZpSave+1
     ;allocate far memory
     lda #0
     ldy #0
     jsr kernNew
     bcc +
     rts
-    ;open the file
-+   lda #"B"
+    ;add to tag memory
++   lda mmap_tag
+    jsr addMemTag
+    ;restore zp and open the file
+    lda loadZpSave
+    ldy loadZpSave+1
+    sta zp
+    sty zp+1
+    lda #"B"
     jsr open
     sta mmap_tmp
-    lda #<aceSharedBuf
-    ldy #>aceSharedBuf   ;buffer for streaming in the file...
+    lda #<stringBuffer
+    ldy #>stringBuffer   ;buffer for streaming in the file...
     sta zp
     sty zp+1
     ;read file into far memory
@@ -204,10 +215,7 @@ mmapInternalRam = *
     dec aceDirentBytes+1
     bpl -
     lda mmap_tmp
-    jsr close
-    ;add to tag memory
-    lda mmap_tag
-    jmp addMemTag
+    jmp close
 
     mmap_err = *
     sta errno
