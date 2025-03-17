@@ -42,7 +42,15 @@ configMain = *
    lda aceInternalBanks
    sta totalBanks+0
    jsr reserveRam0HiMem
-   jsr reserveTPA
+!if useC64 {
+   ;** reduce TPA if no ERAM on C64
+   jsr eramDetect
+   bcc +
+   lda #$b0
+   ldy #$c6
+   sta (.configBuf),y
+}
++  jsr reserveTPA
    jsr eramMemory
    lda totalBanks+0
    ldy totalBanks+1
@@ -659,21 +667,6 @@ reserveTPA = *
    sta aceFreeMemory+3
    rts
 
-eramBank = *
-!if useFastClock {
-   ldy $d030
-   sty $44
-   ldy #0
-   sty $d030
-}
-   sta $deff
--  bit $defe
-   bvc -
-!if useFastClock {
-   ldy $44
-   sty $d030
-}
-   rts
 eramDetect = *
    ;detect ERAM presence
 !if useFastClock {
@@ -731,7 +724,7 @@ eramMemory = *
    bcc +
    rts            ;ERAM not present
 +  lda #255
-   jsr eramBank   ;select the freemap
+   jsr seBank   ;select the freemap
    ;TODO
    ;It may be worthwhile to use the config values
    ;for REU bank low/high and apply them to Eram blocks.
