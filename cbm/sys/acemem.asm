@@ -962,14 +962,17 @@ reclaimProcFreemap = *  ;( ) : .Y=pagesRemoved
 +  clc
    rts
 
-minUsedBank !byte 0
-maxUsedBank !byte 0  ;plus 1
+minUsedBank !fill 4,0
+maxUsedBank !fill 4,0  ;plus 1
 
 clearMemoryInfo = *
+   ldx #3
    lda #$ff
-   sta minUsedBank
-   lda #$00
-   sta maxUsedBank
+   ldy #$00
+-  sta minUsedBank
+   sty maxUsedBank
+   dex
+   bpl -
    rts
 
 ;*** process primitives
@@ -1103,13 +1106,16 @@ kernProcExecSub = *
    stx execFrame+22
    lda reloadFlag
    sta execFrame+23
-   ldx #7
+   ldx #3
 -  lda minUsedBank
    sta execFrame+28,x
    lda maxUsedBank
    sta execFrame+36,x
    dex
    bpl -
+   ldx #4
+   lda aceTagsCur
+   sta execFrame+28,x
 
    ;** store new frame info
    sec
@@ -1196,14 +1202,17 @@ internExit = *
    jsr reclaimOpenFiles
    jsr reclaimProcMemory
    dec aceProcessID
-   ldx #7
+   ldx #3
 -  lda execFrame+28,x
    sta minUsedBank
    lda execFrame+36,x
    sta maxUsedBank
    dex
    bpl -
-
+   ldx #4
+   lda execFrame+28,x
+   sta aceTagsCur
+   
    ;** reload previous program if necessary
    ;xx note: currently, a process that was "execsub"ed cannot "exec" another
    ;xx process or else the "execsub"ed process will not be reloaded, since I

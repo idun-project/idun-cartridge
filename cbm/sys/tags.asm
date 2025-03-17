@@ -43,12 +43,11 @@ pearsonHash !byte $ce,$4a,$67,$b5,$3f,$2f,$5c,$c8,$fa,$53,$da,$7f,$96,$a8,$ea,$1
             !byte $c7,$4b,$5d,$58,$68,$f0,$15,$b8,$5e,$a1,$a2,$52,$ee,$b7,$eb,$98
 
 
-restoreMp = *
+initTags = *
+   lda #0
    ldx #0
--  lda mpsave,x
-   sta mp,x
+-  sta tagMemTable,x
    inx
-   cpx #4
    bne -
    rts
 

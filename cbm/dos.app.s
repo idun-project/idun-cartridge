@@ -194,7 +194,7 @@ ashrc = *
    ;** mmap load the batch file
    lda #<memBatchTag
    ldy #>memBatchTag
-   ldx #$ff    ;using system area
+   ldx #0
    jsr mmap
    bcc +
    jmp ashrcError
@@ -1174,7 +1174,7 @@ dispTable = *
 
 ;===reset===
 reset = *
-   lda #aceRestartWarmReset
+   lda #aceRestartExitBasic
    jmp aceRestart
 
 
@@ -1869,7 +1869,7 @@ exec_batch = *
    ;** mmap load the batch file
    lda #<memBatchTag
    ldy #>memBatchTag
-   ldx #$ff       ;using system area
+   ldx #0
    jsr mmap
    bcc +
    jmp handleScriptError

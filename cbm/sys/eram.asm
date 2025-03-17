@@ -25,6 +25,16 @@ CMD_ALLOCATE    = $f9
 CMD_MMAP        = $fb
 CMD_GCOLLECT    = $fa
 
+initEram = *
+    lda #0
+    sta aceEramCur
+    sta aceTagsCur
+    jsr initTags
+    ;** free all the ERAM
+    ldx #CMD_GCOLLECT
+    lda #$ff
+    jmp kernMapperCommand
+
 ;=== new === (.AY)=data, .X=$ff? zw=bytes : (mp), .CS=error
 sys_area_alloc !byte 0
 

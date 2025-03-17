@@ -467,6 +467,7 @@ aceStartup = *
    sta aceCurDirName+2
    lda #1
    sta aceProcessID
+   jsr initEram
    jmp pidCloseall
 
 initStack = *

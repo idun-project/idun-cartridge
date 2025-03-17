@@ -57,7 +57,6 @@ Inits = *
    jsr pidInit
    jsr aceIrqInit
    jsr initMemoryAlloc
-   jsr initTags
    clc
    rts
 
@@ -120,13 +119,6 @@ initMemoryAlloc = *
    sta freemapBank+0
    sty freemapBank+1
    clc
-   rts
-initTags = *
-   lda #0
-   ldx #0
--  sta tagMemTable,x
-   inx
-   bne -
    rts
 
 testMemoryType = *  ;( .A=type, .X=bankLimit ) : .A=bankCount
@@ -704,8 +696,7 @@ eramDetect = *
    cmp #65
    bne eramDetectFail
    lda $df00
-   cmp #255
-   beq eramDetectFail
+   bmi eramDetectFail
    lda $dfff
    cmp #255
    bne eramDetectFail
@@ -735,6 +726,7 @@ eramMemory = *
    sta aceEramBanks
    sta aceEramCur
    sta aceEramStart
+   ;** detect ERAM accessible ("Bertha" 2024+)
    jsr eramDetect
    bcc +
    rts            ;ERAM not present
