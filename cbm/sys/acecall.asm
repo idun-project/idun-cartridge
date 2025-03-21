@@ -911,7 +911,11 @@ statRespHandler = *
    ldy #>aceDirentBuffer
    ldx #aceDirentLength
    jsr kernModemGet
-   lda aceDirentBytes+0
+   lda aceDirentNameLen
+   bne +
+   sec
+   rts
++  lda aceDirentBytes+0
    ldy aceDirentBytes+1
    rts
 

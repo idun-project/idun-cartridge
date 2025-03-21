@@ -704,7 +704,10 @@ eramDetectFail:
    rts
 availEram = *
    jsr resetFree
-   ldx aceEramStart
+   lda aceEramBanks
+   bne +
+   rts
++  ldx aceEramStart
 -  lda $df00,x
    clc
    adc $45
@@ -717,6 +720,12 @@ availEram = *
 eramMemory = *
    lda #0
    sta aceEramBanks
+!if useC128 {
+   ldy #$a6
+} else {
+   ldy #$c2
+}
+   lda (.configBuf),y
    sta aceEramCur
    sta aceEramStart
    ;** detect ERAM accessible ("Bertha" 2024+)
@@ -725,14 +734,9 @@ eramMemory = *
    rts            ;ERAM not present
 +  lda #255
    jsr seBank   ;select the freemap
-   ;TODO
-   ;It may be worthwhile to use the config values
-   ;for REU bank low/high and apply them to Eram blocks.
-   ;This would allow some Eram blocks to be reserved for
-   ;use outside of the kernel usage. The values are in
-   ;configBuf+$c2 and configBuf+$c3 for the C128 and in
-   ;configBuf+$a7 for the C64.
    lda #255
+   sec
+   sbc aceEramStart
    sta aceEramBanks
    lda #$40       ;256 16k blocks = 64 banks = 4,096K
    clc

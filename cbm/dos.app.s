@@ -32,6 +32,10 @@ regsave !byte 0,0,0
 shellTitle !pet "Idun Shell      "
 shellName: !byte 0,0
 
+;Hack alert- these kernel constants are needed for batch files;
+;copied here from kernhead.asm.
+aceTagsCur        = aceStatB+93  ;(1)
+aceTagsStart      = aceStatB+94  ;(1)
 
 ;=== Dos Startup. Makes Dos resident for fast reload. ===
 DosStartup = *
@@ -208,6 +212,9 @@ ashrc = *
    ldx errno
    bne ashrcError
    sta inputFd
+   ;** memBatchTag entry gets overwritten
+   lda aceTagsStart
+   sta aceTagsCur
    ;** execute shell as same process
    jsr shell
    ;** close and return
@@ -1886,6 +1893,9 @@ exec_batch = *
    cpy #0
    bne handleScriptError
    sta inputFd
+   ;** memBatchTag entry gets overwritten
+   lda aceTagsStart
+   sta aceTagsCur
    ;** execute shell as same process
    jsr shell
    ;** close and return
@@ -1918,9 +1928,16 @@ resident = *
    adc #0
    tay
    lda reTagName
-   ldx #$ff       ;using system area
-   jmp mmap
-
+   ldx #$ff          ;using system area
+   jsr mmap
+   bcc +
+   lda #<residentErrMsg
+   ldy #>residentErrMsg
+   jmp eputs 
++  rts
+residentErrMsg = *
+   !pet "Fail load file to memory buffer"
+   !byte chrCR,0
 
 ;===funkey===
 

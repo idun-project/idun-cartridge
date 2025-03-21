@@ -1,16 +1,16 @@
 What is ERAM?
 =============
 
-ERAM is a 4.0 Megabyte expansion memory available to your Commodore with an idun-cartridge. It works similarly to "GeoRAM", but is not compatible and will need a different driver for GEOS. ERAM is not normally used for running code; it's for faster and more convenient access to large data sets, and for sharing memory with the ARM CPU when used with hybrid applications (i.e. apps that use Linux or Lua). You can think of ERAM as poviding "Extra", "External", or "Expansion" memory, but for much more than just a "RAM Disk".
+ERAM is a 4.0 Megabyte expansion memory available to your Commodore with idun-cartridge. It works similar to *GeoRAM*, but is not compatible and will need a different driver for GEOS. ERAM is not normally used for running code; it's for faster and more convenient access to large data sets, and for sharing memory with the ARM CPU when used in hybrid applications (i.e. apps that use Linux or Lua). You can think of ERAM as poviding "Extra", "External", or "Expansion" memory, but more useful and programmable than just a *RAM Disk*.
 
-Using ERAM from software can be done in multiple ways. You can program it directly using a simple hardware interface controlled by two registers. Or, you can use one of two builtin APIs: the low-level "Stash API" or the high-level "New API".
+Using ERAM from software can be done in multiple ways. You can program it directly using a simple hardware interface controlled by two registers. Or, you can use one of two builtin APIs: the low-level "Stash API" or the high-level "New API". The high-level API is novel for 8-bit computers; it includes routines to instantly load files from the cartridge SD card to ERAM, and access them by name using familiar, albeit faster, routines like `open`, `read`, and `seek`.
 
 ## High-level ERAM API (New/Mmap)
 
 This API makes it very simple to use ERAM in an application or tool written for the idun-cartridge. There are only 3 routines.
 
 1. **new** - Combines a memory allocation with a memory stash operation. The data in local memory is transferred to ERAM. If an allocation size, but no data is provided, then it's just an alloc with the ERAM initialized to zeroes.
-2. **memtag** - Previously allocated memory (using `new`) is paired with a hashtag, giving the memory in ERAM a name. This allows the data in memory to be opened as a file using a filename like "_:hashtag".
+2. **memtag** - Previously allocated memory (using `new`) is paired with a hashtag, giving the object in ERAM a name. This allows the data in ERAM to be opened as a file using a filename like "_:hashtag".
 3. **mmap** - Combines loading a file into memory with the above hash tagging. A file is instantly loaded to ERAM from the SD card, without passing the data through local memory. So, it's VERY fast. Then, the data in ERAM is accessed using any of the file API, Low-level ERAM API, or hardware interface.
 
 ### File style API for tagged ERAM
@@ -19,7 +19,7 @@ As mentioned above, a memory buffer in ERAM can be assigned a name, and then tre
 
 ## Low-level ERAM API (Stash/Fetch)
 
-ERAM is also compatible with the existing, low-level `aceMem*` API calls which still work with local RAM banks too. The routines are `aceMemAlloc, aceMemStash, aceMemFetch, and aceMemFree`. You should note that ERAM is automatically garbage collected when a process exits, so calls to `aceMemFree` are unnecessary and ignored when using ERAM. This API is familiar to many Commodore programmers because it is the same approach used for additional local RAM banks and the REU. You are free to mix & match calls to this API with the ones from the New API and with direct hardware access, if needed. You just have to be sure that you address the ERAM buffers correctly, which is done by treating all far memory pointers as 32-bit values.
+ERAM is also compatible with the existing, low-level `aceMem` API calls which still work with local RAM banks too. The routines are `aceMemAlloc, aceMemStash, aceMemFetch, and aceMemFree`. You should note that memory is automatically garbage collected when a process exits, so calls to `aceMemFree` are unnecessary and ignored when using ERAM. This API is familiar to many Commodore programmers because it is the same approach used for additional local RAM banks and the *REU*. You are free to mix & match calls to this API with the ones from the New API and with direct hardware access, if needed. You just have to be sure that you address the RAM buffers correctly, which is done by treating all far memory pointers as 32-bit values.
 
 *far memory pointer (mp)*
 | ptr byte | mp+0        | mp+1 | mp+2       | mp+3        |

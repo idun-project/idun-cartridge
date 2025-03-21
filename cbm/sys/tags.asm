@@ -19,9 +19,8 @@ tagwork     = syswork+12   ;(4)
 ;              T = Pearson Hash value for tag
 ;              YY= Size of the far memory block
 ;              MM= Far mem page addr. of memory block
-; Allows up to 50 entries stored in tagMemTable[0..249].
-; Entry #51 at tagMemTable[250..254] is temp storage used internally.
-; tagMemTable[255] is the index of the next free "slot" for allocation.
+; Allows up to 51 entries stored in tagMemTable[0..254].
+; The aceTagsCur variable keeps track of next open slot in the table.
 
 ;Randomized values used to calculate a one-byte unique hash for a tag.
 ;@see `jsr pearson`
@@ -107,7 +106,11 @@ addMemTag = *  ;(.A=hash, zw=size, (mp)) : .CS=error
    sta tagMemTable,x
    inx
    stx aceTagsCur
-   clc
+   lda sys_area_alloc
+   cmp #$ff
+   bne +
+   stx aceTagsStart
++  clc
    rts
 
 tagMemPtr = *

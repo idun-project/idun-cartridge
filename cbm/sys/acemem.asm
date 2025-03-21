@@ -869,10 +869,7 @@ kernMemStat = *
    rts
 
 reclaimProcMemory = *
-   lda aceEramBanks
-   beq +
-   jsr reclaimProcEram
-+  lda minUsedBank
+   lda minUsedBank
    cmp maxUsedBank
    beq +
    bcs ++
@@ -882,37 +879,28 @@ reclaimProcMemory = *
    jsr reclaimProcType
 ++ rts
 
-reclaimProcEram = *
-   lda #$ff
-   jsr seBank
-   lda #1
-   jsr sePage
-   ldx #255
--  inx
-   lda edat,x
-   beq +
-   cmp aceProcessID
-   bne -
-+  stx aceEramCur
-   jsr reclaimEramBlocks
-   ;run garbage collector
-   ldx #CMD_GCOLLECT
-   lda aceProcessID
-   jmp kernMapperCommand
-reclaimEramBlocks = *
--  lda edat,x
+reclaimProcEram = *     ;(.X=alloc start block)
+   lda aceEramBanks
    beq ++
-   cmp aceProcessID
-   bne ++
+-  cpx aceEramCur
+   beq +
+   jsr reclaimEramBlock
+   inx
+   jmp -
+   ;run garbage collector
++  ldx #CMD_GCOLLECT
+   lda aceProcessID
+   jsr kernMapperCommand
+++ rts
+   reclaimEramBlock = *
    clc
    lda aceFreeMemory+1
    adc #$40
    sta aceFreeMemory+1
    bcc +
    inc aceFreeMemory+2
-+  inx
-   jmp -
-++ rts
++  rts
+
 rpBank  !byte 0,0
 rpEnd   !byte 0
 
@@ -1107,15 +1095,14 @@ kernProcExecSub = *
    lda reloadFlag
    sta execFrame+23
    ldx #3
--  lda minUsedBank
+-  lda minUsedBank,x
    sta execFrame+28,x
-   lda maxUsedBank
+   lda maxUsedBank,x
    sta execFrame+36,x
    dex
    bpl -
-   ldx #4
-   lda aceTagsCur
-   sta execFrame+28,x
+   lda aceEramCur
+   sta execFrame+28+4
 
    ;** store new frame info
    sec
@@ -1200,17 +1187,20 @@ internExit = *
    sta reloadFlag
 
    jsr reclaimOpenFiles
+   ldx execFrame+28+4
+   jsr reclaimProcEram
    jsr reclaimProcMemory
    dec aceProcessID
    ldx #3
 -  lda execFrame+28,x
-   sta minUsedBank
+   sta minUsedBank,x
    lda execFrame+36,x
-   sta maxUsedBank
+   sta maxUsedBank,x
    dex
    bpl -
-   ldx #4
-   lda execFrame+28,x
+   lda execFrame+28+4
+   sta aceEramCur
+   lda aceTagsStart
    sta aceTagsCur
    
    ;** reload previous program if necessary

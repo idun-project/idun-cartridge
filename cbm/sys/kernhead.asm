@@ -17,12 +17,12 @@ aceEramBanks      = aceStatB+90  ;(1)
 aceEramCur        = aceStatB+91  ;(1)
 aceSystemType 	  = aceStatB+92  ;(1)   ;$80=C128,$40=C64
 aceTagsCur        = aceStatB+93  ;(1)
-aceSoft80Allocated= aceStatB+94  ;(1)  ;$ff=yes,$00=no
+aceTagsStart      = aceStatB+94  ;(1)
 aceCharSetPage    = aceStatB+95  ;(1)
 aceVic40Page      = aceStatB+96  ;(1)
 aceTpaLimit       = aceStatB+97  ;(1)
 aceSuperCpuFlag   = aceStatB+98  ;(1)   ;SuperCPU/normal flag
-aceNmiWork        = aceStatB+99  ;(2)   ;for redirecting NMIs on the C64
+aceSoft80Allocated= aceStatB+99  ;(1)   ;$ff=yes,$00=no
 aceCurDirName     = aceStatB+101 ;(3)   ;name of current directory
 ;===end of aceStatB ($f00 - $f90 used; max $faf)
 

@@ -29,6 +29,7 @@ initEram = *
     lda #0
     sta aceEramCur
     sta aceTagsCur
+    sta aceTagsStart
     jsr initTags
     ;** free all the ERAM
     ldx #CMD_GCOLLECT
@@ -198,6 +199,7 @@ mmapInternalRam = *
     ;allocate far memory
     lda #0
     ldy #0
+    ldx sys_area_alloc
     jsr kernNew
     bcc +
     rts
