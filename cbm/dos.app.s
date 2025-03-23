@@ -1181,8 +1181,7 @@ dispTable = *
 
 ;===reset===
 reset = *
-   lda #aceRestartExitBasic
-   jmp aceRestart
+   jmp shellExit
 
 
 ;===reboot===
@@ -2291,17 +2290,22 @@ printStoppedMsg = *
 shellExit = *
    lda #$ff
    sta shellExitFlag
-   ldy #0
-   lda #1
-   jsr getarg
-   beq +
-   jsr aceDirIsdir
-   cpy #0
-   beq +
-   tax
-   lda #aceRestartExitBasic
-   jmp aceRestart
-+  rts
+   lda #<argBuffer
+   ldy #>argBuffer
+   sta zp
+   sty zp+1
+   lda #0
+   jsr aceDirName
+   jsr aceMiscDeviceInfo
+   bcs +
+   rts
++  sta $9b        ;Pass $ba and $9b/$9c values to BASIC
+   sta $ba
+   lda syswork+1
+   lsr
+   lsr
+   sta $9c
+   rts
 
 ;===path===
 
