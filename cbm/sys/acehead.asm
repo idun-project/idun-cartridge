@@ -216,6 +216,7 @@ aceErrBloadTruncated = 139
 aceErrPermissionDenied = 140
 aceErrNoGraphicsSpace = 141
 aceErrBadProgFormat = 142
+aceAppFileOpen      = 192
 ;commonly used character codes
 chrBEL = $07  ;bell
 chrTAB = $09  ;tab

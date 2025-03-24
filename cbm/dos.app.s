@@ -988,12 +988,7 @@ shellExecCommand = *
 ; check the signature and load new app overtop Dos.
 
 shellLoadExternal = *
-   jsr cmdIsAppl
-   bcs +
-   jmp shellStartAppl
-+  cmp #aceErrFileNotFound
-   beq ++
-+  jsr toolTmoCancel
+   jsr toolTmoCancel
    lda suppressPromptFlag
    pha
    lda name+0
@@ -1007,7 +1002,7 @@ shellLoadExternal = *
    rts
 +  pla
    sta suppressPromptFlag
-++ jsr dosReinit
+   jsr dosReinit
    lda errno
    pha
    lda name+0
@@ -1041,74 +1036,6 @@ shellLoadExternal = *
    !pet ": Bad external-program format"
    !byte chrCR,0
 
-pathPos = 4
-cmdIsAppl = *
-   ;check if name ends with ".app"
-   ldy #0
--  lda (name),y
-   beq +
-   iny
-   jmp -
-+  ldx #4
--  dey
-   dex
-   lda (name),y
-   cmp cmd_app_suffix,x
-   bne failAppName
-   cpx #0
-   beq findApplPath
-   jmp -
-failAppName:
-   sec
-   rts
-findApplPath:
-   ;search path / check file exists
-   lda #0
-   sta pathPos
--  lda name+0
-   sta zp+0
-   lda name+1
-   sta zp+1
-   ldx pathPos
-   jsr aceSearchPath
-   bcs failAppName
-   stx pathPos
-   lda #<(is_app_sign+8)
-   ldy #>(is_app_sign+8)
-   sta zw
-   sty zw+1
-   lda #<is_app_sign
-   ldy #>is_app_sign
-   jsr aceFileBload
-   bcc +
-   lda errno
-   cmp #aceErrFileNotFound
-   beq -
-   jmp failAppName
-   ;check for 8-byte signature
-+  ldx #8
--  dex
-   bmi passAppSign
-   lda is_app_sign,x
-   cmp aceAppAddress,x
-   bne failAppSign
-   jmp -
-passAppSign:
-   clc
-   rts
-failAppSign:
-   sec
-   rts
-is_app_sign !fill 8,0
-cmd_app_suffix !pet ".app"
-
-shellStartAppl = *
-   lda name
-   sta zp
-   lda name+1
-   sta zp+1
-   lda #aceRestartApplReset
-   jmp aceRestart
 
 ;===internal command name and dispatch table===
 

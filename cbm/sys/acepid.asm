@@ -208,6 +208,8 @@ pidContUnlisten = *
   sta errno
   cmp #0
   beq +
+  cmp #aceAppFileOpen
+  beq +
   sec
   rts
 + lda openFcb
@@ -542,8 +544,11 @@ pidDirRead = *
 
 BloadPgs !byte 0
 BloadAddr !byte 0,0    ; temp. storage so won't be overwritten
+BloadAppflag !byte 0
 
 pidBload = *
+  lda #0
+  sta BloadAppflag
   lda bloadBank
   beq +
   ; convert to bank configuration
@@ -589,10 +594,15 @@ pidBload = *
   bcc +
   rts
   ; Destination address
-+ lda BloadAddr+0
++ ldx BloadAddr+1
+  lda errno
+  sta BloadAppflag
+  cmp #aceAppFileOpen
+  bne +
+  ldx #>aceAppAddress
++ stx readPtr+1
+  lda BloadAddr+0
   sta readPtr
-  lda BloadAddr+1
-  sta readPtr+1
   ; Maximum read length = zw-BloadAddr
   lda zw
   sec

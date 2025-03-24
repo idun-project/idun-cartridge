@@ -1304,12 +1304,10 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    jsr getloadRestoreZp
    bcs execLoadError
    ;IDUN: Special case for reload shell
-   jsr isDosReload
+   jsr isAppLoad
    bcc +
-   ;Normally, shell is loaded at aceAppAddress ($6000)
-   lda #$00
-   sta st
-   lda #$60
+   ;app loaded to aceAppAddress ($6000)
+   lda #>aceAppAddress
    sta st+1
 +  ldy #3
    lda (st),y
@@ -1325,8 +1323,13 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    bne execBadProg
    clc
    rts
-   isDosReload = *
-   ldx #2
+   isAppLoad = *
+   lda BloadAppflag
+   bpl +
+   sec
+   rts
+   ;check fname is default shell
++  ldx #2
 -  lda stringBuffer,x
    bne +
    sec
