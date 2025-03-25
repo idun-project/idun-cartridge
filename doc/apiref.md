@@ -1,28 +1,34 @@
-## Idun/ACE-128 PROGRAMMER'S REFERENCE GUIDE (v1.0)
+Idun/ACE-128 PROGRAMMER'S REFERENCE GUIDE (v1.0)
+================================================
+Originally by Craig Bruce 09-Feb-1997.
+Revised for Idun beginning in 2023.
 
-### by Craig Bruce 09-Feb-1997. Revised for Idun 30-Mar-2023.
-------------------------------------------------------------------
+<!--ts-->
+* [Introduction](#introduction)
+* [Reference](#reference)
+   * [SYSTEM VARIABLES AND CONSTANTS](#system-variables-and-constants)
+      * [1. ZERO-PAGE VARIABLES](#1-zero-page-variables)
+      * [2. SYSTEM VARIABLES](#2-system-variables)
+      * [3. SYSTEM CONSTANTS](#3-system-constants)
+   * [SYSTEM CALLS](#system-calls)
+      * [1. FILE CALLS](#1-file-calls)
+      * [2. DIRECTORY CALLS](#2-directory-calls)
+      * [3. SCREEN-CONTROL CALLS](#3-screen-control-calls)
+      * [4. CONSOLE CALLS](#4-console-calls)
+      * [5. GRAPHICS CALLS](#5-graphics-calls)
+      * [6. PROCESS-CONTROL CALLS](#6-process-control-calls)
+      * [7. MEMORY CALLS](#7-memory-calls)
+      * [8. TIME CALLS](#8-time-calls)
+      * [9. TTY ACCESS CALLS](#9-tty-access-calls)
+      * [10. NEW MEMORY API FOR ERAM](#10-new-memory-api-for-eram)
+      * [11. MISCELLANEOUS CALLS](#11-miscellaneous-calls)
+      * [12. IOCTL CALLS](#12-ioctl-calls)
+   * [USER-PROGRAM ORGANIZATION](#user-program-organization)
 
-   * [Introduction](#introduction-original-by-c-bruce)
-   * [Reference](#reference-updated-for-idun)
-      * [SYSTEM VARIABLES AND CONSTANTS](#system-variables-and-constants)
-         * [1. ZERO-PAGE VARIABLES](#1-zero-page-variables)
-         * [2. SYSTEM VARIABLES](#2-system-variables)
-         * [3. SYSTEM CONSTANTS](#3-system-constants)
-      * [SYSTEM CALLS](#system-calls)
-         * [1. FILE CALLS](#1-file-calls)
-         * [2. DIRECTORY CALLS](#2-directory-calls)
-         * [3. SCREEN-CONTROL CALLS](#3-screen-control-calls)
-         * [4. CONSOLE CALLS](#4-console-calls)
-         * [5. GRAPHICS CALLS](#5-graphics-calls)
-         * [6. PROCESS-CONTROL CALLS](#6-process-control-calls)
-         * [7. MEMORY CALLS](#7-memory-calls)
-         * [8. TIME CALLS](#8-time-calls)
-         * [9. TTY ACCESS CALLS](#9-tty-access-calls)
-         * [10. TAGGED MEMORY AND MEMORY-FILE CALLS](#10-tagged-memory-and-memory-file-calls)
-         * [11. MISCELLANEOUS CALLS](#11-miscellaneous-calls)
-         * [12. IOCTL CALLS](#12-ioctl-calls)
-      * [USER-PROGRAM ORGANIZATION](#user-program-organization)
+<!-- Created by https://github.com/ekalinin/github-markdown-toc -->
+<!-- Added by: brian, at: Tue Mar 25 05:37:06 PM EDT 2025 -->
+
+<!--te-->
 
 ## Introduction
 
@@ -276,19 +282,6 @@ ALTERS :  .A, .X, .Y, errno
 ```
 
 Seeks to the given file position. Seek call will only work with special device drivers which are actually designed to randomly access files, such as memory-mapped files. see: mmap.
-
-```
-NAME   :  mmap
-PURPOSE:  map a file into a block of expansion RAM
-ARGS   :  .AY  = tag name for the memory block (null-terminated)
-          (zp) = pointer to filename
-RETURNS:  .CS  = error occurred flag
-ALTERS :  .A, .X, .Y, errno
-```
-
-This API is for mapping files into a blob of expansion RAM, such that the file's contents are easily swappable into a working memory buffer. The memory can be retrieved using an assigned "tag" string value, which is typically just the file name, but can also be any chosen symbolic name.
-
-Additionally, tagged memory can be treated as a read-only, random-access file, when opened as `_:tag`. Opening a file with this naming convention will try to locate the file in expanded RAM, and will return a file descriptor (Fd) that can be used with the standard file I/O functions - `read`, `seek`, `close`.
 
 ```
 NAME   :  aceFileBload
@@ -1260,48 +1253,54 @@ aceTtyPut        = aceCallB+216 ;( .AY=SendBuffer, .X=SendBytes,
 
 Copies specified number of bytes to the stream output. Always non-blocking.
 
-#### 10. TAGGED MEMORY AND MEMORY-FILE CALLS
+#### 10. NEW MEMORY API FOR ERAM
 
-The tagged memory system is a convenience API that sits atop the normal far memory allocation routines (aceMemAlloc, aceMemStash, etc.). But rather than using far pointers to keep track of the memory blocks, they are given unique names. These names can even be filenames, thus providing a "memory-mapped file" feature for super-fast access to runtime data with easy load/save to the filesystem. The idun-shell `resident` command, as an example, uses this API to keep frequently used commands in memory.
+This new memory API simplifies the use of both local extended memory and [ERAM](eram.md). It sits atop the normal far memory allocation routines (aceMemAlloc, aceMemStash, etc.). But rather than using far pointers to keep track of the memory blocks, they are usually assigned unique hashtags. These names can be filenames, thus providing a "memory-mapped file" feature for super-fast access to runtime data with easy load/save to the filesystem. The idun-shell `resident` command, as an example, uses this API to keep frequently used commands in memory.
 
-Any tagged data block will occupy from 256 up to 65,280 bytes with storage using full page boundaries. Only a single byte "Pearson Hash" value is used to identify the block internally, so locating any one of the up to 256 blocks is very fast. Hash collissions are possible, but unlikely, and attempts to allocate a block that matches an existing hash value will return an error.
+Any memory block will occupy from 256 up to 65,280 bytes with storage using full page boundaries. Only a single byte "Pearson Hash" value is used to identify the block internally, so locating any one of the up to 256 blocks is very fast. Hash collisions are possible, but unlikely, and attempts to allocate a block that matches an existing hash value will return an error.
+
+All of these routines preferentially allocate from ERAM. Local Banked RAM is used only if ERAM is not supported or disabled in the configuration file.
 
 ```
-NAME   :  aceTagAlloc
-PURPOSE:  allocate a block of memory with tagname
-ARGS   :  (zp)  = pointer to null-terminated tagname
+NAME   :  new
+PURPOSE:  allocate memory block and fill from local memory
+ARGS   :  (.AY) = pointer to local data
           (zw)  = size of block in bytes
+          .X    = if $ff, then use system memory
+RETURNS:  .CS, errno, mp
+ALTERS :  .A, .X, .Y
+```
+
+If (.AY) is $0000, then this call allocates the block of size (zw) and initializes it with zeroes. Otherwise, the data in local memory at (.AY) is copied to the allocated block.
+
+If .X=$ff, then the memory block is allocated out of the system memory area, which is the high blocks of ERAM. This memory is not removed by garbage collection. Therefore, memory in this area is long-lived and can be shared by different processes.
+
+```
+NAME   :  mmap
+PURPOSE:  map a file into a block of expansion RAM
+ARGS   :  (.AY)= tag name for the memory block (null-terminated)
+          (zp) = pointer to filename
+          .X   = if $ff, then use system memory
+RETURNS:  .CS  = error occurred flag, errno, mp
+ALTERS :  .A, .X, .Y
+```
+
+This routine is for mapping files into ERAM, such that the file's contents are easily read into a working memory buffer. This memory can be treated as a read-only, random-access file, when opened as `_:hashtag`. Opening a file with this naming convention will try to locate the file in ERAM, and will return a file descriptor (Fd) that can be used with the standard file I/O functions - `read`, `seek`, `close`.
+
+It is noteworthy that when used with ERAM, this routine *directly* loads the file into the memory of the cartridge and is nearly instant.
+
+```
+NAME   :  memtag
+PURPOSE:  allocated memory is paired with a hashtag
+ARGS   :  (.AY) = tag name for the memory block (null-terminated)
+          (zw)  = size of block in bytes
+          (mp)  = far pointer to block
 RETURNS:  .CS, errno
 ALTERS :  .A, .X, .Y
 ```
 
-```
-NAME   :  aceTagStash
-PURPOSE:  copies RAM buffer to tagged memory block
-ARGS   :  (zp)  = pointer to source RAM buffer
-          (.AY) = pointer to null-terminated tagname
-RETURNS:  .CS if tagname not found
-ALTERS :  .A, .X, .Y
-```
+This routine allows any allocated block to work as if it was created with `mmap`. The hashtag is assigned to the memory, and then it can be accessed via the File API too.
 
-```
-NAME   :  aceTagFetch
-PURPOSE:  copies tagged memory block to RAM buffer
-ARGS   :  (zp)  = pointer to destination RAM buffer
-RETURNS:  .CS if tagname not found
-ALTERS :  .A, .X, .Y
-```
-
-```
-NAME   :  aceTagRealloc
-PURPOSE:  (re)allocate a block of memory with tagname
-ARGS   :  (zp)  = pointer to null-terminated tagname
-          (zw)  = size of block in bytes
-RETURNS:  .CS, errno
-ALTERS :  .A, .X, .Y
-```
-
-Works the same as aceTagAlloc, but will not allocate additional memory or return an error if a matching tagname already exists.
 
 #### 11. MISCELLANEOUS CALLS
 

@@ -1,6 +1,6 @@
-## Idun for the Commodore 128
+## Idun for the Commodore 128 and C64
 
-This is the home of the idun-cartridge for the C128. Here you will find the latest software, along with source code, sample applications, and other content.
+This is the home of the idun-cartridge for the C128/64. Here you will find the latest software, along with source code, sample applications, and other content.
 
 What does it do? Hopefully a [demo](https://www.youtube.com/watch?v=X_DMMz55Tpo) is worth a thousand words.
 
@@ -8,25 +8,17 @@ There's also a [Discord Server](https://discord.gg/6Du9jhK4eF) for the project. 
 
 ### Hardware
 
-The idun-cartridge uses a Propeller 1 micro-controller to provide a fast hardware interface between the C128 and a Raspberry Pi ("RPi") that runs a customized Linux OS. The cartridge is designed to work and fit best with the Raspberry Pi Zero 2. However, any recent Raspberry Pi can be made to work.
+The idun-cartridge uses a Propeller 1 micro-controller to provide a fast hardware interface between the Commodore and a Raspberry Pi ("RPi") that runs a customized Linux OS. The cartridge is designed to work and fit best with the Raspberry Pi Zero 2. However, any recent Raspberry Pi can be made to work.
 
 The first set of photos show the idun-cartridge with RPi Zero 2 fitted. As you can see, a standard-sized C64/128 cartridge case can be hacked to cover the board, but leave the RPi, ports, and button accessible.
 
-![cartridge without RPi](doc/cart_no_rpi.jpg)
-![cartridge with Pi Zero](doc/330_112856.jpg)
+<img align="left" src="doc/cart_no_rpi.jpg" /><img src="doc/330_112856.jpg" />
 
  A Model B RPi will also fit on an idun-cartridge, as this photo shows. For both Model Zero and Model B, the RPi is fitted on top of the idun-cartridge and upside-down. For the Model B, a case or other support is essential because of the weight.
 
 You can also fit a Model A RPi, but the headers must be relocated to the opposite side of both the idun-cartridge PCB and the RPi itself. In this case, the RPi will be on the bottom (under the idun-cartridge), as shown here connected to a flat C128.
 
-![cartridge with Model B](doc/401_122754.jpg)
-![cartridge with Model A](doc/407_144230.jpg)
-
-#### Partial Support for original Pi Zero
-
-The original Pi Zero is nearing end-of-life, being phased out by the Raspberry Pi Foundation in favor of the more powerful Pi Zero 2. Because of this, some ARM Linux disributions are discontinuing support, making it difficult for the idun-cartridge to continue supporting the Pi Zero. However, the current state of affairs is that the Pi Zero is widely available and very inexpensive, and this could remain the case for the next year-or-so.
-
-In light of the above, the Pi Zero is *partially* supported. You can download a compatible [image file](https://drive.google.com/file/d/1-f4fZqi1PGydYXPUaHLZCb5UNGgmPkZW/view?usp=sharing) that includes v1.2 of the software. All features are present on this image *except* for the `idunSID` remote SID player software (it requires a newer `glibc` library) and the Z80 programming support.
+<img align="left" src="doc/401_122754.jpg" /><img src="doc/407_144230.jpg" />
 
 ### Support the project
 
@@ -46,17 +38,27 @@ Your microSD is now ready to use with your idun-cartridge. To expand the file sy
 
 #### Power
 
-It is recommended that you power the RPi externally from a USB power supply. The jumper (JP1) that allows power to come from the C128 is not installed by default, and only suited for the RPi Zero 2. Even then, it makes it too easy to turn off the C128 and Raspberry Pi without first shutting it down via the button. Plus, it is nice to be able to access the cartridge using the web filebrowser, emulation, or `ssh` while the C128 is switched off.
+It is recommended that you power the RPi externally from a USB power supply. The jumper (JP1) that allows power to come from the Commodore is not installed by default, and only suited for the RPi Zero 2. Even then, it makes it too easy to turn off the Commodore and Raspberry Pi without first shutting it down via the button. Plus, it is nice to be able to access the cartridge using the web filebrowser, emulation, or `ssh` while the Commodore is switched off.
 
 #### Cartridge Mode & Reset
 
-The idun-cartridge has a single "big red button" with dual use. Press and release immediately to Reset everything, including rebooting your C128. Press and hold for at least 3 seconds to shutdown your cartridge, which is necessary before powering down.
-
 <img align="right" src="doc/cart_mode_sw2.jpg" />
 
-As of release v1.1.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (i.e. not switched to the "Mode" position), the idun-cartridge loads the usual software stack. However, when switched to "Mode", a different software stack is selected as specified by the [mode] settings in the configuration file.
+The idun-cartridge has a single "big red button" with dual use. Press and release immediately to Reset everything, including rebooting your Commodore. Press and hold for at least 3 seconds to shutdown your cartridge, which is necessary before powering down.
 
-With the default configuration file settings, setting the switch to the "Mode" position enables "C64 Arcade Mode". This means the C128 is booted into C64 mode and the "arcade.app" game selector software is automatically loaded. This provides a very convenient way to quickly load and run C64 games on the C128.
+As of release v1.2.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (i.e. not switched to the "Mode" position), the idun-cartridge works on the C128 in its native mode. However, when switched to "Mode", a different software stack is selected as specified by the [mode] settings in the configuration file.
+
+With the default configuration file, setting the switch to the "Mode" position enables C64 support. This means that the cartridge can be used on a C64 and that it will boot a C128 into its C64 mode. If you are primarily wanting to play C64 games, then you can most easily do so by launching the arcade.app from BASIC using the command `go "arcade"`.
+
+#### BASIC commands and launching Apps
+
+On initial boot, the cartridge starts BASIC with some utilities for accessing the Idun virtual disks. The screen lets you use the cursor keys to select which virtual drive to use and on which IEC address; the normal default is `C:`, which is the HOME directory, on IEC device 10. Once you hit "RETURN", you will be in Commodore BASIC.
+
+<img align="left" src="doc/cart_startup.jpg" />
+
+From the BASIC prompt, you can use any of the several commands that are briefly described in the boot screen. Mainly, you can navigate the virtual disk by using `@$` (also `F3` on the C128) to load directories, and the `cd` command to change directories. Any disk image file can be mounted by using `cd` and prefixing the image file name with a ":". This will switch you automatically to the `D:` device, which is where the disk is mounted. You can switch back to the `C:` device using the command `@c`, and switch to any other virtual disk this way. If you want to load and run a program, just locate it in the directory, place a `%` in column 1, and "RETURN". This is equivalent to typing `% "prgname"` on a new line.
+
+The other thing you can do is launch an Idun Application. This is done with the `go` command, and entering just that will quickly launch the default shell. The default shell is controlled by the configuration file, and is normally setup to load `dos.app`, which is the idun-shell and an MS-DOS work-a-like. Other applications, such as the Arcade Selector for running games can be started similarly, using `go "arcade"`. Any app on the cartridge can be started this way, and you can create your own using programming tools that run right on the cartridge!
 
 #### Networking and Managing Files
 
@@ -74,7 +76,7 @@ Configuration options are available in `$HOME/.config/idunrc.toml`. There is doc
 2. Some monitors are picky about how many rows of text they can display in 80 column mode, and how they look when displaying text in interlaced mode. The default is 27 rows, non-interlaced. You can modify this by changing the first parameter in the `[vdc]` section, and for interlaced text, the section `[vdc_interlace]`. Also take a look at the `mode` command for changing the number of text rows on demand (not to be confused with the mode switch described above).
 3. If you are using the software with only a Raspberry Pi and Vice (no idun-cartridge hardware), then pay careful attention to disable the configuration file from trying to connect with hardware that isn't there. For details, see the [README for idun-vice](https://github.com/idun-project/idun-vice).
 
-### Building C128 code
+### Building Commodore code
 
 The idun-cartridge software in this repository is self-hosting. All of the assembly code is built with the `acme` cross-assembler and everything you need to build and modify it can be done on the cartridge itself. You can perform each of these steps from the Linux prompt:
 

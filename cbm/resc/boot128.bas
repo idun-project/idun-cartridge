@@ -5,7 +5,7 @@ start tok128 resc/boot128.prg
 30 PRINT"{yellow}{cm r}{cm a}CI{cm r} {cm r}UCI{space*16}basic commands"
 40 PRINT"BB {125*2} B{125} {125} {light gray}drive {reverse on}c:{reverse off}{space*7}cd";CHR$(34);"/directory";CHR$(34)
 50 PRINT"{yellow}BB {125}B B{125} {125}{space*19}{light gray}";CHR$(34);":disk.img";CHR$(34)
-60 PRINT"{brown}BB {125}B B{125} {125} {light gray}iec{space*3}{reverse on}10{reverse off}{space*7}go <appname>"
+60 PRINT"{brown}BB {125}B B{125} {125} {light gray}iec{space*3}{reverse on}10{reverse off}{space*7}go ";CHR$(34);"appname";CHR$(34)
 70 PRINT"{brown}{cm e}{cm z}CKJCK{cm e} {cm e}{space*16}{light gray}@$=directory{space*2}"
 80 PRINT"cursor to change,{space*9}@<drv> switch "
 90 PRINT"<return> to accept.{space*7}%";CHR$(34);"prgname";CHR$(34);" run"
