@@ -67,11 +67,18 @@ IERROR= $0300
 
 ;** kernal entry points
 kernelRESTOR    = $ff8a
+kernelChrin     = $ffcf
 kernelChrout    = $ffd2
 kernelStop      = $ffe1
 kernelSetnam    = $ffbd
 kernelSetmsg    = $ff90
 kernelLoad      = $ffd5
+kernelOpen      = $ffc0
+kernelClose     = $ffc3
+kernelClrchn    = $ffcc
+kernelSetlfs    = $ffba
+kernelChkin     = $ffc6
+kernelChkout    = $ffc9
 
 ;** kernal vars
 kStatus     = $90 ; I/O status var
@@ -431,12 +438,17 @@ idunWedge = *
     ;might be a wedge command
     +incTXTPTR
     lda (TXTPTR),y
+    cmp #"#"
+    beq wedgeIecAddr
     cmp #"$"
     beq wedgeDir
     cmp #"@"
     bcc wedgeOut
     cmp #"_"
     bcs wedgeOut
+    ldx iecAddress
+    bne wedgeIecCmd
+wedgeSelect = *
     sec
     sbc #"@"
     ;check if valid virtual disk
@@ -472,8 +484,66 @@ wedgeDir = *
     ldx #hookCatalog
     jsr romcall
     jmp basicPrompt
+wedgeIecAddr = *
+    +incTXTPTR
+    jsr +
+    bcs wedgeOut
+    cmp #1
+    bne setIecAddr
+    +incTXTPTR
+    jsr +
+    bcs wedgeOut
+    adc #10
+
+    setIecAddr = *
+    sta iecAddress
+    jmp basicPrompt
+
++   lda (TXTPTR),y
+    cmp #$2f
+    bcs +
+    sec
+    rts
++   cmp #$3a
+    bcc +
+    rts
++   sec
+    sbc #$30
+    clc
+    rts
+wedgeIecCmd = *
+    lda #15             ; Logical file number (15 for command channel)
+    ldx iecAddress      ; Device number
+    ldy #15             ; Secondary address (15 for command channel)
+    jsr kernelSetlfs
+    lda #0              ; Filename length (0 for direct commands)
+    jsr kernelSetnam
+    jsr kernelOpen
+    ldx #15             ; Logical file number
+    jsr kernelChkout
+-   lda (TXTPTR),y
+    beq +
+    jsr kernelChrout
+    +incTXTPTR
+    jmp -
++   lda #13             ; <cr> to end command
+    jsr kernelChrout
+
+    iecCmdResponse = *
+    jsr kernelClrchn
+    ldx #15
+    jsr kernelChkin
+-   jsr kernelChrin
+    jsr kernelChrout
+    cmp #13
+    bne -
+    lda #15             ; Logical file number
+    jsr kernelClose
+    jsr kernelClrchn
+    jmp basicPrompt
 dirSymbol !pet "$"
 invdiskMsg !pet "?not a virtual disk",13,0
+iecAddress !byte 0
 
 ;BASIC extensions handled via IError trap
 locateName = *

@@ -753,13 +753,14 @@ aceExitBasic = *
    jsr $4045   ;init_storage- init charget & z-page
    jmp ($a00)
 } else {
+   jsr $e453   ;INITV
+   jsr $e3bf   ;INITCZ
    lda #0
    sta $800
-   sta 198
-   jsr $a642
-   jmp $a474
+   sta $c6
+   jsr $a642   ;NEW
+   jmp $a474   ;READY
 }
-   brk
 
 ; bkACE
 !source "sys/tags.asm"

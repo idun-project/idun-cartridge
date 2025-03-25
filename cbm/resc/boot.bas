@@ -1,6 +1,6 @@
 
 start tok64 resc/boot.prg
-10 POKE 53280,12:POKE 53281,11:c=50102
+10 POKE 53280,12:POKE 53281,11:c=50240
 20 iec=155:drv=156:PRINT CHR$(142);CHR$(147)
 30 PRINT"{yellow}{cm r}{cm a}CI{cm r} {cm r}UCI{space*16}basic commands";
 40 PRINT"BB {125*2} B{125} {125} {light gray}drive {reverse on}c:{reverse off}{space*7}cd";CHR$(34);"/directory";CHR$(34);
@@ -26,7 +26,7 @@ start tok64 resc/boot.prg
 217 PRINT "{up}          "
 218 PRINT "{yellow}"+ver$+" "+rom$+"{white}"
 219 PRINT CHR$(17);CHR$(17);
-220 SYS50585
+220 SYS50723
 230 PRINT CHR$(19);CHR$(18);CHR$(17);CHR$(17);SPC(17);CHR$((PEEK(drv)+64));
 240 PRINT CHR$(157);CHR$(17);CHR$(17);
 250 i$=STR$(PEEK(iec)):IF LEN(i$)<3 THEN i$=i$+" "
