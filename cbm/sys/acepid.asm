@@ -599,6 +599,11 @@ pidBload = *
   sta BloadAppflag
   cmp #aceAppFileOpen
   bne +
+  ; Toolbox will be overwritten- ensure any app
+  ; IRQ hooks are disabled!
+  lda #<kernHookIrqNone
+  ldy #>kernHookIrqNone
+  jsr kernIrqHook
   ldx #>aceAppAddress
 + stx readPtr+1
   lda BloadAddr+0
