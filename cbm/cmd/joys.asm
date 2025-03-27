@@ -53,6 +53,10 @@ error:
     jsr eputs
     jmp exit
 continue:
+    ; Disable toolbox IRQ
+    lda #<doNothing
+    ldy #>doNothing
+    jsr aceIrqHook
     ; put J: into configuration mode
     lda #<config
     ldy #>config
@@ -87,7 +91,10 @@ getdirs:
     sec
     jsr aceConGamepad
     jmp exit
+doNothing:
+    rts
 exit:
+    jsr toolWinRestore
     rts
 errorMsg:
 !pet "Error: Check you have only one gamepad connected to USB, then press RESET.",13,0
