@@ -15,15 +15,19 @@ local pf64 = 'kernal64.patch'
 -- Output files
 local of128 = '/home/idun/U35.rom'
 local of64 = '/home/idun/U32.rom'
+local ofc64k = '/home/idun/U4.rom'
 local ofcombo = '/home/idun/U32.rom'
 -- Mssage text
 local msg_k128_16k = 'Making patched C128 kernal ROM U35'
 local msg_k64_16k = 'Making patched C64 kernal ROM U32'
 local msg_k128_32k = 'Making patched C128 combined kernal ROM U32'
+local msg_k64_8k = 'Making patched C64 8k kernal ROM U4'
+local msg_c64_16k = 'Making patched C64 combined ROM U3'
 -- Patched ROM checksums
-local md5_U35 = '07652c7540ad4019acbbcdfb57dc486e'
-local md5_U32 = '383f7ca0652c595404897fd42f3a35cd'
-local md5_U32_combo = '3f34c25445aaa1142c205ebf86a4fe03'
+local md5_U35 = '1ff8eb55429bdd4e5eddeab2aa454f3c'
+local md5_U32 = 'b7ffdb43ced48b442737f05e0b85eb69'
+local md5_U32_combo = '8e2131e0430322d0189e423063cdebbc'
+local md5_U4 = 'c8b3bd0b9567912bb40c644540030aca'
 -- Critical ROM offsets
 local KERNAL_128_OFFS = 0x6001
 local KERNAL_64_OFFS = 0x2001
@@ -73,6 +77,18 @@ local function patchRom(roms, patchs, outf, koff)
         i = i+count
     end
     outf:write(string.sub(roms, offs, koff+0x1fff))
+end
+
+local function make8k(roms)
+    -- Open files for c64 kernal patch
+    local outf = assert(io.open(ofc64k, 'wb'))
+    local patchf = assert(io.open(pf64, 'rb'))
+    -- Read in the c64 patch file
+    local patchs = patchf:read("*all")
+    patchf:close()
+    -- Apply the c64 patch
+    patchRom(roms, patchs, outf, KERNAL_64_OFFS)
+    outf:close()
 end
 
 local function make16k(roms)
@@ -135,6 +151,7 @@ end
 
 -- Main
 local wants32k = false
+local wants8k = false
 local prom_fname, md5sum
 sys.chdir(os.getenv('IDUN_SYS_DIR')..'/sys')
 
@@ -154,6 +171,7 @@ romf:close()
 
 if arg[1] then
     wants32k = string.find(arg[1], '/32', 1, true)==1
+    wants8k = string.find(arg[1], '/8', 1, true)==1
 end
 if wants32k then
     outlf(1, eansi('${green}'..msg_k128_32k))
@@ -161,6 +179,16 @@ if wants32k then
     outlf(1, eansi('${green}Patched ROM saved to '..prom_fname))
     out(eansi('${green}Verifying patched ROM checksum...'))
     if md5(prom_fname)==md5_U32_combo then
+        outlf(1, eansi('${green}PASSED'))
+    else
+        outlf(1, eansi('${red}FAILED!'))
+    end
+elseif wants8k then
+    outlf(1, eansi('${green}'..msg_k64_8k))
+    prom_fname = make8k(roms)
+    outlf(1, eansi('${green}Patched ROM saved to '..prom_fname))
+    out(eansi('${green}Verifying patched ROM checksum...'))
+    if md5(prom_fname)==md5_U4 then
         outlf(1, eansi('${green}PASSED'))
     else
         outlf(1, eansi('${red}FAILED!'))
