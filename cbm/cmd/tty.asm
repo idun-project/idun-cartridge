@@ -38,7 +38,6 @@ attribMode    = 44  ;(1)  ;current attrib of cursor
 cursorDispMode= 45  ;(1)  ;$00=disable, $ff=enable
 cursorSavePos = 46  ;(2)  ;(ACE) row and column of saved cursor
 cursorSaveAttr= 48  ;(1)  ;saved attribute of cursor
-exitFlag      = 49  ;(1)  ;whether to exit the terminal immediately or not
 emulateMode   = 50  ;(1)  ;0=literal,1=glasstty,2=vt100
 escChar       = 52  ;(1)  ;current char in esc sequence
 charColor     = 53  ;(1)  ;color of characters
@@ -85,7 +84,7 @@ mainInit = *
    sta cursorSavePos+1
    sta cursorSaveAttr
    sta attribMode
-   sta exitFlag
+   sta aceSignalProc
    lda #TRUE
    sta autowrapMode
    sta cursorDispMode
@@ -237,7 +236,6 @@ termLoop = *
    lda #0
    ;IDUN: Disable keys/joys forwarding
    ; For now, don't allow any forwarding in console.
-   ; Probably want to add joytick forwarding later.
    sta joykeyCapture
    sta zw+1
    jsr aceTtyAvail
@@ -251,9 +249,8 @@ termLoop = *
    jsr cursorOff
    jsr PrintReceivedData
    jsr cursorOn
-+  lda exitFlag
-   cmp #FALSE
-   bne termExit
++  bit aceSignalProc
+   bmi termExit
    jsr aceConKeyAvail
    bcs termLoop
    jsr aceConGetkey
@@ -276,16 +273,14 @@ termLoop = *
    ldy #>writeChar
    ldx #1
    jsr modemSend
-++ lda exitFlag
-   cmp #0
-   bne +
+++ lda aceSignalProc
+   bmi +
    jmp termLoop
 
    termExit = *
 +  jsr cursorOff
    jsr HotkeyRevert
    jsr toolWinRestore
-   lda exitFlag
    rts
 writeChar: !byte 1
 
@@ -599,7 +594,7 @@ helpMsgEnd = *
 
 HotQ = *  ;quit
    lda #TRUE
-   sta exitFlag
+   sta aceSignalProc
    clc
    rts
 

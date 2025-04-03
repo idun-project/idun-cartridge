@@ -40,7 +40,8 @@ aceMouseLimitY   = aceStatB+48         ;(2)
 aceMouseScaleX   = aceStatB+50         ;(1)
 aceMouseScaleY   = aceStatB+51         ;(2)
 joykeyCapture    = aceStatB+53         ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
-;free public kernel vars from +54 through +63
+aceSignalProc    = aceStatB+54         ;(1) send signal (i.e. Interrupt/Kill) to current process
+;free public kernel vars from +55 through +63
 ;private kernel vars from +64 through +103
 aceZpIrqsave     = aceStatB+104        ;(40) toolbox Irq stash Zp here.
 

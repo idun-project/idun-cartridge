@@ -15,7 +15,6 @@ jmp main
 !byte 64,0 ;*stack,reserved
 
 ; Constants
-FALSE     = 0x00
 bkRam0    = $3f
 bkRam1    = $7f
 bkApp     = $0e
