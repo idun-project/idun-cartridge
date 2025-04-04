@@ -250,7 +250,7 @@ termLoop = *
    jsr PrintReceivedData
    jsr cursorOn
 +  bit aceSignalProc
-   bmi termExit
+   bvs termExit
    jsr aceConKeyAvail
    bcs termLoop
    jsr aceConGetkey
@@ -273,8 +273,8 @@ termLoop = *
    ldy #>writeChar
    ldx #1
    jsr modemSend
-++ lda aceSignalProc
-   bmi +
+++ bit aceSignalProc
+   bvs +
    jmp termLoop
 
    termExit = *
