@@ -785,13 +785,15 @@ bloadBank    = syswork+9
 kernFileBkload = *
 internBkload = *
    stx bloadBank
+   ldx #0
    jmp +
 ;*** aceFileBload( (zp)=Name, .AY=Address, (zw)=Limit+1 ) : .AY=End+1
 kernFileBload = *
 internBload = *
    ldx #0
    stx bloadBank
-+  sta bloadAddress+0
++  stx BloadAppflag
+   sta bloadAddress+0
    sty bloadAddress+1
    jsr getDevice
    sta bloadDevice

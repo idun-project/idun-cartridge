@@ -547,8 +547,6 @@ BloadAddr !byte 0,0    ; temp. storage so won't be overwritten
 BloadAppflag !byte 0
 
 pidBload = *
-  lda #0
-  sta BloadAppflag
   lda bloadBank
   beq +
   ; convert to bank configuration

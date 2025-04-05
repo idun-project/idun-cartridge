@@ -17,7 +17,6 @@ cpem_exec_c64_sz = * - cpem_exec_c64
 zload_exec !word 6,14,0
 zload_tool !pet "_:zload",0
 zload_path !pet "                ",0
-zload_exec_sz = * - zload_exec
 
 ; Error strings we hope we don't need
 errCpmPath !pet "CP/M files not installed.",0
@@ -96,18 +95,22 @@ Startup = *
    bne Startup
    ; Interrupt signalled -> zload cmd
    ; The path is copied from aceSharedBuf.
-   ldx #16
+   ldx #0
 -  lda aceSharedBuf,x
    sta zload_path,x
-   dex
-   bpl -
+   beq +
+   inx
+   jmp -
++  txa
+   clc
+   adc #15
+   tax
    lda #<zload_tool
    ldy #>zload_tool
    sta zp
    sty zp+1
    lda #<zload_exec
    ldy #>zload_exec
-   ldx #zload_exec_sz
    jsr toolSyscall
    ; After zload finishes, return CPem
    jmp Startup
