@@ -16,7 +16,7 @@ cpem_c64 !pet "_:tty",0,"x:./cpem C64",0
 cpem_exec_c64_sz = * - cpem_exec_c64
 zload_exec !word 6,14,0
 zload_tool !pet "_:zload",0
-zload_path !pet "                ",0
+zload_path !fill 17,0   ;17 bytes CP/M filename
 
 ; Error strings we hope we don't need
 errCpmPath !pet "CP/M files not installed.",0

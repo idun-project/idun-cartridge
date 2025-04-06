@@ -120,7 +120,7 @@ startz80 = *
    sta $05     ;clear carry
    lda $d030
    sta $a37
-   and $fe
+   lda #$00
    sta $d030   ;switch to 1MHz
    jsr JMPFAR  ;launch Z80 prog
    rts         ;return to shell
