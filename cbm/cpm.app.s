@@ -21,6 +21,7 @@ zload_path !fill 17,0   ;17 bytes CP/M filename
 ; Error strings we hope we don't need
 errCpmPath !pet "CP/M files not installed.",0
 errResident !pet "Failed to make commands resident.",0
+errChrset !pet "Failed to load ANSI chrset.",0
 
 ;=== Init (one-time) ===
 Init = *
@@ -37,6 +38,8 @@ Init = *
    sty zp+1
    jsr resident
    bcs errorLoadCmd
+   ; switch to chrset-ansi
+   jsr loadChrset
    ; cd to directory where `cpem` should be!
    lda #<cpem_path
    ldy #>cpem_path
@@ -52,11 +55,18 @@ Init = *
    errorLoadCmd = *
    lda #<errResident
    ldy #>errResident
+   jmp errorExit
+
+   errorLoadChr = *
+   lda #<errChrset
+   ldy #>errChrset
 
    errorExit = *
    jsr puts
    jsr aceConGetkey
-   rts
+   lda #0
+   ldx #0
+   jmp aceProcExit
 
 ;=== Startup ===
 Startup = *
@@ -136,6 +146,61 @@ resident = *
    clc
 +  rts
 
+loadChrset = *
+   lda #<chrsetAns
+   ldy #>chrsetAns
+   jmp loadChrContinue
+chrsetAns !pet "z:chrset-ansi",0
+unloadChrset= *
+   lda #<chrsetStd
+   ldy #>chrsetStd
+   jmp loadChrContinue
+chrsetStd !pet "z:chrset-standard",0
+
+   loadChrContinue = *
+   sta zp
+   sty zp+1
+   lda aceMemTop
+   sta zw
+   lda aceMemTop+1
+   sta zw+1
+   lda #<.charsetBuf
+   ldy #>.charsetBuf
+   jsr aceFileBload
+   bcc +
+   jmp errorLoadChr
++  lda #<.charsetBuf
+   ldx #>.charsetBuf
+   sta syswork+0
+   stx syswork+1
+   ldy #5
+   lda (syswork+0),y
+   tay
+   clc
+   lda syswork+0
+   adc #8
+   bcc +
+   inx
++  sta syswork+0
+   stx syswork+1
+   lda #%11100000
+   cpy #$00
+   beq +
+   ora #%00010000
++  ldx #$00
+   ldy #40
+   jsr aceWinChrset
+   clc
+   lda syswork+0
+   adc #40
+   sta syswork+0
+   bcc +
+   inc syswork+1
++  lda #%10001010
+   ldx #$00
+   ldy #0
+   jmp aceWinChrset
+
 ;******** standard library ********
 
 putchar = *
@@ -168,4 +233,5 @@ cls = *
    jmp putchar
 
 ;=== bss ===
+.charsetBuf = *
 macroUserCmds = * ;not used
