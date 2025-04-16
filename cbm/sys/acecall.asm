@@ -887,6 +887,44 @@ internBload = *
    ldy bloadAddress+1
    rts
 
+;*** aceDirStat ( .A=stat, (zp)=path ) : CS=error,errno
+;                                .CC=filled aceSharedBuf
+
+kernDirStat = *
+   ldx #"/"
+   cmp #$80
+   bne +
+   ldx #"%"
++  stx cmdPrefix
+   jsr kernMiscDeviceInfo
+   bcs +
+   lda #aceErrIllegalDevice
+   sta errno
+   sec
+   rts
++  lda syswork+1
+   sta openDevice
+   lda #"r"
+   sta openMode
+   lda #2
+   sta openNameScan
+   jsr pidCommandSend
+   lda #<dstatRespHandler
+   ldy #>dstatRespHandler
+   jmp pidCommandResponse
+dstatRespHandler = *
+   ldx #$00
+-  jsr pidChIn
+   bcs -
+   beq +
+   tax
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jsr kernModemGet
+   lda #$00
++  sta aceSharedBuf,x
+   rts
+
 ;*** aceFileStat ( (zp)=path ) : .AY=file size,.CS=error,errno
 ;                                .CC=filled aceDirentBuffer
 
@@ -895,6 +933,7 @@ kernFileStat = *
    bcs +
    lda #aceErrIllegalDevice
    sta errno
+   sec
    rts
 +  lda syswork+1
    sta openDevice
@@ -905,10 +944,10 @@ kernFileStat = *
    lda #2
    sta openNameScan
    jsr pidCommandSend
-   lda #<statRespHandler
-   ldy #>statRespHandler
+   lda #<fstatRespHandler
+   ldy #>fstatRespHandler
    jmp pidCommandResponse
-statRespHandler = *
+fstatRespHandler = *
    lda #<aceDirentBuffer
    ldy #>aceDirentBuffer
    ldx #aceDirentLength
@@ -1442,62 +1481,20 @@ internDirChange = *
    sec
    rts
 
-;*** aceDirMake( (zp)=Name, .AY=minimumEntries )
+;*** aceIecCommand( (zp)=Command )
 
-mkdirDevice = syswork
-
-kernDirMake = *
-   jsr getDiskDevice
-   bcc +
-   rts
-+  sta mkdirDevice
-   +ldaSCII "m"
-   sta stringBuffer+0
-   +ldaSCII "d"
-   sta stringBuffer+1
-   +ldaSCII ":"
-   sta stringBuffer+2
-   ldx #3
+kernIecCommand = *
+   sta syswork
+   sty syswork+1
+   ldx #0
+   ldy #0
 -  lda (zp),y
    sta stringBuffer,x
    beq +
    iny
    inx
    bne -
-+  lda mkdirDevice
-   jsr cmdchOpen
-   bcs ++
-   jsr cmdchSend
-   bcs +
-   jsr checkDiskStatus
-+  php
-   jsr cmdchClose
-   plp
-++ rts
-
-;*** aceDirRemove( (zp)=Name )
-
-rmdirDevice = syswork
-
-kernDirRemove = *
-   jsr getDiskDevice
-   bcc +
-   rts
-+  sta rmdirDevice
-   +ldaSCII "r"
-   sta stringBuffer+0
-   +ldaSCII "d"
-   sta stringBuffer+1
-   +ldaSCII ":"
-   sta stringBuffer+2
-   ldx #3
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  lda rmdirDevice
++  lda aceCurrentDevice
    jsr cmdchOpen
    bcs ++
    jsr cmdchSend
@@ -1818,7 +1815,7 @@ kernMiscSysType = *
    rts
 
 ;*** aceMiscDeviceInfo( (zp)=path: .A=iec addr,.X=type,.Y=scan pos
-;                                  sw=flags,sw+1=device,.CS=virt.dev )
+;                                  sw=flags,sw+1=device,.CS=virt.drv )
 kernMiscDeviceInfo = *
    jsr getDevice
    sty syswork+2
@@ -1829,10 +1826,16 @@ kernMiscDeviceInfo = *
    lda configBuf+0,y
    tax
    lda configBuf+1,y
-   cpx #4
-   bcs +
+   ldy syswork+2
    cpx #7
-+  ldy syswork+2
+   bne +
+   sec
+   rts
++  cpx #4
+   bne +
+   sec
+   rts
++  clc
    rts
 
 

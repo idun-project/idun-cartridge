@@ -105,8 +105,8 @@ idunDosMain = *
    ldy #>minuteTimeout
    jsr toolTmoSecs
    ; cd HOME
-   lda #$80
-   jsr aceDirChange
+   ; lda #$80
+   ; jsr aceDirChange
    ; Start shell
    lda #stdin
    sta inputFd
@@ -1264,83 +1264,93 @@ basicExtPrg !pet "z:basic780",0
 
 ;===mount===
 mtWritable  = 2   ;(1)
-mtArgc      = 4   ;(1)
-mtImageArg  = 5   ;(1)
-mtDevice !pet "d:",0
+mtArg       = 4   ;(1)
+mtPathArg   = 5   ;(1)
+mtDrive !pet "d:",0     ;default mount to d:
+
 mtUsageMsg = *
-   !pet chrCR,"mount [/w] imagefile [/dev:]",chrCR
-   !pet "Mounts image file on virtual drive",chrCR
-   !pet "- optional [/w] to allow writing",chrCR
-   !pet "- optional device, default ",chrQuote,"d:",chrQuote
-   !pet chrCR,0
+   !pet "mount [/d:] [imagefile-or-directory]",chrCR,chrCR
+   !pet "Mounts image file or directory on virtual drive",chrCR
+   !pet "- no arguments to list mounted drives",chrCR
+   !pet "- optionally specify the drive letter (d: default)",chrCR,0
 mtErrorMsg1 = *
    !pet "Error: illegal target device",chrCR,0
 mtErrorMsg2 = *
-   !pet "Error: cannot open image file",chrCR,0
+   !pet "Error: cannot open path",chrCR,0
 mtErrorMsg3 = *
-   !pet "Error: cannot mount image file",chrCR,0
+   !pet "Error: cannot mount path",chrCR,0
 mtDoneMsg1   = *
    !pet "Mounted ",0
 mtDoneMsg2   = *
    !pet " on ",0
 
 mount = *
-   ; default is read-only
-   lda #FALSE
-   sta mtWritable
-   sta mtImageArg
-   ; default device d:
-   +ldaSCII "d"
-   sta mtDevice+0
-   ; args handler
    lda #0
-   sta mtArgc
--  inc mtArgc
-   lda mtArgc
-   cmp aceArgc
-   beq ++
+   sta mtPathArg
+   lda #$44
+   sta mtDrive
+   ; check for no args
+   lda aceArgc+0
+   sta mtArg
+   dec mtArg
+   cmp #2
+   lda aceArgc+1
+   sbc #0
+   bcs mountNextArg
+   jmp mountShowAll
+   
+   ; get arguments
+   mountNextArg = *
+   lda mtArg
+   beq mountCont
    ldy #0
    jsr getarg
    ldy #0
    lda (zp),y
    +cmpASCII "/"
    bne mtRequiredArg
-   ; handle optional argument
    iny
    lda (zp),y
-   +cmpASCII "w"
-   beq +
-   iny
-   lda (zp),y
-   +cmpASCII ":"
-   bne mtShowUsage
-   dey
-   lda (zp),y
-   sta mtDevice+0
-   jmp -
-+  lda #TRUE
-   sta mtWritable
-   jmp -
+   +cmpASCII "?"
+   bne mtDriveArg
+   jmp mtShowUsage
+   
+   mtDriveArg = *
+   cmp #$40
+   bcc mtShowUsage
+   cmp #$5b
+   bcs mtShowUsage
+   sta mtDrive
+   dec mtArg
+   jmp mountNextArg
+
    ; handle required argument
    mtRequiredArg = *
-   lda mtArgc
-   sta mtImageArg
-   jmp -
+   lda mtArg
+   sta mtPathArg
+   dec mtArg
+   jmp mountNextArg
 
-   ; check for correct device type of target
-++ lda #<mtDevice
-   ldy #>mtDevice
+   mountCont = *
+   lda #<mtDrive
+   ldy #>mtDrive
    sta zp
    sty zp+1
+   lda mtPathArg
+   beq mountShowDrv
+   ; default is read-write
++  lda #TRUE
+   sta mtWritable
+   ; get device type of mount drive
    jsr aceMiscDeviceInfo
-   cpx #7
-   bne mtDeviceError
-   ; open the image file
-   ldy #0
-   lda mtImageArg
-   beq mtShowUsage
+   bcc mtDeviceError
+   ; open the path
++  ldy #0
+   lda mtPathArg
    jsr getarg
-   lda mtDevice+0
+   lda mtDrive
+   sec
+   sbc #$40
    and #$1f
    asl
    asl
@@ -1352,6 +1362,7 @@ mount = *
    cmp #aceErrFileTypeMismatch
    beq mtMountError
    jmp mtOpenError
+
    mtShowUsage = *
    lda #<mtUsageMsg
    ldy #>mtUsageMsg
@@ -1373,18 +1384,47 @@ mount = *
    ldy #>mtDoneMsg1
    jsr puts
    ldy #0
-   lda mtImageArg
+   lda mtPathArg
    jsr getarg
    ldx #stdout
    jsr zpputs
    lda #<mtDoneMsg2
    ldy #>mtDoneMsg2
    jsr puts
-   lda #<mtDevice
-   ldy #>mtDevice
+   lda #<mtDrive
+   ldy #>mtDrive
    jsr puts
    lda #chrCR
    jmp putchar
+
+   mountShowDrv = *
+   lda #$80
+   jsr aceDirStat
+   bcc +
+   rts
++  ldx #stdout
+   jsr zpputs
+   lda #"="
+   jsr putchar
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jsr puts
+   lda #chrCR
+   jmp putchar
+
+   mountShowAll = *
+   lda #$40
+   sta mtDrive
+-  inc mtDrive
+   lda #<mtDrive
+   ldy #>mtDrive
+   sta zp
+   sty zp+1
+   jsr mountShowDrv
+   lda mtDrive
+   cmp #$5a
+   bne -
+   rts
 
 
 ;===mem===
@@ -2055,9 +2095,17 @@ cd = *
    lda aceArgc+1
    sbc #0
    bcs +
-   lda #$80
-   jsr aceDirChange
-   rts
+   lda #<currentDir
+   ldy #>currentDir
+   sta zp
+   sty zp+1
+   lda #$00
+   jsr aceDirStat
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jsr puts
+   lda #chrCR
+   jmp putchar
 +  lda #1
    ldy #0
    jsr getarg

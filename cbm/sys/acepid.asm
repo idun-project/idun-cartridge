@@ -699,40 +699,37 @@ cmdPrefix:
   !byte 0
 
 ;*** (.X=device, (zp)=name) : .CS=error, errno
+pidOpenDir = *
+  +ldaSCII "$"
+  jmp pidSimpleCmd
+
+;*** (.X=device, (zp)=name) : .CS=error, errno
 pidRemove = *
-	+ldaSCII "!"
-	sta cmdPrefix
-	jsr pidCommandStart
-  bcs +
-  jsr pidCommandFinish
-  jmp pidCommandClose
-+ rts
+  +ldaSCII "!"
+  jmp pidSimpleCmd
 
 ;*** (.X=device, (zp)=old_name, (zw)=new_name) : .CS=error, errno
 pidRename = *
-	+ldaSCII "="
-	sta cmdPrefix
-	jsr pidCommandStart
-  bcc +
-  sta errno
-  rts
-+ lda zw
+  lda zw
   sta zp
   lda zw+1
   sta zp+1
-  jsr pidCommandFinish
+  +ldaSCII "="
+pidSimpleCmd = *
+  sta cmdPrefix
+  jsr pidCommandStart
+  bcc +
+  sta errno
+  rts
++ jsr pidCommandFinish
   jmp pidCommandClose
 
 ;*** (.X=device, (zp)=name) : .CS=error, errno
 pidChDir = *
-  lda #0
-  sta openNameScan
-  ldy #1
-  lda #":"
-  cmp (zp),y
+  ldy openNameScan
+  lda (zp),y
   bne +
-  lda #2
-  sta openNameScan
+  jmp chdirSetName
 + lda chdirDevice
   sta openDevice
   lda #"r"

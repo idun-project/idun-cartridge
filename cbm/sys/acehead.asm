@@ -55,7 +55,7 @@ aceFileRemove = aceCallB+18  ;( (zp)=name )
 aceFileRename = aceCallB+21  ;( (zp)=oldName, (zw)=newName )
 aceFileStat   = aceCallB+24  ;( (zp)=path ) : .AY=filesz,.CS=error,errno,fills aceDirentBuffer
 aceFileIoctl  = aceCallB+27  ;( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
-aceReserved1  = aceCallB+30
+aceIecCommand = aceCallB+30  ;( (zp)=Command )
 aceFileBkload = aceCallB+33  ;( .X=bank (zp)=name, .AY=loadAddr, (zw)=limit+1):.AY=end+1
 
 aceDirOpen    = aceCallB+36  ;( (zp)=dirName ) : .A=fd
@@ -63,8 +63,9 @@ aceDirClose   = aceCallB+39  ;( .A=fd )
 aceDirRead    = aceCallB+42  ;( .X=fd ) : direntBuffer, .Z=eof
 aceDirIsdir   = aceCallB+45  ;( (zp)=name ) : .A=dev, .X=isDisk, .Y=isDir
 aceDirChange  = aceCallB+48  ;( (zp)=dirName, .A=flags($80=home) )
-aceDirMake    = aceCallB+51  ;( (zp)=newDirName, .AY=suggestedEntries )
-aceDirRemove  = aceCallB+54  ;( (zp)=dirName )
+aceDirStat    = aceCallB+51  ;( .A=stat, (zp)=path ) : .CS=error,errno
+                             ;                         .CC=filled aceSharedBuf
+aceReserved1  = aceCallB+54  ;
 aceDirName    = aceCallB+57  ;( .A=sysdir, (zp)=buf ) : buf, .Y=len
                              ; .A:0=curDir, 1=homeDir, 2=execSearchPath,
                              ;    3=configSearchPath, 4=tempDir

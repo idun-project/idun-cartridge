@@ -68,7 +68,7 @@ jmp kernFileRemove
 jmp kernFileRename
 jmp kernFileStat
 jmp kernFileIoctl
-jmp notImp
+jmp kernIecCommand
 jmp kernFileBkload
 
 jmp kernDirOpen
@@ -76,8 +76,8 @@ jmp kernDirClose
 jmp kernDirRead
 jmp kernDirIsdir
 jmp kernDirChange
-jmp kernDirMake
-jmp kernDirRemove
+jmp kernDirStat
+jmp notImp
 jmp kernDirName
 
 jmp kernWinScreen
