@@ -1838,19 +1838,25 @@ kernMiscDeviceInfo = *
 +  clc
    rts
 
+;*** aceDirAssign ( (zp)=path .X=device ) : .CS=error
+kernDirAssign = *
+   stx regsave+1
+   jsr getDevice
+   sty openNameScan
+   tax
+   jsr pidOpenDir
+   bcc +
+   rts
++  ldx regsave+1
+   +ldaSCII "w"
+   jmp pidMount
 
 ;*** aceMountImage ( (zp)=image file .X=device, .A=R/W flag)
 ;                    : .CS=error,errno
 kernMountImage = *
    sta regsave+0
    stx regsave+1
-   bmi +
-   +ldaSCII "r"
-   sta regsave+0
-   jmp ++
-+  +ldaSCII "w"
-   sta regsave+0
-++ jsr open
+   jsr open
    bcc +
    rts
 +  pha            ;store image file fd

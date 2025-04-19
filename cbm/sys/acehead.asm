@@ -65,7 +65,7 @@ aceDirIsdir   = aceCallB+45  ;( (zp)=name ) : .A=dev, .X=isDisk, .Y=isDir
 aceDirChange  = aceCallB+48  ;( (zp)=dirName, .A=flags($80=home) )
 aceDirStat    = aceCallB+51  ;( .A=stat, (zp)=path ) : .CS=error,errno
                              ;                         .CC=filled aceSharedBuf
-aceReserved1  = aceCallB+54  ;
+aceDirAssign  = aceCallB+54  ;( .X=device, (zp)=path ) : .CS=error
 aceDirName    = aceCallB+57  ;( .A=sysdir, (zp)=buf ) : buf, .Y=len
                              ; .A:0=curDir, 1=homeDir, 2=execSearchPath,
                              ;    3=configSearchPath, 4=tempDir

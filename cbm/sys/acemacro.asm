@@ -58,3 +58,10 @@
 	jsr aceConDebugLog
 }
 }
+!macro as_device {
+	sec
+	sbc #$40
+	and #$1f
+	asl
+	asl
+}

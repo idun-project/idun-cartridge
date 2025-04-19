@@ -1289,6 +1289,10 @@ mount = *
    sta mtPathArg
    lda #$44
    sta mtDrive
+   lda #<aceMountImage
+   ldy #>aceMountImage
+   sta mountMethod+1
+   sty mountMethod+2
    ; check for no args
    lda aceArgc+0
    sta mtArg
@@ -1338,24 +1342,26 @@ mount = *
    sty zp+1
    lda mtPathArg
    beq mountShowDrv
-   ; default is read-write
-+  lda #TRUE
-   sta mtWritable
    ; get device type of mount drive
    jsr aceMiscDeviceInfo
    bcc mtDeviceError
+   cpx #4
+   bne +
+   lda #<aceDirAssign
+   ldy #>aceDirAssign
+   sta mountMethod+1
+   sty mountMethod+2
    ; open the path
 +  ldy #0
    lda mtPathArg
    jsr getarg
    lda mtDrive
-   sec
-   sbc #$40
-   and #$1f
-   asl
-   asl
+   +as_device
    tax
-   lda mtWritable
+   ; default is read-write
+   lda #"W"
+
+   mountMethod = *
    jsr aceMountImage
    bcc mtDone
    lda errno

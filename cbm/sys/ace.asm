@@ -77,7 +77,7 @@ jmp kernDirRead
 jmp kernDirIsdir
 jmp kernDirChange
 jmp kernDirStat
-jmp notImp
+jmp kernDirAssign
 jmp kernDirName
 
 jmp kernWinScreen
