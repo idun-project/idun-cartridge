@@ -1088,6 +1088,9 @@ dispTable = *
 !pet "mount"
 !byte 0
 !word mount
+!pet "assign"
+!byte 0
+!word assign
 !pet "nix"
 !byte 0
 !word xex
@@ -1269,10 +1272,10 @@ mtPathArg   = 5   ;(1)
 mtDrive !pet "d:",0     ;default mount to d:
 
 mtUsageMsg = *
-   !pet "mount [/d:] [imagefile-or-directory]",chrCR,chrCR
-   !pet "Mounts image file or directory on virtual drive",chrCR
-   !pet "- no arguments to list mounted drives",chrCR
-   !pet "- optionally specify the drive letter (d: default)",chrCR,0
+   !pet "mount [/d:] [imagefile]",chrCR,chrCR
+   !pet "Mounts image file as virtual floppy",chrCR
+   !pet "- optionally specify drive letter (d: default)",chrCR
+   !pet "- no args will list mounted drives",chrCR,0
 mtErrorMsg1 = *
    !pet "Error: illegal target device",chrCR,0
 mtErrorMsg2 = *
@@ -1289,10 +1292,6 @@ mount = *
    sta mtPathArg
    lda #$44
    sta mtDrive
-   lda #<aceMountImage
-   ldy #>aceMountImage
-   sta mountMethod+1
-   sty mountMethod+2
    ; check for no args
    lda aceArgc+0
    sta mtArg
@@ -1344,15 +1343,10 @@ mount = *
    beq mountShowDrv
    ; get device type of mount drive
    jsr aceMiscDeviceInfo
-   bcc mtDeviceError
-   cpx #4
-   bne +
-   lda #<aceDirAssign
-   ldy #>aceDirAssign
-   sta mountMethod+1
-   sty mountMethod+2
+   cpx #7
+   bne mtDeviceError
    ; open the path
-+  ldy #0
+   ldy #0
    lda mtPathArg
    jsr getarg
    lda mtDrive
@@ -1360,8 +1354,6 @@ mount = *
    tax
    ; default is read-write
    lda #"W"
-
-   mountMethod = *
    jsr aceMountImage
    bcc mtDone
    lda errno
@@ -1426,8 +1418,152 @@ mount = *
    ldy #>mtDrive
    sta zp
    sty zp+1
+   jsr aceMiscDeviceInfo
+   cpx #7
+   bne +
    jsr mountShowDrv
++  lda mtDrive
+   cmp #$5a
+   bne -
+   rts
+
+
+;===assign===
+asUsageMsg = *
+   !pet "assign [/d:] [directory]",chrCR,chrCR
+   !pet "Assign directory as virtual drive",chrCR
+   !pet "- /d = drive letter for assign",chrCR
+   !pet "- no args lists assigned drives",chrCR,0
+asDoneMsg1   = *
+   !pet "Assigned ",0
+asDoneMsg2   = *
+   !pet " to ",0
+
+assign = *
+   lda #0
+   sta mtPathArg
+   sta mtDrive
+   ; check for no args
+   lda aceArgc+0
+   sta mtArg
+   dec mtArg
+   cmp #2
+   lda aceArgc+1
+   sbc #0
+   bcs assignNextArg
+   jmp assignShowAll
+   
+   ; get arguments
+   assignNextArg = *
+   lda mtArg
+   beq assignCont
+   ldy #0
+   jsr getarg
+   ldy #0
+   lda (zp),y
+   +cmpASCII "/"
+   bne asRequiredArg
+   iny
+   lda (zp),y
+   +cmpASCII "?"
+   bne asDriveArg
+   jmp asShowUsage
+   
+   asDriveArg = *
+   cmp #$40
+   bcc asShowUsage
+   cmp #$5b
+   bcs asShowUsage
+   sta mtDrive
+   dec mtArg
+   jmp assignNextArg
+
+   ; handle required argument
+   asRequiredArg = *
+   lda mtArg
+   sta mtPathArg
+   dec mtArg
+   jmp assignNextArg
+
+   assignCont = *
    lda mtDrive
+   beq asShowUsage
+   lda #<mtDrive
+   ldy #>mtDrive
+   sta zp
+   sty zp+1
+   lda mtPathArg
+   beq assignShowDrv
+   ; get device type of mount drive
+   jsr aceMiscDeviceInfo
+   cpx #4
+   beq +
+   jmp mtDeviceError
+   ; open the path
++  ldy #0
+   lda mtPathArg
+   jsr getarg
+   lda mtDrive
+   +as_device
+   tax
+   jsr aceDirAssign
+   bcc asDone
+   lda errno
+   cmp #aceErrFileTypeMismatch
+   bne +
+   jmp mtMountError
++  jmp mtOpenError
+
+   asShowUsage = *
+   lda #<asUsageMsg
+   ldy #>asUsageMsg
+   jmp eputs
+   asDone = *
+   lda #<asDoneMsg1
+   ldy #>asDoneMsg1
+   jsr puts
+   ldy #0
+   lda mtPathArg
+   jsr getarg
+   ldx #stdout
+   jsr zpputs
+   lda #<asDoneMsg2
+   ldy #>asDoneMsg2
+   jsr puts
+   lda #<mtDrive
+   ldy #>mtDrive
+   jsr puts
+   lda #chrCR
+   jmp putchar
+
+   assignShowDrv = *
+   lda #$80
+   jsr aceDirStat
+   bcc +
+   rts
++  ldx #stdout
+   jsr zpputs
+   lda #"="
+   jsr putchar
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jsr puts
+   lda #chrCR
+   jmp putchar
+
+   assignShowAll = *
+   lda #$40
+   sta mtDrive
+-  inc mtDrive
+   lda #<mtDrive
+   ldy #>mtDrive
+   sta zp
+   sty zp+1
+   jsr aceMiscDeviceInfo
+   cpx #4
+   bne +
+   jsr assignShowDrv
++  lda mtDrive
    cmp #$5a
    bne -
    rts
