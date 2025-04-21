@@ -281,15 +281,6 @@ cmdchOpen = *  ;( .A=device )
 +  rts
 
 cmdchClose = *
-   lda devtable,x
-   tax
-   lda configBuf+0,x
-   cmp #1
-   beq +
-   lda configBuf+2,x
-   sta closeFd
-   jmp pidClose
-+  sec
    lda #cmdlf
    jsr kernelClose
    bcc +
@@ -1484,8 +1475,6 @@ internDirChange = *
 ;*** aceIecCommand( (zp)=Command )
 
 kernIecCommand = *
-   sta syswork
-   sty syswork+1
    ldx #0
    ldy #0
 -  lda (zp),y
@@ -1494,12 +1483,27 @@ kernIecCommand = *
    iny
    inx
    bne -
++  ldx aceCurrentDevice
+   lda configBuf+0,x
+   cmp #1
+   beq +
+   sec
+   rts
 +  lda aceCurrentDevice
    jsr cmdchOpen
    bcs ++
    jsr cmdchSend
    bcs +
-   jsr checkDiskStatus
+   ;read device response
+   ldx #cmdlf
+   jsr kernelChkin
+-  jsr kernelChrin
+   pha
+   jsr kernConPutchar
+   pla
+   cmp #13
+   bne -
+   clc
 +  php
    jsr cmdchClose
    plp

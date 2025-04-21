@@ -927,6 +927,35 @@ shellExecCommand = *
    iny
    bne -
 
+   ;** check for and handle "@" commands
++  lda argBuffer
+   cmp #"@"
+   bne +
+   lda #13
+   sta argBuffer,y
+   iny
+   lda #0
+   sta argBuffer,y
+   lda #<(argBuffer+1)
+   ldy #>(argBuffer+1)
+   sta zp
+   sty zp+1
+   jmp aceIecCommand
+
+   ;** check for and handle drive-switch
++  ldy #2
+   lda (name),y
+   bne +
+   dey
+   lda (name),y
+   cmp #":"
+   bne +
+   lda name+0
+   ldy name+1
+   sta zp+0
+   sty zp+1
+   jmp cdSetDevice
+
    ;** search internal dispatch table for name
 +  ldy #0
    dispCmpCommand = *
