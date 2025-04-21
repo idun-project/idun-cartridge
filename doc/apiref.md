@@ -423,6 +423,34 @@ Returns the null-terminated string for the requested directory or search path.  
 
 Actually, search paths (arguments 2 and 3) are really a sequence of null- terminated strings (with each string representing one component of the whole path) terminated with an empty string.  This call should not cause any disk I/O to occur, so it can be called without hesitating about the overhead. The given string-buffer pointer must point to enough storage to hold the result sting(s).  For the current directory, it should be at least 81 characters in length, for the other directories, 32 characters, and for the search paths, 64 characters.
 
+```
+NAME   :  aceDirAssign
+PURPOSE:  assign a directory to a virtual drive
+ARGS   :  (zp) = pointer to null-terminated path of directory to assign
+          .X   = device to be assigned
+RETURNS:  .CS  = errno
+ALTERS :  .A, .X, .Y, errno
+```
+
+The device number passed in .X can be easily obtained by using the `as_device` macro to convert a drive letter (lowercase) to the device number.
+
+```
+NAME   :  aceDirStat
+PURPOSE:  Get the status of a virtual device
+ARGS   :  (zp) = pointer to null-terminated device prefix (e.g. "c:", "d:", etc.)
+          .A   = $80 to get device mount name or assignment
+               = $00 to get the current directory of the device
+RETURNS:  .CS  = errno
+          aceSharedBuf contains the status string as a full path
+ALTERS :  .A, .X, .Y, errno
+```
+
+You can retrieve the current assignment of a device that has been set in the configuration file or using `aceDirAssign`. You can also retrieve the full path of an image mounted on a device. For both these uses, pass a value of $80 in .A
+
+If you just want the current path of the device, then pass $00 in .A
+
+The result is a null-terminated path string in aceSharedBuf.
+
 
 #### 3. SCREEN-CONTROL CALLS
 
@@ -1435,11 +1463,12 @@ NAME   :  aceMountImage
 PURPOSE:  mount a disk image file
 ARGS   :  (zp) = pointer to null-terminated image filename
           .A   = R/W flag
+          .X   = device to mount image
 RETURNS:  .CS  = errno
 ALTERS :  .A, .X, .Y, errno
 ```
 
-Idun currently supports .D64, .D71, and .T64 image files, and will likely add others. This API mounts an image file to a virtual drive, just as is done with the `mount` command in the shell. Set the .A flag to either "R" (for read-only) or "W" (for read/write) access to the mounted image.
+Idun currently supports .D64, .D71, and .T64 image files, and will likely add others. This API mounts an image file to a virtual drive, just as is done with the `mount` command in the shell. Set the .A flag to either "R" (for read-only) or "W" (for read/write) access to the mounted image. The device number passed in .X can be easily obtained by using the `as_device` macro to convert a drive letter (lowercase) to the device number.
 
 ```
 NAME   :  aceDirectRead

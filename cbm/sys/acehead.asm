@@ -102,8 +102,8 @@ aceConGamepad  = aceCallB+135 ;( .AY=buf) : .AY[0-1]=gamepad1 ,AY[2-3]=gamepad2
 aceGrExit      = aceCallB+138 ;( )
 aceConDebugLog = aceCallB+141 ;( (zp)=msg,(.AY)=byte vars,.X=num vars)
 aceHashTag     = aceCallB+144 ;( (.AY)=name : .A=tag hash)
-aceProcExec = aceCallB+147 ;( (zp)=execName, (zw)=argv,.AY=argCnt,[mp]=saveArea,
-                           ; .X=reftch):.A=exitCode,.X=exitDataLen,[mp]=saveArea
+aceProcExec    = aceCallB+147 ;( (zp)=execName, (zw)=argv,.AY=argCnt,[mp]=saveArea,
+                              ; .X=reftch):.A=exitCode,.X=exitDataLen,[mp]=saveArea
 aceProcExecSub = aceCallB+150 ;( (zp)=execAddr, ...) rest same as aceProcExec
                               ;  : .A=exitCode, .X=exitDataLen, [mp]=saveArea
 aceProcExit    = aceCallB+153 ;( .A=exitCode, .X=exitBufDataLen, exitData )

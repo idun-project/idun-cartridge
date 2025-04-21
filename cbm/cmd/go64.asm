@@ -84,15 +84,13 @@ mountImageFile = *
    lda #1
    jsr getarg
    lda mtDevice+0
-   and #$1f
-   asl
-   asl
+   +as_device
    tax
    pla
    sta zp
    pla
    sta zp+1
-   lda #TRUE
+   lda #"W"
    jsr aceMountImage
    lda errno
    beq mtDone

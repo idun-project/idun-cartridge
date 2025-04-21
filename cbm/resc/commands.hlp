@@ -1,3 +1,6 @@
+assign
+assign directory to drive
+${bold}Usage:${normal} assign </e:> [path] -- The ${green}assign${white} command changes which directory on the SD card's filesystem is assigned to the drive letter you specify. It's basically a shortcut allowing you to reference a specific path using e:, f:, etc. If you do not specify a path, then the path currently assigned to the drive(s) is shown. The assignments will persist across resets and power-cycles.
 basic
 exit to basic prompt
 On the C128, the ${green}basic${white} command launches the excellent BASIC 7.80 extension, which enhances BASIC 7's graphics functions to work with the 80-column display too.
@@ -87,7 +90,7 @@ print text file w/ paging
 The ${green}more${white} command shows the contents of a PETSCII file on the screen. Unlike the ${green}type${white} command, it will pause after each full screen of text so that you can use it to read long files.
 mount
 mount a disk image file
-${bold}Usage:${normal} mount <imgfile> [/w] [/dev:] -- The ${green}mount${white} command is for mounting Commodore disk and tape image files. It supports .D64, .D71, and .T64 files. The default behavior is read-only, but the optional '/w' switch allows you to mount a disk image as writable. By default, all images are mounted to device d:, but you can specify a different device by including a switch such as '/f:', assuming 'f:' is configured for virtual disks (it is not by default!). Note: The ${green}go64${white} command mounts disk & tape images to device '^:' so as to not conflict with the mount command.
+${bold}Usage:${normal} mount [imgfile] [/d:] -- The ${green}mount${white} command is for mounting Commodore disk and tape image files. It supports .D64, .D71, and .T64 files. Disks are mounted in read/write mode, so you should be careful with removing or over-writing files. By default, all images are mounted to device d:, but you can specify a different device by including a switch such as '/f:', assuming 'f:' is configured for virtual disks (it is not by default!). Note: The ${green}go64${white} and ${green}browse${white} commands mount disk & tape images to device '^:' so as to not conflict with the mount command. If no image file is provided, then the command shows what disk image files are currently mounted. Also, drives you mount will persist across reboots and power-cycles.
 mousetest
 test mouse
 This is a simple program to test the cursor, mouse movement, and button presses. Idun's API supports the Commodore 1351 and compatible mouse controllers. View the 'cmd/mousetest.asm' source code file to see how to access the mouse, or look at the source in 'apps/mandelbrot.app' to see how to use the mouse in a Lua application.

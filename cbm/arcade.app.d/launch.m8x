@@ -40,11 +40,9 @@ mountD64 = *
     sta zp
     sty zp+1
     lda #"d"
-    and #$1f
-    asl
-    asl
+    +as_device
     tax
-    lda #TRUE
+    lda #"W"
     jsr aceMountImage
     bcc +
     jmp .error

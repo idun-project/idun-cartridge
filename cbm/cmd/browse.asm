@@ -1003,9 +1003,7 @@ mountImageStd = *
    rts
 +  ldy #0
    lda (zp),y
-   and #$1f
-   asl
-   asl
+   +as_device
    pha
    jsr getFileArg
    lda #<FileArg
@@ -1022,7 +1020,7 @@ mountImageStd = *
    jsr aceDirClose
 +  pla
    tax
-   lda #TRUE
+   lda #"W"
    jsr aceMountImage
    bcs +
    lda #$1e
