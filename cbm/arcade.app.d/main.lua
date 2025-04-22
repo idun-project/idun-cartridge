@@ -115,13 +115,8 @@ function Ev_key_search(c)
         searchstr = searchstr..ch
     end
 
-    local terms = splittokens(util.pet2asc(searchstr))
-    found = search.get(terms[1])
-    local i = 2
-    while i <= #terms do
-        found = search.incremental(found, terms[i])
-        i = i+1
-    end
+    local terms = util.pet2asc(searchstr)
+    found = search.get(terms)
     if #found>0 then update_search_results(1, #found) else clearsearch(1) end
 end
 
@@ -197,7 +192,7 @@ end
 
 function Ev_select_results(s)
     s = s + result_start - 1
-    assert(found[s], string.format("No result slected by %d",s))
+    assert(found[s], string.format("No result selected by %d",s))
     select_gid = gamedb['alpha'][found[s]][3]
     select_path = string.toutf8(gamedb['alpha'][found[s]][2])
     local i = info.get(select_path)

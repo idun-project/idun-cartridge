@@ -12,7 +12,7 @@ directory/file browser
 The ${green}browse${white} command provides a more convenient way to navigate the directory tree, and can also mount disk images or launch applications. Input is done with cursor keys + ${bold}ENTER${normal} to select, or you can use a joystick. When a sub-directory is selected, the next column of the display is populated with the contents. To go back up the tree, press LEFT. If you highlight an application or disk image, then selection will cause a menu to appear with the possible actions.
 cd
 change current drive/directory
-Use the ${green}cd${white} command with a drive letter, such as 'cd a:' to switch to a different drive. If the drive has sub-directories, then you can switch to them by entering the name of the sub-directory. You can also use '..' to change to the parent directory. With no arguments, the command takes you to your home directory.
+Use the ${green}cd${white} command with a drive letter, such as 'cd a:' to switch to a different drive (Note: this command can also be shortened to just "a:"). If the drive has sub-directories, then you can switch to them by entering the name of the sub-directory. You can also use '..' to change to the parent directory. With no arguments, the command shows the current working path of the current drive.
 cls
 clear the screen
 Clears the screen and presents the shell prompt at the home cursor position.
