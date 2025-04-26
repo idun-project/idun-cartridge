@@ -18,7 +18,7 @@ ACEDRVS=\
 sys/acevdc.asm sys/acevic.asm sys/acesoft80.asm idun-io.asm \
 sys/acepid.asm sys/acepiserv.asm sys/hook.asm
 
-KERNAL=$(SYSDIR)/idun128 \
+KERNEL=$(SYSDIR)/idun128 \
 $(SYSDIR)/idun-64
 
 HOOK=$(SYSDIR)/boot128 \
@@ -71,7 +71,7 @@ test: $(TEST)
 $(BUILD): $(ACESYS)
 	mkdir -p $@
 
-sys: $(BUILD) $(SYSDIR) $(KERNAL) $(HOOK) $(SYS)
+sys: $(BUILD) $(SYSDIR) $(KERNEL) $(HOOK) $(SYS)
 	@$(foreach f,$(SYS), cp $(f) $(SYSDIR);)
 
 $(SYSDIR):

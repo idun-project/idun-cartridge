@@ -730,7 +730,7 @@ Go = *
 }
     ; load kernel and jump
     ldx #$00
-    ldy #$13    
+    ldy #$12
     lda #0
 !if useC128 {
     jsr kernelLoad
@@ -739,7 +739,7 @@ Go = *
 }
     pla
     sta IdunDrive
-    jmp $1300
+    jmp $1200
 IOpen = *
     lda kLastDevice
     cmp MyDevice

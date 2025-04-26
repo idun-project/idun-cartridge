@@ -1275,8 +1275,6 @@ ARGS   :  (.AY) = address of send buffer
           .X    = number of bytes to send (1-256), with 256 indicated by a zero
 RETURNS:  <none>
 ALTERS :  .A, .X, .Y
-aceTtyPut        = aceCallB+216 ;( .AY=SendBuffer, .X=SendBytes,
-                                ;  : .CS, error
 ```
 
 Copies specified number of bytes to the stream output. Always non-blocking.

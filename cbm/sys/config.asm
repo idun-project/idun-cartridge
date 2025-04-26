@@ -36,6 +36,7 @@ configMain = *
    jsr pidInit          ;Before accessing cart devices!
    jsr loadConfig
    bcs +
+   jsr enableVic80
    jsr screenInit
    jsr setDate
    jsr internalMemory
@@ -437,17 +438,7 @@ freeRam0AfterKernel = *
    lda #>aceAppAddress
    sbc aceEndPage
    sta $40
-   bit sysType
-   bvc +
    clc
-   adc #3
-   sta $40
-   lda #$00
-   ldy #$11
-   sta (.ram0FreeMap),y
-   ldy #$12
-   sta (.ram0FreeMap),y
-+  clc
    lda $45
    adc $40
    sta $45
@@ -487,6 +478,28 @@ installInternVectors = *
 
 installVectors64 = *
    ;xx copy to exp banks
+   rts
+
+;If the CPM app was specified by the `go` cmd, then
+;enable the software 80 column mode on the C64.
+enableVic80 = *
+   bit sysType
+   bvs +
+-  rts
++  lda aceSharedBuf+0
+   cmp #"C"
+   bne -
+   lda aceSharedBuf+1
+   cmp #"P"
+   bne -
+   lda aceSharedBuf+2
+   cmp #"M"
+   bne -
+   lda aceSharedBuf+3
+   bne -
+   lda #$ff
+   ldy #$c0
+   sta (.configBuf),y
    rts
 
 ram0HiMemPtr !byte 0

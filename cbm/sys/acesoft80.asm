@@ -17,46 +17,7 @@ seRowColorInc = 40
 seBackColor !byte 0
 
 seStartup = *
-   lda #aceMemNull
-   sta winScrollReuWork+3
-   lda configBuf+$c0
-   and #$20
-   beq +
-   bit aceSuperCpuFlag  ;don't need REU ops if you have one
-   bmi +
-   lda #$fc
-   sta allocProcID
-   lda #>8192
-   ldx #aceMemREU
-   ldy #aceMemREU
-   jsr kernPageAlloc
-   bcs +
-   ldx #3
--  lda mp,x
-   sta winScrollReuWork,x
-   dex
-   bpl -
-   clc
-   lda mp+1
-   adc #>7680
-   sta mp+1
-   lda #$00
-   ldx #0
--  sta stringBuffer,x
-   inx
-   bne -
-   lda #<stringBuffer
-   ldy #>stringBuffer
-   sta zp+0
-   sty zp+1
-   lda #<256
-   ldy #>256
-   jsr kernMemStash
-   inc mp+1
-   lda #<256
-   ldy #>256
-   jsr kernMemStash
-+  rts
+   rts
    
 seShutdown = *
    lda vic+$11
@@ -93,7 +54,7 @@ seActivate = *
    sta winStartRow
    sta winStartCol
    ldx #7
--  lda configBuf+$d0,x
+-  lda configBuf+$b8,x
    sta winPalette,x
    dex
    bpl -
@@ -109,23 +70,6 @@ seActivateHardware = *
    lda $dd00
    and #%11111100
    sta $dd00
-   rts
-
-seMirrorAll = *
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrAll
-   sta scpuHwOff
-+  rts
-
-seMirrorOff = *
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrOff
-   sta scpuHwOff
-+  clc
    rts
 
 seVicbitWork !byte 0
@@ -149,9 +93,6 @@ seRgbi2vicbit = *  ;.A=color
    lda seRgbi2vicTab,x
    ora seVicbitWork
    rts
-
-seVicbit2rgbi = *
-   brk
 
 seRgbi2vic = *
    and #$0f
@@ -281,7 +222,6 @@ seWinPut = *
    sta sePutWhich
    stx sePutLen
    sty sePutColor
-   jsr seMirrorAll
    ldx #6
 -  lda syswork+0,x
    sta sePutAddr,x
@@ -415,9 +355,9 @@ seWinPut = *
    and #$10
    beq +
    lda sePutColor
-   cmp configBuf+$d0+0
+   cmp configBuf+$b8+0
    bne +
-   lda configBuf+$d0+1
+   lda configBuf+$b8+1
    sta sePutColor
 +  lda sePutColor
    jsr seRgbi2vicbit
@@ -453,7 +393,7 @@ seWinPut = *
    sta syswork+0,x
    dex
    bpl -
-   jmp seMirrorOff
+   rts
 
 seEchoLeadRhs = *  ;( (sw+0)=bmAddr, (sw+2)=backAddr )
    lda syswork+0
@@ -616,9 +556,6 @@ seEchoSpaceFill = * ;( (sw+0)=bmAddr++, (sw+2)=backAd++, .A=chars, syswork+5--)
    rts
 
 seQuickFill = *  ;( (sw+0)=addr, (sw+6)=bytes:0-511 )
-   ldx winScrollReuWork+3
-   cpx #aceMemNull
-   bne seQuickFillReu
    ldx syswork+1
    lda syswork+7
    beq +
@@ -642,49 +579,6 @@ seQuickFill = *  ;( (sw+0)=addr, (sw+6)=bytes:0-511 )
 ++ stx syswork+1
    rts
 
-seQuickFillReu = *  ;( (sw+0)=addr, (sw+6)=bytes:0-511 )
-   jsr seZpMpSave
-   ldx #3
--  lda winScrollReuWork,x
-   sta mp,x
-   dex
-   bpl -
-   clc
-   lda mp+1
-   adc #>7680
-   sta mp+1
-   lda syswork+0
-   ldy syswork+1
-   sta zp+0
-   sty zp+1
-   lda syswork+6
-   ldy syswork+7
-   ldx #bkRam0io
-   stx bkSelect
-   jsr kernMemFetch
-   lda #bkRam0
-   sta bkSelect
-   jsr seZpMpRestore
-   rts
-
-seCopyReuSave !fill 10,0
-
-seZpMpSave = *
-   ldx #7
--  lda zp,x
-   sta seCopyReuSave+0,x
-   dex
-   bpl -
-   rts
-
-seZpMpRestore = *
-   ldx #7
--  lda seCopyReuSave+0,x
-   sta zp,x
-   dex
-   bpl -
-   rts
-
 seWinGet = *
    jmp notImp
 
@@ -692,7 +586,6 @@ seWinCopyDest   !byte 0,0  ;from (sw+0)
 seWinCopySource !byte 0,0  ;from (sw+2)
 
 seWinCopyRow = *
-   jsr seMirrorAll
    ldx #3
 -  lda syswork+0,x
    sta seWinCopyDest,x
@@ -719,7 +612,7 @@ seWinCopyRow = *
    bpl -
 +  bit winScrollMask
    bmi +
-   jmp seMirrorOff
+   rts
    ;** copy bitmap row
 +  jsr seAddBitmap
    lda syswork+3
@@ -755,7 +648,7 @@ seWinCopyRow = *
    ldx seWinCopySource+1
    sta syswork+1
    stx syswork+3
-   jmp seMirrorOff
+   rts
 
 seFastScDir !byte 0
 
@@ -768,13 +661,10 @@ seFastScroll = *  ;if window is entire screen width
    rts
 +  bit seFastScDir
    bmi +
-   lda winScrollReuWork+3
-   cmp #aceMemNull
-   beq -
+   jmp -
 
    ;** scroll color
-+  jsr seMirrorAll
-   bit winScrollMask
++  bit winScrollMask
    bvc +
    jsr seFastScrollLen80 ;set length
    lsr syswork+9
@@ -844,7 +734,7 @@ seFastScroll = *  ;if window is entire screen width
    sbc winScrollRows
 ++ ldx #0
    jsr seWinPos
-   jmp seMirrorOff
+   rts
 
 seFastScrollLen80 = *  ;( winRows, winScrollRows ) : (sw+8)=scrollLen80
    sec
@@ -870,17 +760,13 @@ seFastScrollDo = *
    bpl -
 +  lda syswork+8    ;do scroll
    ldy syswork+9
-   jmp seQuickCopy
+   ;fall-through
 
 seQuickCopy = *  ;( (sw+0)=dest++, (sw+2)=source++, .AY=len )
    sta syswork+8
    sty syswork+9
-   lda winScrollReuWork+3
-   cmp #aceMemNull
-   beq +
-   jmp seQuickCopyReu
    ;** set up soft copy
-+  lda #bkRam0
+   lda #bkRam0
    sta bkSelect
    lda syswork+2
    ldy syswork+3
@@ -920,34 +806,6 @@ seFsTo    sta $ffff,x
    ;** finish
 +  lda #bkACE
    sta bkSelect
-   rts
-
-seQuickCopyReu = *
-   jsr seZpMpSave
-   lda #bkRam0io
-   sta bkSelect
-   lda syswork+2
-   ldy syswork+3
-   sta zp+0
-   sty zp+1
-   ldx #3
--  lda winScrollReuWork,x
-   sta mp,x
-   dex
-   bpl -
-   lda syswork+8
-   ldy syswork+9
-   jsr kernMemStash
-   lda syswork+0
-   ldy syswork+1
-   sta zp+0
-   sty zp+1
-   lda syswork+8
-   ldy syswork+9
-   jsr kernMemFetch
-   lda #bkACE
-   sta bkSelect
-   jsr seZpMpRestore
    rts
 
 seCursorFlash     !byte $00  ;$00=inactive, $ff=active
@@ -1007,7 +865,6 @@ seIrqCursor = *
    bne -
    lda scpuMrMode
    pha
-   jsr seMirrorAll
    lda seCursorMaxCntdn
    sta seCursorCountdown
    lda seCursorAddr+0
@@ -1037,12 +894,7 @@ seIrqCursor = *
    eor #$ff
    sta seCursorState
    pla
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrMode
-   sta scpuHwOff
-+  clc
+   clc
    rts
 
 seWinOption = *
@@ -1058,371 +910,15 @@ seWinOption = *
    rts
    ;** 2.border color
 ++ dex
-   bne seWinOptCursor
+   bne ++
    php
    sei
-   bcc ++
+   bcc +
    jsr seRgbi2vic
-   bit seSsActive
-   bmi +
    sta vic+$20
-   jmp ++
-+  sta seSsColor
-++ bit seSsActive
-   bmi +
-   lda vic+$20
-   jmp ++
-+  lda seSsColor
-++ jsr seVic2rgbi
++  lda vic+$20
+   jsr seVic2rgbi
    plp
    clc
    rts
-   ;** 3.cursor style
-   seWinOptCursor = *
-   dex
-   bne ++
-   bcc +
-   nop
-+  nop
-   clc
-   rts
-   ;** 4.cursor-blink speed
-++ dex
-   bne ++
-   bcc +
-   nop
-+  nop
-   clc
-   rts
-   ;** 5.screen rvs
-++ dex
-   bne ++
-   bcc +
-   nop
-+  nop
-   clc
-   rts
-   ;** 6.cpu speed (ignore)
-++ dex
-   bne +
-   jmp notImp
-   ;** 7.color palette
-+  dex
-   bne ++
-   bcc +
-   nop
-+  nop
-   clc
-   rts
 ++ jmp notImp
-
-;*** graphics routines ***
-
-seBmColor !byte 0
-
-seGrScreen = *
-   sty seBmColor
-   bit aceSoft80Allocated
-   bmi +
-   lda #aceErrNoGraphicsSpace
-   sta errno
-   sec
-   rts
-+  jsr seMirrorAll
-   txa
-   jsr seRgbi2vic
-   sta vic+$20
-   jsr seActivateHardware
-   lda seBmColor
-   jsr seRgbi2vicbit
-   ldy #0
--  sta seColorAddr+0,y
-   sta seColorAddr+256,y
-   sta seColorAddr+512,y
-   sta seColorAddr+768,y
-   iny
-   bne -
-   lda #$00
-   jsr seGrFill
-   lda #<200
-   ldy #>200
-   sta syswork+0
-   sty syswork+1
-   sta conMouseMaxY+0
-   sty conMouseMaxY+1
-   lda #<320
-   ldy #>320
-   sta conMouseMaxX+0
-   sty conMouseMaxX+1
-   jsr conMouseBounds
-   lda #40
-   ldx #1
-   jmp seMirrorOff
-
-seGrExit = *
-   lda winRows
-   ldx winCols
-   jsr kernWinScreen
-   rts
-
-seGrFill = *
-   jsr seMirrorAll
-   tax
-   lda #<seBitmapAddr
-   ldy #>seBitmapAddr
-   sta syswork+0
-   sty syswork+1
-   txa
-   ldx #31
-   ldy #0
--  sta (syswork+0),y
-   iny
-   sta (syswork+0),y
-   iny
-   bne -
-   inc syswork+1
-   dex
-   bne -
-   ldy #63
--  sta (syswork+0),y
-   dey
-   bpl -
-   jmp seMirrorOff
-
-seBmRows    !byte 0
-seBmCols    !byte 0
-seBmCol     !byte 0
-seBmRow     !byte 0
-seBmBuffer  = stringBuffer
-seGrOpFlags = syswork+15
-seGrTemp    = syswork+14
-seGrSor     = syswork+12
-
-seGrOp = *  ;( .A=opflags, .X=X, (sw+0)=Y, .Y=cols, (sw+2)=rows, sw+4=interlv,
-   ;**           sw+5=fillval, (sw+6)=sPtr, (sw+8)=dPtr, (sw+10)=mPtr )
-   ;**           <all syswork arguments can change>
-   ;** opflags: $80=get, $40=put, $20=copy, $10=fill,$8=mask,$4=and,$2=xor,$1=or
-   sta seGrOpFlags
-   stx seBmCol
-   sty seBmCols
-   clc
-   tya
-   adc syswork+4
-   sta syswork+4
-   lda syswork+0
-   sta seBmRow
-   lsr
-   lsr
-   lsr
-   ldx #0
-   jsr seMult320
-   lda seBmRow
-   and #$07
-   clc
-   adc syswork+0
-   sta syswork+0
-   bcc +
-   inc syswork+1
-+  lda seBmCol
-   ldy #0
-   sty seGrTemp
-   ldx #3
--  asl
-   rol seGrTemp
-   dex
-   bne -
-   clc
-   adc syswork+0
-   sta syswork+0
-   lda syswork+1
-   adc seGrTemp
-   sta syswork+1
-   jsr sePosAdd
-   ;** at this point, we have the screen position in (sw+0)
-   lda seBmCols
-   bne +
-   clc
-   rts
-seGrOpLoop = *
-+  lda syswork+0
-   ldy syswork+1
-   sta seGrSor+0
-   sty seGrSor+1
-   jsr seMirrorAll
-   lda #bkRam0
-   sta bkSelect
-seGrOpGet = *
-   bit seGrOpFlags
-   bpl seGrOpPut
-   ldx #0
-   ldy #0
--  lda (syswork+0,x)
-   sta (syswork+8),y
-   clc
-   lda syswork+0
-   adc #8
-   sta syswork+0
-   bcc +
-   inc syswork+1
-+  iny
-   cpy seBmCols
-   bcc -
-   lda seGrSor+0
-   ldy seGrSor+1
-   sta syswork+0
-   sty syswork+1
-seGrOpPut = *
-   bit seGrOpFlags
-   bvc seGrOpCopy
-   ldx #0
-   ldy #0
-   lda seGrOpFlags
-   and #$0f
-   bne seGrOpPutComplex
--  lda (syswork+6),y
-   sta (syswork+0,x)
-   clc
-   lda syswork+0
-   adc #8
-   sta syswork+0
-   bcc +
-   inc syswork+1
-+  iny
-   cpy seBmCols
-   bcc -
-   jmp seGrOpPutFinish
-
-   seGrOpPutComplex = *
--  lda seGrOpFlags
-   and #$08
-   beq +
-   ;** mask
-   lda (syswork+10),y
-   eor #$ff
-   and (syswork+0,x)
-   sta (syswork+0,x)
-   ;** or
-+  lda seGrOpFlags
-   and #$01
-   bne +
-   lda (syswork+6),y
-   ora (syswork+0,x)
-   jmp seGrOpPutDo
-   ;** xor
-+  lda seGrOpFlags
-   and #$02
-   bne +
-   lda (syswork+6),y
-   eor (syswork+0,x)
-   jmp seGrOpPutDo
-   ;** and
-+  lda (syswork+6),y
-   eor #$ff
-   and (syswork+0,x)
-
-   seGrOpPutDo = *
-   sta (syswork+0,x)
-   clc
-   lda syswork+0
-   adc #8
-   sta syswork+0
-   bcc +
-   inc syswork+1
-+  iny
-   cpy seBmCols
-   bcc -
-
-   seGrOpPutFinish = *
-   lda seGrSor+0
-   ldy seGrSor+1
-   sta syswork+0
-   sty syswork+1
-seGrOpCopy = *  ;xx not implemented
-   lda seGrOpFlags
-   and #$20
-   beq seGrOpFill
-   ldx #0
-   ldy #0
-   nop
-   lda seGrSor+0
-   ldy seGrSor+1
-   sta syswork+0
-   sty syswork+1
-seGrOpFill = *
-   lda seGrOpFlags
-   and #$10
-   beq seGrOpContinue
-   ldx #0
-   ldy #0
--  lda #$00
-   sta (syswork+0,x)
-   clc
-   lda syswork+0
-   adc #8
-   sta syswork+0
-   bcc +
-   inc syswork+1
-+  iny
-   cpy seBmCols
-   bcc -
-   lda seGrSor+0
-   ldy seGrSor+1
-   sta syswork+0
-   sty syswork+1
-seGrOpContinue = *
-   lda #bkACE
-   sta bkSelect
-   jsr seMirrorOff
-   lda syswork+2+0
-   bne +
-   dec syswork+2+1
-+  dec syswork+2+0
-   lda syswork+2+0
-   ora syswork+2+1
-   bne +
-   clc
-   rts
-+  bit seGrOpFlags
-   bmi +
-   clc
-   lda syswork+8+0
-   adc syswork+4
-   sta syswork+8+0
-   bcc +
-   inc syswork+8+1
-+  bit seGrOpFlags
-   bvc +
-   clc
-   lda syswork+6+0
-   adc syswork+4
-   sta syswork+6+0
-   bcc +
-   inc syswork+6+1
-+  lda seGrOpFlags
-   and #$08
-   beq +
-   clc
-   lda syswork+10+0
-   adc syswork+4
-   sta syswork+10+0
-   bcc +
-   inc syswork+10+1
-+  inc seBmRow
-   lda seBmRow
-   and #$07
-   beq +
-   lda #<1
-   ldy #>1
-   jmp ++
-+  lda #<320-7
-   ldy #>320-7
-++ clc
-   adc syswork+0
-   sta syswork+0
-   tya
-   adc syswork+1
-   sta syswork+1
-   jmp seGrOpLoop
-
-;the end + blank line
-

@@ -199,6 +199,14 @@ chrsetStd !pet "z:chrset-standard",0
 +  lda #%10001010
    ldx #$00
    ldy #0
+   jsr aceWinChrset
+   clc
+   lda syswork+1
+   adc #>2048
+   sta syswork+1
+   lda #%10000110
+   ldx #$00
+   ldy #0
    jmp aceWinChrset
 
 ;******** standard library ********

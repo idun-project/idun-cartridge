@@ -47,118 +47,14 @@
    useC128 = 0 ;no
    useVdc  = 0
    useVic  = 1
-   useSoft80 = 0
+   useSoft80 = 1
    useExtKeyboard = 0
    useFastClock = 0 ;don't use--crashes on C64
 }
 
 ;*** Start of kernel code
-* = $1300
-jmp entryPoint
-
-;***jump table
-
-jmp kernFileOpen
-jmp kernFileClose
-jmp kernFileRead
-jmp kernFileWrite
-jmp kernFileLseek
-jmp kernFileBload
-jmp kernFileRemove
-jmp kernFileRename
-jmp kernFileStat
-jmp kernFileIoctl
-jmp kernIecCommand
-jmp kernFileBkload
-
-jmp kernDirOpen
-jmp kernDirClose
-jmp kernDirRead
-jmp kernDirIsdir
-jmp kernDirChange
-jmp kernDirStat
-jmp kernDirAssign
-jmp kernDirName
-
-jmp kernWinScreen
-jmp kernWinMax
-jmp kernWinSet
-jmp kernWinSize
-jmp kernWinCls
-jmp kernWinPos
-jmp kernWinPut
-jmp kernWinGet
-jmp kernWinScroll
-jmp kernWinCursor
-jmp kernWinPalette
-jmp kernWinChrset
-jmp kernWinOption
-
-jmp kernConWrite
-jmp kernConPutlit
-jmp kernConPos
-jmp kernConGetpos
-jmp kernConInput
-jmp kernConStopkey
-jmp kernConGetkey
-jmp kernConKeyAvail
-jmp kernConKeyMat
-jmp kernConMouse
-jmp kernConJoystick
-jmp kernConOption
-jmp kernConGamepad
-jmp kernGrExit
-jmp kernConDebugLog
-jmp kernHashTag
-
-jmp kernProcExec
-jmp kernProcExecSub
-jmp kernProcExit
-
-jmp kernMemZpload
-jmp kernMemZpstore
-jmp kernMemFetch
-jmp kernMemStash
-jmp kernMemAlloc
-jmp kernMemFree
-jmp kernMemStat
-
-jmp kernTimeGetDate
-jmp kernTimeSetDate
-jmp kernIrqHook
-
-jmp kernMiscUtoa
-jmp kernMiscIoPeek
-jmp kernMiscIoPoke
-
-jmp kernFileFdswap
-jmp kernConRead
-jmp kernConPutchar
-jmp kernConPutctrl
-jmp kernConSetHotkeys
-jmp kernModemAvail
-jmp kernModemGet
-jmp kernModemPut
-jmp kernNew
-jmp kernMemtag
-jmp kernMmap
-jmp notImp
-jmp kernMiscSysType
-jmp kernMiscRobokey
-jmp kernMountImage
-jmp kernMiscDeviceInfo
-jmp kernCopyHost
-jmp kernRestart
-jmp kernMapperSetreg
-jmp kernMapperCommand
-jmp kernMapperProcmsg
-jmp kernWinGrChrPut
-jmp kernDirectRead
-jmp kernDirectWrite
-jmp kernViceEmuCheck
-jmp kernSearchPath
-
-!byte $ff,$fe,$3c,$e2,$fc
+* = $1200
+   jmp entryPoint
 
 ;***global declarations
 
@@ -262,6 +158,225 @@ kernelScrorg = $ffed
 kernelSwapper = $ff5f
 kernelRestor = $ff8a
 
+;*** entrypoint()
+entryPoint = *
+   ;After bootstrapping from ROM code, this
+   ;code disables the EXROM soft-switch; causes
+   ;ROM bootstrap code to be replaced with NMI
+   ;handler code (dynamically loaded).
+   sta $de7e
+   lda #0
+   pha
+   plp
+   ;remove intf vectors overridden by booter
+   jsr kernelRestor
+   ;remove wedge setup by booter
+   lda #$e6
+   sta CHRGET+0
+!if useC128 {
+   lda #$3d
+} else {
+   lda #$7a
+}
+   sta CHRGET+1
+   lda #$d0
+   sta CHRGET+2
+   ;start ace
+   lda #bkACE
+   sta bkSelect
+
+;*** main()
+   lda #147
+   jsr kernelChrout
+   lda #14
+   jsr kernelChrout
+   ldx #$00
+   lda $d0bc
+   and #$80
+   bne +
+   ldx #$ff
++  stx aceSuperCpuFlag
+   bit aceSuperCpuFlag
+   bpl +
+   sta scpuHwOn
+   sta $d07b ;select 20 MHz
+   sta scpuMrAll
+   sta scpuHwOff
++  sei
+   jsr aceBootstrap
+   jsr initMemory
+   ; IDUN: Init syswork vars to 0 to prevent weird side-effects
+   ldy #15
+   lda #0
+-  sta syswork,y
+   dey
+   bpl -
+   jsr aceConfig
+   bcc +
+   jmp configErrMainExit
++  jsr aceStartup
+   bit aceSuperCpuFlag
+   bpl +
+   sta scpuHwOn
+   sta scpuMrOff
+   sta scpuHwOff
++  sei
+   jsr winStartup
+   jsr conInit
+   lda #$01
+   sta vic+$1a     ;enable VIC raster IRQ
+   cli
+   lda #<charsetBuf
+   ldx #>charsetBuf
+   sta syswork+0
+   stx syswork+1
+   ldy #5
+   lda (syswork+0),y
+   tay
+   clc
+   lda syswork+0
+   adc #8
+   bcc +
+   inx
++  sta syswork+0
+   stx syswork+1
+   lda #%11100000
+   cpy #$00
+   beq +
+   ora #%00010000
++  ldx #$00
+   ldy #40
+   jsr kernWinChrset
+   clc
+   lda syswork+0
+   adc #40
+   sta syswork+0
+   bcc +
+   inc syswork+1
++  lda #%10001010
+   ldx #$00
+   ldy #0
+   jsr kernWinChrset
+!if useSoft80 {
+   clc
+   lda syswork+1
+   adc #>2048
+   sta syswork+1
+   lda #%10000110
+   ldx #$00
+   ldy #0
+   jsr kernWinChrset
+}
+   jsr openStdio
+   cli
+   ;** start designated main application/shell
+   jsr shellApp
+   jmp callApplication
+
+;***jump table
+* = aceCallB
+jmp kernFileOpen
+jmp kernFileClose
+jmp kernFileRead
+jmp kernFileWrite
+jmp kernFileLseek
+jmp kernFileBload
+jmp kernFileRemove
+jmp kernFileRename
+jmp kernFileStat
+jmp kernFileIoctl
+jmp kernIecCommand
+jmp kernFileBkload
+
+jmp kernDirOpen
+jmp kernDirClose
+jmp kernDirRead
+jmp kernDirIsdir
+jmp kernDirChange
+jmp kernDirStat
+jmp kernDirAssign
+jmp kernDirName
+
+jmp kernWinScreen
+jmp kernWinMax
+jmp kernWinSet
+jmp kernWinSize
+jmp kernWinCls
+jmp kernWinPos
+jmp kernWinPut
+jmp kernWinGet
+jmp kernWinScroll
+jmp kernWinCursor
+jmp kernWinPalette
+jmp kernWinChrset
+jmp kernWinOption
+
+jmp kernConWrite
+jmp kernConPutlit
+jmp kernConPos
+jmp kernConGetpos
+jmp kernConInput
+jmp kernConStopkey
+jmp kernConGetkey
+jmp kernConKeyAvail
+jmp kernConKeyMat
+jmp kernConMouse
+jmp kernConJoystick
+jmp kernConOption
+jmp kernConGamepad
+jmp kernGrExit
+jmp kernConDebugLog
+jmp kernHashTag
+
+jmp kernProcExec
+jmp kernProcExecSub
+jmp kernProcExit
+
+jmp kernMemZpload
+jmp kernMemZpstore
+jmp kernMemFetch
+jmp kernMemStash
+jmp kernMemAlloc
+jmp kernMemFree
+jmp kernMemStat
+
+jmp kernTimeGetDate
+jmp kernTimeSetDate
+jmp kernIrqHook
+
+jmp kernMiscUtoa
+jmp kernMiscIoPeek
+jmp kernMiscIoPoke
+
+jmp kernFileFdswap
+jmp kernConRead
+jmp kernConPutchar
+jmp kernConPutctrl
+jmp kernConSetHotkeys
+jmp kernModemAvail
+jmp kernModemGet
+jmp kernModemPut
+jmp kernNew
+jmp kernMemtag
+jmp kernMmap
+jmp notImp
+jmp kernMiscSysType
+jmp kernMiscRobokey
+jmp kernMountImage
+jmp kernMiscDeviceInfo
+jmp kernCopyHost
+jmp kernRestart
+jmp kernMapperSetreg
+jmp kernMapperCommand
+jmp kernMapperProcmsg
+jmp kernWinGrChrPut
+jmp kernDirectRead
+jmp kernDirectWrite
+jmp kernViceEmuCheck
+jmp kernSearchPath
+
+!byte $ff,$fe,$3c,$e2,$fc
+
 notImp = *
    lda #aceErrNotImplemented
    sta errno
@@ -294,35 +409,6 @@ kernelClose = *
    clc
    rts
 }
-
-;*** entrypoint()
-
-entryPoint = *
-   ;After bootstrapping from ROM code, this
-   ;code disables the EXROM soft-switch; causes
-   ;ROM bootstrap code to be replaced with NMI
-   ;handler code (dynamically loaded).
-   sta $de7e
-   lda #0
-   pha
-   plp
-   ;remove intf vectors overridden by booter
-   jsr kernelRestor
-   ;remove wedge setup by booter
-   lda #$e6
-   sta CHRGET+0
-!if useC128 {
-   lda #$3d
-} else {
-   lda #$7a
-}
-   sta CHRGET+1
-   lda #$d0
-   sta CHRGET+2
-   ;start ace
-   lda #bkACE
-   sta bkSelect
-   jmp main
 
 ;*** startup()
 
@@ -357,10 +443,6 @@ aceBootstrap = *
    ldy #>nmiHandler
    sta $318
    sty $319
-;   lda #<stopHandler
-;   ldy #>stopHandler
-;   sta $328
-;   sty $329
    lda #<nmiContinue
    ldy #>nmiContinue
    sta nmiRedirect+0   ;redundant on C128
@@ -784,98 +866,6 @@ aceVicColorOff !byte $b8
 ; Access additional RPi I/O services
 !source "sys/acepiserv.asm"
 
-;*** main()
-
-bootDevice !byte 0
-
-main = *
-   lda 186
-   sta bootDevice
-   lda #147
-   jsr kernelChrout
-   lda #14
-   jsr kernelChrout
-   ldx #$00
-   lda $d0bc
-   and #$80
-   bne +
-   ldx #$ff
-+  stx aceSuperCpuFlag
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta $d07b ;select 20 MHz
-   sta scpuMrAll
-   sta scpuHwOff
-+  sei
-   jsr aceBootstrap
-   jsr initMemory
-   ; IDUN: Init syswork vars to 0 to prevent weird side-effects
-   ldy #15
-   lda #0
--  sta syswork,y
-   dey
-   bpl -
-   jsr aceConfig
-   bcc +
-   jmp configErrMainExit
-+  jsr aceStartup
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrOff
-   sta scpuHwOff
-+  sei
-   jsr winStartup
-   jsr conInit
-   lda #$01
-   sta vic+$1a     ;enable VIC raster IRQ
-   cli
-   lda #<charsetBuf
-   ldx #>charsetBuf
-   sta syswork+0
-   stx syswork+1
-   ldy #5
-   lda (syswork+0),y
-   tay
-   clc
-   lda syswork+0
-   adc #8
-   bcc +
-   inx
-+  sta syswork+0
-   stx syswork+1
-   lda #%11100000
-   cpy #$00
-   beq +
-   ora #%00010000
-+  ldx #$00
-   ldy #40
-   jsr kernWinChrset
-   clc
-   lda syswork+0
-   adc #40
-   sta syswork+0
-   bcc +
-   inc syswork+1
-+  lda #%10001010
-   ldx #$00
-   ldy #0
-   jsr kernWinChrset
-!if useSoft80 {
-   clc
-   lda syswork+1
-   adc #>2048
-   sta syswork+1
-   lda #%10000110
-   ldx #$00
-   ldy #0
-   jsr kernWinChrset
-}
-   jsr openStdio
-   cli
-   ;** start designated main application/shell
-   jsr shellApp
 callApplication = *
    lda aceMemTop+0
    ldy aceMemTop+1
@@ -922,8 +912,6 @@ callApplication = *
 doExit = *
    jmp kernRestart
 configErrMainExit = *
-   lda bootDevice
-   sta 186
    ldx #0
    lda #aceRestartExitBasic
    ;** falls through to kernRestart

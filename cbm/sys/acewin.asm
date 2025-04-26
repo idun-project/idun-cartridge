@@ -21,7 +21,6 @@ winPalette   !fill 8,0  ;palette for the current screen
 winChrSpace  !byte 0  ;code of the space character
 winChsetRvsChars !byte $ff  ;$ff=rvsChars, $00=nonRvsChars
 winCharPalette !fill 42,0  ;palette for graphics characters
-winScrollReuWork !byte aceMemNull,aceMemNull,aceMemNull,aceMemNull ;reu scroll
 winDriver    !byte 0  ;which driver: $80=vdc, $40=vic, $20=soft80(se)
 
 winStartup = *
