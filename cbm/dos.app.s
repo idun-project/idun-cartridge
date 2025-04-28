@@ -1486,6 +1486,8 @@ assign = *
    assignNextArg = *
    lda mtArg
    beq assignCont
+   cmp #2
+   beq asRequiredArg
    ldy #0
    jsr getarg
    ldy #0
