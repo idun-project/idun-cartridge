@@ -24,6 +24,7 @@ bankLimit    = 21  ;(1)
 save0        = 22  ;(2)
 save2        = 24  ;(2)
 saveN        = 26  ;(2)
+hasEram      = 28  ;(1)
 
 configMain = *
    lda sysType
@@ -42,11 +43,12 @@ configMain = *
    jsr internalMemory
    lda aceInternalBanks
    sta totalBanks+0
+   jsr eramDetect
    jsr reserveRam0HiMem
 !if useC64 {
    ;** reduce TPA if no ERAM on C64
-   jsr eramDetect
-   bcc +
+   bit hasEram
+   bmi +
    lda #$b0
    ldy #$c6
    sta (.configBuf),y
@@ -527,7 +529,9 @@ reserveVic80 = *
    bit sysType
    bvs +
 -  rts
-+  ldy #$c0
++  bit hasEram
+   bpl -
+   ldy #$c0
    lda (.configBuf),y
    bpl -
    lda scrDrivers
@@ -706,14 +710,15 @@ eramDetect = *
    lda $dfff
    cmp #255
    bne eramDetectFail
-   clc
+   sta hasEram
    rts
 eramDetectFail:
 !if useFastClock {
    ldy $44
    sty $d030
 }
-   sec
+   lda #$00
+   sta hasEram
    rts
 availEram = *
    jsr resetFree
@@ -742,8 +747,8 @@ eramMemory = *
    sta aceEramCur
    sta aceEramStart
    ;** detect ERAM accessible ("Bertha" 2024+)
-   jsr eramDetect
-   bcc +
+   bit hasEram
+   bmi +
    rts            ;ERAM not present
 +  lda #255
    jsr seBank   ;select the freemap

@@ -28,21 +28,22 @@ escState      = 13  ;(1)  ;current state in ESC sequence
 escParm       = 14  ;(1)  ;current parameter index of parm data
 escQuesFlag   = 15  ;(1)  ;flag for question-mark char used in ESC seq
 keyshift      = 17  ;(1)  ;shift pattern of last key struck
-keypadMode    = 18  ;(1)  ;$00=normal, $ff=application
-cursorMode    = 19  ;(1)  ;$00=normal, $ff=application
-linefeedMode  = 20  ;(1)  ;$00=linefeed, $ff=newline
-screenMode    = 21  ;(1)  ;$00=normal, $ff=reversed
-autowrapMode  = 22  ;(1)  ;$00=off, $ff=on
-extentMode    = 23  ;(1)  ;$00=scroll_region, $ff=full_screen
-attribMode    = 24  ;(1)  ;current attrib of cursor
+screenWidth   = 18  ;(1)  ;initial text screen width (in case we modify)
+keypadMode    = 19  ;(1)  ;$00=normal, $ff=application
+cursorMode    = 20  ;(1)  ;$00=normal, $ff=application
+linefeedMode  = 21  ;(1)  ;$00=linefeed, $ff=newline
+screenMode    = 22  ;(1)  ;$00=normal, $ff=reversed
+autowrapMode  = 23  ;(1)  ;$00=off, $ff=on
+extentMode    = 24  ;(1)  ;$00=scroll_region, $ff=full_screen
+attribMode    = 25  ;(1)  ;current attrib of cursor
                           ;  ($80=rvs,$40=underline,$20=blink,$10=intensity)
-cursorDispMode= 25  ;(1)  ;$00=disable, $ff=enable
-cursorSavePos = 26  ;(2)  ;(ACE) row and column of saved cursor
-cursorSaveAttr= 28  ;(1)  ;saved attribute of cursor
-emulateMode   = 29  ;(1)  ;0=literal,1=glasstty,2=vt100
-escChar       = 30  ;(1)  ;current char in esc sequence
-charColor     = 31  ;(1)  ;color of characters
-cursorSaveColor = 32 ;(1) ;saved color of characters
+cursorDispMode= 26  ;(1)  ;$00=disable, $ff=enable
+cursorSavePos = 27  ;(2)  ;(ACE) row and column of saved cursor
+cursorSaveAttr= 29  ;(1)  ;saved attribute of cursor
+emulateMode   = 30  ;(1)  ;0=literal,1=glasstty,2=vt100
+escChar       = 31  ;(1)  ;current char in esc sequence
+charColor     = 32  ;(1)  ;color of characters
+cursorSaveColor = 33 ;(1) ;saved color of characters
 work          = 48 ;(16) ;lowest-level temporary work area
 
 escParmData:  !fill 24,0     ;accept up to 24 parameters for ESC sequences
@@ -92,6 +93,8 @@ mainInit = *
    sta cursorDispMode
    lda defEmulate
    sta emulateMode
+   jsr aceWinSize
+   stx screenWidth
    jsr userkeyInit
    ;Check keyboard capture
    lda #HotkeyCmdK
@@ -145,9 +148,21 @@ modemOpen = *
    jsr eputs
    jmp die
 +  sta modemFd
+   ;IF C64 and modem device is X:, then try to set the
+   ;soft-80 screen mode.
+   ldy #0
+   lda (zp),y
+   cmp #"X"
+   bne +
+   jsr aceMiscSysType
+   bmi +
+   ;Try to enable soft-80
+   lda #0
+   ldx #80
+   jsr aceWinScreen
    ;if argument was like "d:cmd", then make
    ;the cmd string the default tool title
-   ldy #2
++  ldy #2
    lda (zp),y
    bne +
    ldy #0
@@ -205,7 +220,16 @@ termSzctl: !pet "80xYY",0
 
 modemClose = *
    lda modemFd
-   jmp close
+   jsr close
+   ;restore screen width, if modified
+   jsr aceWinSize
+   cpx screenWidth
+   beq +
+   lda #0
+   ldx screenWidth
+   jsr aceWinScreen
++  jsr toolWinRestore
+   rts
 
 
 petToAscTable = *   ;$ff=ignore, $fe=special

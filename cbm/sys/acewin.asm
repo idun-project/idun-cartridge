@@ -49,11 +49,6 @@ winStartup = *
 }
 !if useC64 {
    ldx #$40
-   lda configBuf+$c0
-   and #$c0
-   cmp #$c0
-   bne +
-   ldx #$20
    bit winDriversAv
    bpl +
    ldx #$80
