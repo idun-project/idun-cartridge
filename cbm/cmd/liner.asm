@@ -9,6 +9,7 @@ jmp main
 
 !source "toolx/vdc/core.asm"
 !source "toolx/vdc/draw.asm"
+!source "toolx/vic/core.asm"
 
 ;zp vars
 stepX   = $02 ;(2)

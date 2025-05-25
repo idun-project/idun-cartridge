@@ -450,11 +450,11 @@ systemRestore = *
 systemPage = *
 * = systemPage+256
 
-!if *>aceToolAddress {
-   !error "Tool extension exceeds maximum address ", aceToolAddress
-} else {
-   * = aceToolAddress
-}
+; !if *>aceToolAddress {
+;    !error "Tool extension exceeds maximum address ", aceToolAddress
+; } else {
+;    * = aceToolAddress
+; }
 
 !ifndef xGrMode {
    xGrMode = xVicGrMode
