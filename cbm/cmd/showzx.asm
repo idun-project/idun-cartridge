@@ -10,6 +10,7 @@
 !source "sys/acemacro.asm"
 
 SCR_FILE_SZ = 6912
+C128_VDC_ON = %10001000
 * = aceToolAddress
 
 jmp main
@@ -31,8 +32,8 @@ main = *
    sta argnum
    ;check for C128
    jsr aceMiscSysType
-   cmp #$80
-   beq +
+   and #C128_VDC_ON
+   bne +
    jmp showUsageError
    ;check for at least one arg
 +  lda aceArgc

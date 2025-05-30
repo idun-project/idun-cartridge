@@ -6,7 +6,9 @@
 ;
 
 !source "sys/acehead.asm"
-!source "toolx/vic/core.asm"  ;use VIC gfx routines
+!source "sys/toolbox.asm"
+!source "toolx/gfx.asm"  ;use VIC gfx routines
+
 jmp init
 
 ;constants
@@ -252,13 +254,14 @@ getarg = *
    sta zp+1
    rts
 
-* = $7400
+* = $8000
 directory = *
 bmapBuffer= directory+FILENM_SIZE*100
 bmapData  = bmapBuffer+2
 colorData = bmapData+8000
 colorMem  = colorData+1000
 bkgdColor = colorMem+1000
+macroUserCmds = * ;not used
 bssAppEnd = *
 
 ;┌────────────────────────────────────────────────────────────────────────┐

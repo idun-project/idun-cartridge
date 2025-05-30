@@ -2551,6 +2551,13 @@ kernConOption = *
    sty zp+1
    clc
    rts
+   ;** 16.display drivers
+++ dex
+   bne ++
+   bcc +
+   rts
++  lda winDriversAv
+   rts
 ++ jmp notImp
 
 ;┌────────────────────────────────────────────────────────────────────────┐

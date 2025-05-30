@@ -17,12 +17,9 @@
 !source "sys/acehead.asm"
 !source "sys/toolhead.asm"
 !source "sys/acemacro.asm"
-
-* = aceToolAddress
+!source "toolx/gfx.asm"
 
 jmp main
-!byte aceID1,aceID2,aceID3
-!byte 64,0 ;*stack,reserved
 
 grXextent   = $02  ;(1)
 grYextent   = $03  ;(1)
@@ -37,8 +34,6 @@ drawColor   = $0c  ;(1)
 displayUsageErrorMsg = *
 ;    |1234567890123456789012345678901234567890|
 !pet "usage: showvdc <img1> [img2..imgN]",chrCR,0
-
-!source "toolx/vdc/core.asm"
 
 main = *
    lda #0

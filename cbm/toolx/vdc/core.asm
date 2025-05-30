@@ -1,4 +1,4 @@
-!zone xVdc {
+!zone xVdcGfx
 
 ;vdc register addresses
 vdcSelect = $d600
@@ -21,7 +21,7 @@ VDC_GRMODE_MAX = 7
 
 ; This represents the _canonical_ VDC graphics modes, as defined
 ; by the specific register values for each standard mode. Many
-; variations _can be_ acheived with other VDC register settings.
+; variations _can be_ achieved with other VDC register settings.
 
 ; Mode 0: standard 80 column text mode with attributes (rows variable)
 ; Mode 1: medres (640x200), monochrome bitmap (no attr, 264 line NTSC)
@@ -33,7 +33,7 @@ VDC_GRMODE_MAX = 7
 ; Mode 7: super-res (800x600), monochrome bitmap (64k, no attr, interlace, 625 line PAL)
 
 .vdc_mode_preset:
-   !word .vdcreg_mode_1 ;non-interlace, optinal 2nd buffer
+   !word .vdcreg_mode_1 ;non-interlace, optional 2nd buffer
    !byte 80,25          ;columns, rows
    !word $0000,$4000    ;main bitmap addr/2nd bitmap offset
    !word $ffff,$ffff    ;main attr addr/2nd attr offset ($ffff=no attr)
@@ -1048,14 +1048,3 @@ xVdcBufswap = *
    sta .bmadr1+0
    sty .bmadr1+1
    rts
-}
-
-!ifndef xGrMode {
-   xGrMode = xVdcGrMode
-   xGrExtents = xVdcGrExtents
-   xGrOp = xVdcGrOp
-   xGrAttr = xVdcGrAttr
-   xGrClear = xVdcMemClear
-   xGrDblBuffer = xVdcDblBuffer
-   xGrBufswap = xVdcBufswap
-}

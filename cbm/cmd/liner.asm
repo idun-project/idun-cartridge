@@ -1,15 +1,8 @@
 !source "sys/acehead.asm"
 !source "sys/toolhead.asm"
-
-* = aceToolAddress
+!source "toolx/gfx.asm"
 
 jmp main
-!byte aceID1,aceID2,aceID3
-!byte 64,0  ;** stack,reserved
-
-!source "toolx/vdc/core.asm"
-!source "toolx/vdc/draw.asm"
-!source "toolx/vic/core.asm"
 
 ;zp vars
 stepX   = $02 ;(2)

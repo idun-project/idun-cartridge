@@ -1830,7 +1830,12 @@ kernMiscSysType = *
    ldy aceEramBanks
    lda configBuf+$aa
    sta syswork+0
-   lda aceSystemType
+   lda winDriver
+   lsr
+   lsr
+   lsr
+   lsr
+   ora aceSystemType
    rts
 
 ;*** aceMiscDeviceInfo( (zp)=path: .A=iec addr,.X=type,.Y=scan pos

@@ -1,9 +1,4 @@
-!zone xVic {
-
-* = aceAppAddress
-jmp aceToolAddress
-!byte aceID1,aceID2,aceID3
-!byte 64,0  ;** stack,reserved
+!zone xVicGfx
 
 ;constants
 VIC_GRMODE_MAX = 4
@@ -15,12 +10,12 @@ bkRam0         = $3f
 bkSelect       = $ff00
 
 ;current graphics mode vars
-GrMode    !byte 0
-BmRows    !byte 0
-BmCols    !byte 0
-BmCol     !byte 0
-BmRow     !byte 0
-BmColor   !byte 0
+.GrMode    !byte 0
+.BmRows    !byte 0
+.BmCols    !byte 0
+.BmCol     !byte 0
+.BmRow     !byte 0
+.BmColor   !byte 0
 GrOpFlags = syswork+15
 GrTemp    = syswork+14
 GrSor     = syswork+12
@@ -37,20 +32,20 @@ GrSor     = syswork+12
 
 ; _Important_: Only switches any mode TO or FROM MODE 0.
 xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
-   sta GrMode
+   sta .GrMode
    cmp #0
    bne +
-   jsr systemRestore
-   jmp textRestore
+   jsr .systemRestore
+   jmp .textRestore
 +  sei
-   sty BmColor
+   sty .BmColor
    txa
-   jsr Rgbi2vic
+   jsr .Rgbi2vic
    sta vic+$20
-   jsr systemSave
-   jsr ActivateHardware
-   lda BmColor
-   jsr Rgbi2vicbit
+   jsr .systemSave
+   jsr .ActivateHardware
+   lda .BmColor
+   jsr .Rgbi2vicbit
    ldy #0
 -  sta ColorAddr+0,y
    sta ColorAddr+256,y
@@ -68,7 +63,7 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    cli
    rts
 
-ActivateHardware = *
+.ActivateHardware = *
    lda vic+$30
    sta $0a37
    lda #$00
@@ -77,7 +72,7 @@ ActivateHardware = *
    ora vic+$11
    and #%01111111
    sta vic+$11
-   lda GrMode
+   lda .GrMode
    cmp #3
    bcc +
    lda #%00010000    ;multicolor mode on
@@ -118,27 +113,27 @@ xVicGrOp = *  ;( .A=opflags, .X=X, (sw+0)=Y, .Y=cols, (sw+2)=rows, sw+4=interlv,
    ;**           <all syswork arguments can change>
    ;** opflags: $80=get, $40=put, $20=copy, $10=fill,$8=mask,$4=and,$2=xor,$1=or
    sta GrOpFlags
-   stx BmCol
-   sty BmCols
+   stx .BmCol
+   sty .BmCols
    clc
    tya
    adc syswork+4
    sta syswork+4
    lda syswork+0
-   sta BmRow
+   sta .BmRow
    lsr
    lsr
    lsr
    ldx #0
-   jsr Mult320
-   lda BmRow
+   jsr .Mult320
+   lda .BmRow
    and #$07
    clc
    adc syswork+0
    sta syswork+0
    bcc +
    inc syswork+1
-+  lda BmCol
++  lda .BmCol
    ldy #0
    sty GrTemp
    ldx #3
@@ -152,13 +147,13 @@ xVicGrOp = *  ;( .A=opflags, .X=X, (sw+0)=Y, .Y=cols, (sw+2)=rows, sw+4=interlv,
    lda syswork+1
    adc GrTemp
    sta syswork+1
-   jsr PosAdd
+   jsr .PosAdd
    ;** at this point, we have the screen position in (sw+0)
-   lda BmCols
+   lda .BmCols
    bne +
    clc
    rts
-GrOpLoop = *
+.GrOpLoop = *
 +  lda syswork+0
    ldy syswork+1
    sta GrSor+0
@@ -167,7 +162,7 @@ GrOpLoop = *
    sta bkSelect
 GrOpGet = *
    bit GrOpFlags
-   bpl GrOpPut
+   bpl .GrOpPut
    ldx #0
    ldy #0
 -  lda (syswork+0,x)
@@ -179,20 +174,20 @@ GrOpGet = *
    bcc +
    inc syswork+1
 +  iny
-   cpy BmCols
+   cpy .BmCols
    bcc -
    lda GrSor+0
    ldy GrSor+1
    sta syswork+0
    sty syswork+1
-GrOpPut = *
+.GrOpPut = *
    bit GrOpFlags
-   bvc GrOpCopy
+   bvc .GrOpCopy
    ldx #0
    ldy #0
    lda GrOpFlags
    and #$0f
-   bne GrOpPutComplex
+   bne .GrOpPutComplex
 -  lda (syswork+6),y
    sta (syswork+0,x)
    clc
@@ -205,13 +200,13 @@ GrOpPut = *
    lda syswork+1
    cmp #$ff
    bne +
-   jmp GrOpPutFinish
+   jmp .GrOpPutFinish
 +  iny
-   cpy BmCols
+   cpy .BmCols
    bcc -
-   jmp GrOpPutFinish
+   jmp .GrOpPutFinish
 
-   GrOpPutComplex = *
+   .GrOpPutComplex = *
 -  lda GrOpFlags
    and #$08
    beq +
@@ -226,20 +221,20 @@ GrOpPut = *
    bne +
    lda (syswork+6),y
    ora (syswork+0,x)
-   jmp GrOpPutDo
+   jmp .GrOpPutDo
    ;** xor
 +  lda GrOpFlags
    and #$02
    bne +
    lda (syswork+6),y
    eor (syswork+0,x)
-   jmp GrOpPutDo
+   jmp .GrOpPutDo
    ;** and
 +  lda (syswork+6),y
    eor #$ff
    and (syswork+0,x)
 
-   GrOpPutDo = *
+   .GrOpPutDo = *
    sta (syswork+0,x)
    clc
    lda syswork+0
@@ -248,18 +243,18 @@ GrOpPut = *
    bcc +
    inc syswork+1
 +  iny
-   cpy BmCols
+   cpy .BmCols
    bcc -
 
-   GrOpPutFinish = *
+   .GrOpPutFinish = *
    lda GrSor+0
    ldy GrSor+1
    sta syswork+0
    sty syswork+1
-GrOpCopy = *  ;xx not implemented
+.GrOpCopy = *  ;xx not implemented
    lda GrOpFlags
    and #$20
-   beq GrOpFill
+   beq .GrOpFill
    ldx #0
    ldy #0
    nop
@@ -267,10 +262,10 @@ GrOpCopy = *  ;xx not implemented
    ldy GrSor+1
    sta syswork+0
    sty syswork+1
-GrOpFill = *
+.GrOpFill = *
    lda GrOpFlags
    and #$10
-   beq GrOpContinue
+   beq .GrOpContinue
    ldx #0
    ldy #0
 -  lda #$00
@@ -282,13 +277,13 @@ GrOpFill = *
    bcc +
    inc syswork+1
 +  iny
-   cpy BmCols
+   cpy .BmCols
    bcc -
    lda GrSor+0
    ldy GrSor+1
    sta syswork+0
    sty syswork+1
-GrOpContinue = *
+.GrOpContinue = *
    lda #bkACE
    sta bkSelect
    lda syswork+2+0
@@ -325,8 +320,8 @@ GrOpContinue = *
    sta syswork+10+0
    bcc +
    inc syswork+10+1
-+  inc BmRow
-   lda BmRow
++  inc .BmRow
+   lda .BmRow
    and #$07
    beq +
    lda #<1
@@ -340,43 +335,43 @@ GrOpContinue = *
    tya
    adc syswork+1
    sta syswork+1
-   jmp GrOpLoop
+   jmp .GrOpLoop
 
-VicbitWork !byte 0
-Rgbi2vicbit = *  ;.A=color
+.VicbitWork !byte 0
+.Rgbi2vicbit = *  ;.A=color
    pha
    and #$0f
    tax
-   lda Rgbi2vicTab,x
+   lda .Rgbi2vicTab,x
    asl
    asl
    asl
    asl
-   sta VicbitWork
+   sta .VicbitWork
    pla
    lsr
    lsr
    lsr
    lsr
    tax
-   lda Rgbi2vicTab,x
-   ora VicbitWork
+   lda .Rgbi2vicTab,x
+   ora .VicbitWork
    rts
-Rgbi2vic = *
+.Rgbi2vic = *
    and #$0f
    tax
-   lda Rgbi2vicTab,x
+   lda .Rgbi2vicTab,x
    rts
-Rgbi2vicTab !byte 0,11,6,14,5,13,12,3,2,10,8,4,9,7,15,1
+.Rgbi2vicTab !byte 0,11,6,14,5,13,12,3,2,10,8,4,9,7,15,1
 
-Mult320 = * ;( .A=row, .X=col ) : (sw+0)=(row*80+col)*4
-   jsr Mult80
+.Mult320 = * ;( .A=row, .X=col ) : (sw+0)=(row*80+col)*4
+   jsr .Mult80
    asl syswork+0
    rol syswork+1
    asl syswork+0
    rol syswork+1
    rts
-Mult80 = *  ;( .A=row, .X=col ) : (sw+0)=row*80+col, .X:unch
+.Mult80 = *  ;( .A=row, .X=col ) : (sw+0)=row*80+col, .X:unch
    sta syswork+0
    ldy #0
    sty syswork+1
@@ -398,7 +393,7 @@ Mult80 = *  ;( .A=row, .X=col ) : (sw+0)=row*80+col, .X:unch
    inc syswork+1
 +  sta syswork+0
    rts
-PosAdd = *  ;add start addr of bitmap
+.PosAdd = *  ;add start addr of bitmap
    clc
    lda syswork+0
    adc #<BitmapAddr
@@ -407,59 +402,44 @@ PosAdd = *  ;add start addr of bitmap
    adc #>BitmapAddr
    sta syswork+1
    rts
-}  ;end xVic
 
-textsz !byte 0,0
-textRestore = *
+.textsz !byte 0,0
+.textRestore = *
    jsr aceWinSize
-   sta textsz
-   stx textsz+1
+   sta .textsz
+   stx .textsz+1
    lda #0
    ldx #40
    jsr aceWinScreen
    jsr aceGrExit
-   lda textsz
-   ldx textsz+1
+   lda .textsz
+   ldx .textsz+1
    jmp aceWinScreen
 
 ;Since the VIC-II bitmap can overwrite system memory
 ;on page $ff, we need to backup that data and restore
 ;it when we exit graphics mode.
-systemSave = *
+.systemSave = *
    lda #bkRam0
    sta bkSelect
    ldx #5            ;save $ff05-ffff
 -  lda $ff00,x
-   sta systemPage,x
+   sta .systemPage,x
    inx
    bne -
    lda #bkACE
    sta bkSelect
    rts
-systemRestore = *
+.systemRestore = *
    lda #bkRam0
    sta bkSelect
    ldx #5            ;save $ff05-ffff
--  lda systemPage,x
+-  lda .systemPage,x
    sta $ff00,x
    inx
    bne -
    lda #bkACE
    sta bkSelect
    rts
-systemPage = *
-* = systemPage+256
-
-; !if *>aceToolAddress {
-;    !error "Tool extension exceeds maximum address ", aceToolAddress
-; } else {
-;    * = aceToolAddress
-; }
-
-!ifndef xGrMode {
-   xGrMode = xVicGrMode
-   xGrOp = xVicGrOp
-   xGrClear = GrFill
-   xGrBitmapAddr = BitmapAddr
-   xGrScreenAddr = ColorAddr
-}
+.systemPage = *
+* = .systemPage+256

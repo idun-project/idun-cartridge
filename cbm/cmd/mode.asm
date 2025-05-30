@@ -19,12 +19,9 @@
 !source "sys/acehead.asm"
 !source "sys/acemacro.asm"
 !source "sys/toolhead.asm"
-
-* = aceToolAddress
+!source "toolx/gfx.asm"
 
 jmp main
-!byte aceID1,aceID2,aceID3
-!byte 64,0  ;** stack,reserved
 
 columns = $02
 rows    = $03
@@ -39,8 +36,6 @@ colPtr  = $0e   ;(2)
 ;VIC/VDC graphics mode
 vicm    = $10
 vdcm    = $11
-
-!source "toolx/vdc/core.asm"
 
 main = *
    ;** init zp vars
@@ -143,12 +138,12 @@ main = *
    ldx columns
    cpx #80
    bne +
-   lda #<vdc
-   ldy #>vdc
+   lda #<vdcnm
+   ldy #>vdcnm
    jsr puts
    jmp ++
-+  lda #<vic
-   ldy #>vic
++  lda #<vicnm
+   ldy #>vicnm
    jsr puts
 ++ lda #0
    sta itoa+1
@@ -160,9 +155,9 @@ main = *
    ldy #>mode
    jsr puts
    rts
-vdc   !pet "VDC 80x",0
-vic   !pet "VIC-II 40x",0
-mode  !pet " active",chrCR,0
+vdcnm   !pet "VDC 80x",0
+vicnm   !pet "VIC-II 40x",0
+mode    !pet " active",chrCR,0
 
    exitDebug = *
    lda #<debug_file

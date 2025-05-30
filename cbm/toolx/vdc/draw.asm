@@ -1,4 +1,4 @@
-!zone xVDC_DRAW {
+!zone xVDC_DRAW
 
 ;ZP vars
 .TMP = syswork+0	;(2)    
@@ -414,4 +414,3 @@ writepixbyte:
 CACHEPOINT	!byte $ff, 0, 0
 CACHEADDR	!byte 0,0
 CACHEPIXEL	!byte 0
-}

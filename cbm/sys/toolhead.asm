@@ -3,7 +3,8 @@
 
 ;=== Toolbox Interface calls ===
 toolCallB 	= aceAppAddress + 8
-!ifndef toolUserLayout {
+!ifndef aceToolboxEnd {
+aceToolboxEnd  = aceToolAddress
 toolUserLayout 	= toolCallB + 0   ;(.A=layout flags .X=width or height)
 toolUserNode 	= toolCallB + 3 	;requires embedded args!
 toolUserGadget 	= toolCallB + 6 	;requires embedded args!

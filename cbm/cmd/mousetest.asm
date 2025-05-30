@@ -10,12 +10,9 @@
 
 !source "sys/acehead.asm"
 !source "sys/toolhead.asm"
-
-* = aceToolAddress
+!source "toolx/gfx.asm"
 
 jmp main
-!byte aceID1,aceID2,aceID3
-!byte 64,0  ;** stack,reserved
 
 IMAGE_COLS = 2
 IMAGE_ROWS = 11
@@ -27,8 +24,6 @@ startY       = $08  ;(2)
 temp         = $0a  ;(2)
 rndfill      = $0c  ;(1)
 
-;use toolbox extensions
-!source "toolx/vdc/core.asm"
 !source "toolx/vdc/pointer.asm"
 
 main = *
