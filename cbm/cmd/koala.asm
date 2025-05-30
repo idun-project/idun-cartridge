@@ -1,4 +1,4 @@
-;'koala' app: Simple Koala slideshow viewer
+;'koala': Simple Koala slideshow viewer
 ;
 ;Copyright© 2024 Brian Holdsworth
 ;
@@ -6,7 +6,7 @@
 ;
 
 !source "sys/acehead.asm"
-!source "sys/toolbox.asm"
+!source "sys/toolhead.asm"
 !source "toolx/gfx.asm"  ;use VIC gfx routines
 
 jmp init
@@ -25,14 +25,22 @@ dest     = $08 ;(2)
 
 showUsageErrMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "Usage: koala.app in directory with",13,10
+!pet "Usage: koala in directory with",13,10
 !pet ".koa image files.",13,10
 !pet "No images found. <Press any key>",0
+showDisplayErrMsg = *
+;    |1234567890123456789012345678901234567890|
+!pet "koala only for VIC-II 40c display.",13,10,0
 
 
 currDir: !pet ".:",0
 init = *
-   lda #0
+   ;check for VIC-II display
+   jsr aceMiscSysType
+   cmp #WIN_DRIVER_VDC
+   bne +
+   jmp showDisplayError
++  lda #0
    sta count
    lda #<directory
    ldy #>directory
@@ -66,6 +74,7 @@ init = *
    sta dirPtr
    sty dirPtr+1
    jsr graphicOn
+   bcs +
 -  jsr showKoaBmap
    bcs +    ;failed to load image
    dec count
@@ -106,24 +115,31 @@ quit = *
    jsr graphicOff
 exit = *
 	lda #0
-	sta zp
-	sta zp+1
-	lda #aceRestartApplReset
-	jmp aceRestart
+   ldx #0
+	jmp aceProcExit
 showUsageError = *
    lda #<showUsageErrMsg
    ldy #>showUsageErrMsg
+   jmp contError
+showDisplayError = *
+   lda #<showDisplayErrMsg
+   ldy #>showDisplayErrMsg
+   contError = *
    jsr eputs
    jsr aceConGetkey
    rts
 
 graphicOn = *
+   lda #FALSE
+   jsr toolStatEnable
    lda #VIC_II_MODE
    ldx #0
    ldy #0
    jmp xGrMode
 
 graphicOff = *
+   lda #TRUE
+   jsr toolStatEnable
    lda #0
    jsr xGrMode
    rts
@@ -261,7 +277,6 @@ bmapData  = bmapBuffer+2
 colorData = bmapData+8000
 colorMem  = colorData+1000
 bkgdColor = colorMem+1000
-macroUserCmds = * ;not used
 bssAppEnd = *
 
 ;┌────────────────────────────────────────────────────────────────────────┐

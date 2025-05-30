@@ -13,8 +13,6 @@ xGrAttr:        jmp xVdcGrAttr
 xGrClear:       jmp xVdcMemClear
 xGrDblBuffer:   jmp xVdcDblBuffer
 xGrBufswap:     jmp xVdcBufswap
-xGrBitmapAddr:  jmp notImpl
-xGrScreenAddr:  jmp notImpl
 xPlot:          jmp xVdcPlot
 xPolygon:       jmp xVdcPolygon
 
@@ -31,7 +29,7 @@ notImpl = *
    sec
    rts
 
-xVicGfx !word xVicGrMode,notImpl,xVicGrOp,notImpl,GrFill,notImpl,notImpl,BitmapAddr,ColorAddr,notImpl,notImpl
+xVicGfx !word xVicGrMode,notImpl,xVicGrOp,notImpl,VicGrFill,notImpl,notImpl,notImpl,notImpl
 GfxInit = *
     jsr aceMiscSysType
     cmp #WIN_DRIVER_VDC
@@ -46,7 +44,7 @@ GfxInit = *
     ldy #>xGrMode
     sta syswork
     sty syswork+1
-    ldy #32
+    ldy #26
 -   lda #>notImpl
     sta (syswork),y
     dey
@@ -61,7 +59,7 @@ GfxInit = *
     sta syswork
     sty syswork+1
     ldx #(GfxInit-xVicGfx-1)
-    ldy #32
+    ldy #26
 -   lda xVicGfx,x
     sta (syswork),y
     dey
