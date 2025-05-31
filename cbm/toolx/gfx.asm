@@ -1,3 +1,5 @@
+;This extension can only be included immediately after the Toolbox,
+;meaning either sys/toolbox.asm, or sys/toolhead.asm must precede it.
 * = aceToolboxEnd
 
 jmp GfxInit
@@ -5,7 +7,6 @@ jmp GfxInit
 !byte 64,0  ;** stack,reserved
 
 ; Jump table
-xGrInit:        jmp GfxInit
 xGrMode:        jmp xVdcGrMode
 xGrExtents:     jmp xVdcGrExtents
 xGrOp:          jmp xVdcGrOp
@@ -22,14 +23,14 @@ xPolygon:       jmp xVdcPolygon
 
 !zone xGfx
 WIN_DRIVER_VDC      = %10001000
-WIN_DRIVER_VIC80    = %10000010
+WIN_DRIVER_VIC80    = %01100000
 notImpl = *
    lda #aceErrNotImplemented
    sta errno
    sec
    rts
 
-xVicGfx !word xVicGrMode,notImpl,xVicGrOp,notImpl,VicGrFill,notImpl,notImpl,notImpl,notImpl
+xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,VicGrFill,notImpl,notImpl,notImpl,notImpl
 GfxInit = *
     jsr aceMiscSysType
     cmp #WIN_DRIVER_VDC
@@ -37,7 +38,7 @@ GfxInit = *
     jmp GfxToolxEnd
 +   ldx #16
     jsr aceConOption
-    and WIN_DRIVER_VIC80
+    and #WIN_DRIVER_VIC80
     bne +
     ; Cannot use Gfx with text mode VIC-II driver on C64
     lda #<xGrMode

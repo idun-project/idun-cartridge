@@ -11,6 +11,7 @@
 !source "sys/acehead.asm"
 !source "sys/toolhead.asm"
 !source "toolx/gfx.asm"
+!source "toolx/pointer.asm"
 
 jmp main
 
@@ -23,8 +24,6 @@ startX       = $06  ;(2)
 startY       = $08  ;(2)
 temp         = $0a  ;(2)
 rndfill      = $0c  ;(1)
-
-!source "toolx/vdc/pointer.asm"
 
 main = *
    ;** vdc mode 1
@@ -39,18 +38,18 @@ main = *
    lda #$00
    ldy #$00
    jsr xGrClear
-   jsr xPointerEnable
+   jsr xPtrEnable
    jmp mainloop
 +  rts
 
    mainloop = *
    jsr checkStop
-   jsr xPointerPoll
+   jsr xPtrPoll
    beq mainloop
    
    drawstart = *
    ldx #cursorX
-   jsr xPointerLoc
+   jsr xPtrLoc
    ;startX/Y = cursorX/Y
    ldx #cursorX-1
 -  inx
@@ -61,10 +60,10 @@ main = *
    lda $dc06
    sta rndfill
    drawloop = *
-   jsr xPointerPoll
+   jsr xPtrPoll
    beq mainloop
    ldx #cursorX
-   jsr xPointerLoc
+   jsr xPtrLoc
    ldx #1
 -  lda cursorX,x
    cmp startX,x

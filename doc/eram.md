@@ -15,7 +15,7 @@ This API makes it very simple to use ERAM in an application or tool written for 
 
 ### File style API for tagged ERAM
 
-As mentioned above, a memory buffer in ERAM can be assigned a name, and then treated as a file in a call to the `open` routine. The key is to prefix the filename for `open` with the device previx `_:`. This tells the `open` call to locate the file in ERAM. You can then use other file routines (`read`, `seek`, etc.) To access the data in a simple and familiar way. Since the data is in ERAM, access is even faster than the normal file access (already pretty fast). But even better is that it's a random access memory buffer that can also be shared by software running on the ARM CPU. This opens many exciting possibilities for future applications.
+As mentioned above, a memory buffer in ERAM can be assigned a name, and then treated as a file in a call to the `open` routine. The key is to prefix the filename for `open` with the device prefix `_:`. This tells the `open` call to locate the file in ERAM. You can then use other file routines (`read`, `seek`, etc.) To access the data in a simple and familiar way. Since the data is in ERAM, access is even faster than the normal file access (already pretty fast). But even better is that it's a random access memory buffer that can also be shared by software running on the ARM CPU. This opens many exciting possibilities for future applications.
 
 ## Low-level ERAM API (Stash/Fetch)
 

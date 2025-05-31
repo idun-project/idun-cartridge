@@ -4,6 +4,7 @@
 VIC_GRMODE_MAX = 4
 vic            = $d000
 ColorAddr      = $cc00
+xVicScreenAddr = ColorAddr
 BitmapAddr     = $e000
 bkACE          = $0e
 bkRam0         = $3f
@@ -21,8 +22,7 @@ GrTemp    = syswork+14
 GrSor     = syswork+12
 
 ; This represents the _canonical_ VIC-II graphics modes, as defined
-; by the specific register values for each standard mode. Many
-; variations _can be_ acheived with other VDC register settings.
+; by the specific register values for each standard mode.
 
 ; Mode 0: standard 40 column text mode with color attributes (25 rows)
 ; Mode 1: lores (320x200), monochrome bitmap
@@ -54,13 +54,14 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    iny
    bne -
    lda #$00
-   jsr GrFill
+   jsr VicGrFill
    lda #<200
    ldy #>200
    sta syswork+0
    sty syswork+1
    lda #40
    cli
+   clc
    rts
 
 .ActivateHardware = *
@@ -85,7 +86,7 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    sta $dd00
    rts
 
-GrFill = *
+VicGrFill = *
    tax
    lda #<BitmapAddr
    ldy #>BitmapAddr
@@ -106,6 +107,24 @@ GrFill = *
 ; -  sta (syswork+0),y
 ;    dey
 ;    bpl -
+   rts
+
+;Get the pixel extents of current bitmap.
+; - Call ONLY after setting mode with xVicGrMode.
+;RETURNS: .X,.Y = x/8, y pixel extents
+;         syswork+0 = VIC-II bitmap addr
+;         syswork+2 = VIC-II color addr
+xVicGrExtents = *
+   lda #<BitmapAddr
+   ldy #>BitmapAddr
+   sta syswork+0
+   sty syswork+1
+   lda #<ColorAddr
+   ldy #>ColorAddr
+   sta syswork+2
+   sty syswork+3
+   ldx #40
+   ldy #200
    rts
 
 xVicGrOp = *  ;( .A=opflags, .X=X, (sw+0)=Y, .Y=cols, (sw+2)=rows, sw+4=interlv,

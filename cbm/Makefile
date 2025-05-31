@@ -96,7 +96,7 @@ resc/boot128.prg : resc/boot128.bas
 resc/boot.prg : resc/boot.bas
 	bastext -o $<
 
-$(CMDS): $(BUILD)/%: cmd/%.asm $(ACEHDRS) sys/toolhead.asm toolx/*/*
+$(CMDS): $(BUILD)/%: cmd/%.asm $(ACEHDRS) sys/toolhead.asm toolx/* toolx/*/*
 	$(ACME) --cpu 6510 --vicelabels $@.sym -f plain -o $@ $<
 
 $(TEST): $(BUILD)/%: cmd/%.asm $(ACEHDRS)

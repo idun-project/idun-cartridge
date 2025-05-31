@@ -21,7 +21,6 @@ dirFd    = $02 ;(1)
 dirPtr   = $03 ;(2)
 count    = $05 ;(1)
 source   = $06 ;(2)
-dest     = $08 ;(2)
 
 showUsageErrMsg = *
 ;    |1234567890123456789012345678901234567890|
@@ -162,7 +161,8 @@ showKoaBmap = *
    jsr loadImageFile
    bcc +
    rts
-+  jsr _copy_bmp
++  jsr xGrExtents
+   jsr _copy_bmp
    jsr _copy_color
    lda bkgdColor
    sta vic+$21
@@ -173,20 +173,16 @@ showKoaBmap = *
    ldy #>bmapData
    sta source
    sty source+1
-   lda #<xGrBitmapAddr
-   ldy #>xGrBitmapAddr
-   sta dest
-   sty dest+1
    ldy #0
 -  lda (source),y
-   sta (dest),y
+   sta (syswork),y
    iny
    bne -
    inc source+1
-   inc dest+1
+   inc syswork+1
    ldy #0
-   lda dest+1
-   cmp #>(xGrBitmapAddr+$1f00)
+   lda syswork+1
+   cmp #$ff
    bne -
    ;avoid writing to MCRs ($ff00-$ff04)
    cmp #$ff
@@ -194,20 +190,20 @@ showKoaBmap = *
    ldy #5
    _copy_bmp_last = *
    lda (source),y
-   sta (dest),y
+   sta (syswork),y
    iny
    bne _copy_bmp_last
    rts
    _copy_color = *
    ldx #0
 -  lda colorData,x
-   sta xGrScreenAddr,x
+   sta xVicScreenAddr,x
    lda colorData+256,x
-   sta xGrScreenAddr+256,x
+   sta xVicScreenAddr+256,x
    lda colorData+512,x
-   sta xGrScreenAddr+512,x
+   sta xVicScreenAddr+512,x
    lda colorData+768,x
-   sta xGrScreenAddr+768,x
+   sta xVicScreenAddr+768,x
    lda colorMem,x
    sta $d800,x
    lda colorMem+256,x
