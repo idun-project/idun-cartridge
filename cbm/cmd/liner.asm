@@ -1,3 +1,9 @@
+; Graphical Screensaver, Copyright© 2020 Brian Holdsworth, MIT License.
+;
+; Draws animated lines display in varying colors. Most interestingly,
+; the use of toolx/gfx allows the code to work not just on C64 and on
+; C128, but also for either VIC-II or VDC display.
+;
 !source "sys/acehead.asm"
 !source "sys/toolhead.asm"
 !source "toolx/gfx.asm"
@@ -10,6 +16,9 @@ stepY   = $04 ;(2)
 current = $06 ;(2)
 last    = $08 ;(2)
 next    = $0a ;(2)
+color   = $0c ;(1)
+limX    = $0d ;(1)
+limY    = $0e ;(1)
 
 Pts !byte 0,0,0,0
     !byte 0,0,0,0
@@ -51,13 +60,15 @@ Pts !byte 0,0,0,0
     !byte 0,0,0,0
     !byte 0,0,0,0
     !byte 0,0,0,0
-Ori !byte 0,0,0,50
-    !byte 20,0,0,0
+Ori !byte 0,0,0,20
+    !byte 10,0,0,0
 Endpts = *
 
 main = *
     lda #FALSE
     jsr toolStatEnable
+    lda #$10
+    sta color
     ;** step num pixels
     lda #4
     sta stepX
@@ -72,18 +83,39 @@ main = *
     ldy #>Pts
     sta last+0
     sty last+1
-    ;** vdc mode 1
+    ;** mode 1 - monochrome bitmaps
     lda #$01
     ldx #$00
     ldy #$00
     jsr xGrMode
-    bcs +
+    bcs ++
+    stx limX    ;X cols
+    tya
+    asl
+    asl
+    asl
+    sta limY    ;Y lines
+    ;** adjust starting line length
+    lda #40
+    cmp limX
+    beq +
+    ldx #3
+    lda Ori,x
+    asl
+    sta Ori,x
+    inx
+    lda Ori,x
+    asl
+    sta Ori,x    
     ;** clear bitmap screen
-    lda #$00
++   lda #$00
     ldy #$00
     jsr xGrClear
+    ;** set fg/bg colors
+    lda color
+    jsr xGrSetColor
     jmp mainloop
-+   rts
+++  rts
 
 mainloop = *
     ;erase last
@@ -91,13 +123,13 @@ mainloop = *
     ldy last+1
     ldx #2
     clc
-    jsr xVdcPlot
+    jsr xPlot
     ;draw current
     lda current+0
     ldy current+1
     ldx #2
     sec
-    jsr xVdcPlot
+    jsr xPlot
 
     jsr step1
     ldx #stepX
@@ -217,7 +249,7 @@ moveY = *
 checkX = *
     ldy #0
     lda (next),y
-    cmp #80
+    cmp limX
     bcs ++
     cmp #0
     beq +
@@ -225,21 +257,23 @@ checkX = *
 +   lda #4
     sta $0,x
     rts
-++  lda #79
+++  dec limX
+    lda limX
     sta (next),y
     lda #-4
     sta $0,x
+    inc limX
     rts
 
 checkY = *
     beq +
-    cmp #200
+    cmp limY
     bcs ++
     rts
 +   lda #4
     sta $0,x
     jmp changeColor
-++  lda #200
+++  lda limY
     sta (next),y
     lda #-4
     sta $0,x
@@ -247,13 +281,14 @@ changeColor = *
     cpx #stepY+1
     beq +
     rts
-+   ldx #26
-    jsr vdcRead
++   lda color
+    clc
     adc #16
+    sta color
     and #$f0
     bne +
     lda #$10
-+   jmp vdcWrite
++   jmp xGrSetColor
 
 checkStop = *
     jsr aceConKeyAvail
@@ -267,3 +302,29 @@ exit = *
     lda #1
     ldx #0
     jmp aceProcExit
+
+!eof
+┌────────────────────────────────────────────────────────────────────────┐
+│                        TERMS OF USE: MIT License                       │
+├────────────────────────────────────────────────────────────────────────┤
+│ Copyright (c) 2020 Brian Holdsworth                                    │
+│                                                                        │
+│ Permission is hereby granted, free of charge, to any person obtaining  │
+│ a copy of this software and associated documentation files (the        │
+│ "Software"), to deal in the Software without restriction, including    │
+│ without limitation the rights to use, copy, modify, merge, publish,    │
+│ distribute, sublicense, and/or sell copies of the Software, and to     │
+│ permit persons to whom the Software is furnished to do so, subject to  │
+│ the following conditions:                                              │
+│                                                                        │
+│ The above copyright notice and this permission notice shall be         │
+│ included in all copies or substantial portions of the Software.        │
+│                                                                        │
+│ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND         │
+│ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     │
+│ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. │
+│ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   │
+│ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   │
+│ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      │
+│ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 │
+└────────────────────────────────────────────────────────────────────────┘

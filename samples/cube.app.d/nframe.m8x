@@ -28,34 +28,34 @@ m8_nframe_handler = *
     ;draw 1st polygon quad
     ldx #4
     sec
-    jsr xVdcPolygon
+    jsr xPolygon
     ;draw 2nd polygon quad
     ldy #16
     jsr .next_vert
     ldx #4
     sec
-    jsr xVdcPolygon
+    jsr xPolygon
     ;draw 4 connecting lines
     ldy #16
     jsr .next_vert
     ldx #2
     sec
-    jsr xVdcPlot
+    jsr xPlot
     ldy #8
     jsr .next_vert
     ldx #2
     sec
-    jsr xVdcPlot
+    jsr xPlot
     ldy #8
     jsr .next_vert
     ldx #2
     sec
-    jsr xVdcPlot
+    jsr xPlot
     ldy #8
     jsr .next_vert
     ldx #2
     sec
-    jsr xVdcPlot
+    jsr xPlot
     rts
 .next_vert = *
     sty .incr

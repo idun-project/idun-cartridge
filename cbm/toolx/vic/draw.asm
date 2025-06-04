@@ -1,4 +1,4 @@
-xVdcDot10:		;(.TP10)
+xVicDot10:		;(.TP10)
 	;check pixel in cache
 	lda .TP10+0
 	cmp CACHEPOINT+0
@@ -6,56 +6,54 @@ xVdcDot10:		;(.TP10)
 	lda .TP10+3
 	cmp CACHEPOINT+2
 	bne +
-	lda .TP10+2
-	cmp CACHEPOINT+1
-	bne +
 	;cached
-	jmp .plotcache
-	;uncached -
-	;first, flush cached pix
-+	jsr .writepixbyte
-	;get bitmap addr of row
+	jmp .plotcacheV2
+	;uncached -flush cached pix
++	jsr .writepixbyteV2
+	;get bitmap addr (sw+0)
 	lda .TP10+3
-	ldy .TP10+2
-	jsr xVdcRowAddr
-	;add offset for column
-	lda .TP10+0	;Xhi
-	clc
-	adc TMP+0
+	sta TMP+0
+	lda #0
+	sta TMP+1
+	ldx .TP10+0
+	ldy #0		;set to zero to get pix addr
+	lda #$80	;get op
+	jsr xVicGrOp
+	lda TMP
 	sta CACHEADDR
 	lda TMP+1
-	adc #0
 	sta CACHEADDR+1
 	;update cached point
 	lda .TP10+0
 	sta CACHEPOINT+0
-	lda .TP10+2
-	sta CACHEPOINT+1
 	lda .TP10+3
 	sta CACHEPOINT+2
+	;PREPARE read from VIC-II RAM
+	sei
+	sec
+	jsr VicMemoryBank
 	lda .SET
-	beq .clearpoint
-	lda CACHEADDR
-	ldy CACHEADDR+1
-	jsr vdcAddrWrite16
-	jsr vdcRamRead
+	beq .clearpointV2
+	ldy #0
+	lda (TMP),y
 	ldx .TP10+1	;Xlo
 	ora .BITVAL,x
 	sta CACHEPIXEL
+-	clc
+	jsr VicMemoryBank
+	cli
 	rts
-.clearpoint:
+.clearpointV2:
 	ldx .TP10+1	;Xlo
 	lda .BITVAL,x
 	eor #$ff
 	sta VAR
-	lda CACHEADDR
-	ldy CACHEADDR+1
-	jsr vdcAddrWrite16
-	jsr vdcRamRead
+	ldy #0
+	lda (TMP),y
 	and VAR
 	sta CACHEPIXEL
-	rts
-.plotcache:
+	jmp -
+.plotcacheV2:
 	lda .SET
 	beq +
 	lda CACHEPIXEL
@@ -69,23 +67,21 @@ xVdcDot10:		;(.TP10)
 	and CACHEPIXEL
 	sta CACHEPIXEL
 ++	rts
-.writepixbyte:
+.writepixbyteV2:
 	lda CACHEADDR+0
 	ldy CACHEADDR+1
-	jsr vdcAddrWrite16
+	sta TMP
+	sty TMP+1
+	ldy #0
 	lda CACHEPIXEL
-	jmp vdcRamWrite
-
-.BITVAL 	!byte 128, 64, 32, 16, 8, 4, 2, 1
-CACHEPOINT	!byte $ff, 0, 0
-CACHEADDR	!byte $ff,$fe
-CACHEPIXEL	!byte 0
+	sta (TMP),y
+	rts
 
 !eof
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        TERMS OF USE: MIT License                       │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Copyright (c) 2025 Brian Holdsworth                                    │
+│ Copyright (c) 2020 Brian Holdsworth                                    │
 │                                                                        │
 │ Permission is hereby granted, free of charge, to any person obtaining  │
 │ a copy of this software and associated documentation files (the        │

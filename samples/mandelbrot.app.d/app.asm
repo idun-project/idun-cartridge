@@ -17,7 +17,7 @@ appInitialize = *
 appRunLoop = *
    jsr aceConStopkey
    bcs exit
-   jmp xPointerUpdate
+   jmp xPtrEvent
    exit = *
    lda __luaFd
    jsr close

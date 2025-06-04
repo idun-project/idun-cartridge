@@ -6,9 +6,6 @@ vic            = $d000
 ColorAddr      = $cc00
 xVicScreenAddr = ColorAddr
 BitmapAddr     = $e000
-bkACE          = $0e
-bkRam0         = $3f
-bkSelect       = $ff00
 
 ;current graphics mode vars
 .GrMode    !byte 0
@@ -16,7 +13,8 @@ bkSelect       = $ff00
 .BmCols    !byte 0
 .BmCol     !byte 0
 .BmRow     !byte 0
-.BmColor   !byte 0
+.BmEnable  !byte %00110000
+.BmLine25  !byte %01111111
 GrOpFlags = syswork+15
 GrTemp    = syswork+14
 GrSor     = syswork+12
@@ -31,35 +29,33 @@ GrSor     = syswork+12
 ; Mode 4: lores color (160x200), split screen multi-color bitmap/text
 
 ; _Important_: Only switches any mode TO or FROM MODE 0.
-xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
+xVicGrMode = *  ;(.A=mode): .X=cols, .Y=rows
    sta .GrMode
    cmp #0
    bne +
-   jsr .systemRestore
    jmp .textRestore
++  ldy #200
+   sty .BmRows       ;Commodore VIC=II 200 lines
+   jsr aceMiscSysType
+   bpl +
+   ldy #192          ;BUT limit to 192 lines on C128
+   sty .BmRows       ; (protects $FFxx memory)
+   lda #%01110111
+   sta .BmLine25     ;24 rows
+   lda #%00110100
+   sta .BmEnable     ;reset scroll
+   lda #<VicBank128
+   ldy #>VicBank128
+   sta VicMemoryBank+1
+   sty VicMemoryBank+2
 +  sei
-   sty .BmColor
-   txa
-   jsr .Rgbi2vic
-   sta vic+$20
-   jsr .systemSave
    jsr .ActivateHardware
-   lda .BmColor
-   jsr .Rgbi2vicbit
-   ldy #0
--  sta ColorAddr+0,y
-   sta ColorAddr+256,y
-   sta ColorAddr+512,y
-   sta ColorAddr+768,y
-   iny
-   bne -
-   lda #$00
-   jsr VicGrFill
-   lda #<200
-   ldy #>200
-   sta syswork+0
-   sty syswork+1
-   lda #40
+   lda .BmRows
+   lsr
+   lsr
+   lsr
+   tay
+   ldx #40
    cli
    clc
    rts
@@ -69,9 +65,9 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    sta $0a37
    lda #$00
    sta vic+$30       ;1 MHz mode
-   lda #%00110000    ;bitmap mode on
+   lda .BmEnable    ;bitmap mode on; reset scroll
    ora vic+$11
-   and #%01111111
+   and .BmLine25
    sta vic+$11
    lda .GrMode
    cmp #3
@@ -86,7 +82,23 @@ xVicGrMode = *  ;(.A=mode, .X=border clr .Y=fg clr): .A=cols,syswork+0=rows
    sta $dd00
    rts
 
-VicGrFill = *
+VicMemoryBank = * ;(.CS RAM0, .CC=App)
+   jmp VicBank64
+VicBank128:
+   lda #$3f    ;bkRAM0
+   bcs +
+   lda #$0e    ;bkApp
++  sta $ff00
+   rts
+VicBank64:
+   lda #$30    ;bkRAM0
+   bcs +
+   lda #$36    ;bkApp
++  sta $01
+   rts
+
+VicGrFill = *  ;(.A = fill value)
+   ;init bitmap
    tax
    lda #<BitmapAddr
    ldy #>BitmapAddr
@@ -97,21 +109,40 @@ VicGrFill = *
    ldy #0
 -  sta (syswork+0),y
    iny
-   sta (syswork+0),y
-   iny
    bne -
    inc syswork+1
    dex
    bne -
-;    ldy #63
-; -  sta (syswork+0),y
-;    dey
-;    bpl -
+   ;only clear last 8 lines for C64
+   ldy .BmRows
+   cpy #200
+   bne +
+   ldy #0
+-  sta (syswork+0),y
+   iny
+   bne -
+   inc syswork+1
+   ldy #63
+-  sta (syswork+0),y
+   dey
+   bpl -
++  rts
+
+xVicColor = *    ;(.A=fgd/bkg - sets all color cells & border)
+   ldy #0
+-  sta ColorAddr+0,y
+   sta ColorAddr+256,y
+   sta ColorAddr+512,y
+   sta ColorAddr+768,y
+   iny
+   bne -
+   and #$0f
+   sta vic+$20
    rts
 
 ;Get the pixel extents of current bitmap.
 ; - Call ONLY after setting mode with xVicGrMode.
-;RETURNS: .X,.Y = x/8, y pixel extents
+;RETURNS: .X,.Y = x/8, y/8 pixel extents
 ;         syswork+0 = VIC-II bitmap addr
 ;         syswork+2 = VIC-II color addr
 xVicGrExtents = *
@@ -123,8 +154,12 @@ xVicGrExtents = *
    ldy #>ColorAddr
    sta syswork+2
    sty syswork+3
+   lda .BmRows
+   lsr
+   lsr
+   lsr
+   tay
    ldx #40
-   ldy #200
    rts
 
 xVicGrOp = *  ;( .A=opflags, .X=X, (sw+0)=Y, .Y=cols, (sw+2)=rows, sw+4=interlv,
@@ -177,8 +212,8 @@ xVicGrOp = *  ;( .A=opflags, .X=X, (sw+0)=Y, .Y=cols, (sw+2)=rows, sw+4=interlv,
    ldy syswork+1
    sta GrSor+0
    sty GrSor+1
-   lda #bkRam0
-   sta bkSelect
+   sec
+   jsr VicMemoryBank
 GrOpGet = *
    bit GrOpFlags
    bpl .GrOpPut
@@ -303,8 +338,8 @@ GrOpGet = *
    sta syswork+0
    sty syswork+1
 .GrOpContinue = *
-   lda #bkACE
-   sta bkSelect
+   clc
+   jsr VicMemoryBank
    lda syswork+2+0
    bne +
    dec syswork+2+1
@@ -435,30 +470,28 @@ GrOpGet = *
    ldx .textsz+1
    jmp aceWinScreen
 
-;Since the VIC-II bitmap can overwrite system memory
-;on page $ff, we need to backup that data and restore
-;it when we exit graphics mode.
-.systemSave = *
-   lda #bkRam0
-   sta bkSelect
-   ldx #5            ;save $ff05-ffff
--  lda $ff00,x
-   sta .systemPage,x
-   inx
-   bne -
-   lda #bkACE
-   sta bkSelect
-   rts
-.systemRestore = *
-   lda #bkRam0
-   sta bkSelect
-   ldx #5            ;save $ff05-ffff
--  lda .systemPage,x
-   sta $ff00,x
-   inx
-   bne -
-   lda #bkACE
-   sta bkSelect
-   rts
-.systemPage = *
-* = .systemPage+256
+!eof
+┌────────────────────────────────────────────────────────────────────────┐
+│                        TERMS OF USE: MIT License                       │
+├────────────────────────────────────────────────────────────────────────┤
+│ Copyright (c) 2020 Brian Holdsworth                                    │
+│                                                                        │
+│ Permission is hereby granted, free of charge, to any person obtaining  │
+│ a copy of this software and associated documentation files (the        │
+│ "Software"), to deal in the Software without restriction, including    │
+│ without limitation the rights to use, copy, modify, merge, publish,    │
+│ distribute, sublicense, and/or sell copies of the Software, and to     │
+│ permit persons to whom the Software is furnished to do so, subject to  │
+│ the following conditions:                                              │
+│                                                                        │
+│ The above copyright notice and this permission notice shall be         │
+│ included in all copies or substantial portions of the Software.        │
+│                                                                        │
+│ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND         │
+│ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     │
+│ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. │
+│ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   │
+│ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   │
+│ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      │
+│ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 │
+└────────────────────────────────────────────────────────────────────────┘

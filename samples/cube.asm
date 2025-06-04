@@ -1,5 +1,6 @@
 ;idunc: generated file ! DO NOT MODIFY !
 !source "sys/toolbox.asm"
+!source "toolx/gfx.asm"
 
 __mailbox    = $9b   ;(2)
 __work       = $9d   ;(2)
@@ -134,8 +135,6 @@ __getarg = *
    ora zp+0
    rts
    
-!source "toolx/vdc/core.asm"
-!source "toolx/vdc/draw.asm"
 !source "cube.app.d/app.asm"
 __app_init = appInitialize
 __app_runloop = appRunLoop

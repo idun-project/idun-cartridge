@@ -32,7 +32,8 @@ vicActivate = *
    and #%11101111
    sta vic+$16    ;multicolor disabled
    lda vic+$11
-   and #%00011111
+   ora #%00001000 ;ensure 25 rows
+   and #%00011011
    sta vic+$11
    lda aceVic40Page
    asl
