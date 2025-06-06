@@ -1,6 +1,6 @@
 ;'showvdc' cmd: Simple slideshow image viewer for VDC graphics modes
 ;
-;Copyright© 2022 Brian Holdsworth
+;Copyright© 2023 Brian Holdsworth
 ;
 ; This is free software, released under the MIT License.
 ;
@@ -527,7 +527,7 @@ bmBuffer = *
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2021 Brian Holdsworth                                    │
+;│ Copyright (c) 2023 Brian Holdsworth                                    │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │

@@ -1,4 +1,4 @@
-; Graphical Screensaver, Copyright© 2020 Brian Holdsworth, MIT License.
+; Graphical Screensaver, Copyright© 2023 Brian Holdsworth, MIT License.
 ;
 ; Draws animated lines display in varying colors. Most interestingly,
 ; the use of toolx/gfx allows the code to work not just on C64 and on
@@ -307,7 +307,7 @@ exit = *
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        TERMS OF USE: MIT License                       │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Copyright (c) 2020 Brian Holdsworth                                    │
+│ Copyright (c) 2023 Brian Holdsworth                                    │
 │                                                                        │
 │ Permission is hereby granted, free of charge, to any person obtaining  │
 │ a copy of this software and associated documentation files (the        │

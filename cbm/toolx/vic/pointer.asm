@@ -1,85 +1,96 @@
-xVdcDot10:		;(.TP10)
-	;check pixel in cache
-	lda .TP10+0
-	cmp CACHEPOINT+0
-	bne +
-	lda .TP10+3
-	cmp CACHEPOINT+2
-	bne +
-	lda .TP10+2
-	cmp CACHEPOINT+1
-	bne +
-	;cached
-	jmp .plotcache
-	;uncached -
-	;first, flush cached pix
-+	jsr .writepixbyte
-	;get bitmap addr of row
-	lda .TP10+3
-	ldy .TP10+2
-	jsr xVdcRowAddr
-	;add offset for column
-	lda .TP10+0	;Xhi
-	clc
-	adc TMP+0
-	sta CACHEADDR
-	lda TMP+1
-	adc #0
-	sta CACHEADDR+1
-	;update cached point
-	lda .TP10+0
-	sta CACHEPOINT+0
-	lda .TP10+2
-	sta CACHEPOINT+1
-	lda .TP10+3
-	sta CACHEPOINT+2
-	lda .SET
-	beq .clearpoint
-	lda CACHEADDR
-	ldy CACHEADDR+1
-	jsr vdcAddrWrite16
-	jsr vdcRamRead
-	ldx .TP10+1	;Xlo
-	ora .BITVAL,x
-	sta CACHEPIXEL
-	rts
-.clearpoint:
-	ldx .TP10+1	;Xlo
-	lda .BITVAL,x
-	eor #$ff
-	sta VAR
-	lda CACHEADDR
-	ldy CACHEADDR+1
-	jsr vdcAddrWrite16
-	jsr vdcRamRead
-	and VAR
-	sta CACHEPIXEL
-	rts
-.plotcache:
-	lda .SET
-	beq +
-	lda CACHEPIXEL
-	ldx .TP10+1
-	ora .BITVAL,x
-	sta CACHEPIXEL
-	jmp ++
-+	ldx .TP10+1	;Xlo
-	lda .BITVAL,x
-	eor #$ff
-	and CACHEPIXEL
-	sta CACHEPIXEL
-++	rts
-.writepixbyte:
-	lda CACHEADDR+0
-	ldy CACHEADDR+1
-	jsr vdcAddrWrite16
-	lda CACHEPIXEL
-	jmp vdcRamWrite
+!zone xVicPointer
 
-.BITVAL 	!byte 128, 64, 32, 16, 8, 4, 2, 1
-CACHEPOINT	!byte $ff, 0, 0
-CACHEADDR	!byte $ff,$fe
-CACHEPIXEL	!byte 0
+SPRITE_NUM = 0
+SPRITEMASK = 1<<SPRITE_NUM
+SPRITE_PTR = $cff8+SPRITE_NUM
+SPRITE_DAT = $ca00
+SPRITE_IMG = SPRITE_DAT+(SPRITE_NUM*64)
+
+xVicPointerEnable = *
+   sta mouseOn
+   cmp #TRUE
+   beq +
+   jmp .hideCursor
++  jsr aceConMouse
+   lda syswork+0
+   ldy syswork+1
+   sta mouseX+0
+   sty mouseX+1
+   lda syswork+2
+   ldy syswork+3
+   sta mouseY+0
+   sty mouseY+1
+   jsr .displayCursor
+   ;fall-through
+xVicPointerMove = *  ;( mouseX, mouseY )
+   lda mouseOn
+   bne +
+   rts
++  lda mouseX
+   sta cursorX
+   clc
+   adc #25
+   sta vic+SPRITE_NUM
+   lda mouseX+1
+   adc #0
+   sta cursorX+1
+   cmp #1
+   bne +
+   ora vic+$10
+   jmp ++
++  lda #$fe
+   and vic+$10
+++ sta vic+$10
+   lda mouseY
+   sta cursorY
+   clc
+   adc #54
+   sta vic+SPRITE_NUM+1
+   rts
+
+.displayCursor = *
+   ;copy the sprite image data
+   lda #<SPRITE_IMG
+   ldy #>SPRITE_IMG
+   sta syswork
+   sty syswork+1
+   ldy #0
+   ldx #0
+-  lda pbmCursorNarrow,x
+   sta (syswork),y
+   lda #0
+   iny
+   sta (syswork),y
+   iny
+   sta (syswork),y
+   iny
+   inx
+   cpx #CURHEIGHT
+   bne -
+-  cpy #64
+   beq +
+   sta (syswork),y
+   iny
+   jmp -
+   ;set the sprite pointer
++  lda #(SPRITE_IMG-$c000)>>6
+   sta SPRITE_PTR
+   ;enable the sprite
+   lda #SPRITEMASK
+   ora vic+$15
+   sta vic+$15
+   ;make cursor white
+   lda #$01
+   sta vic+$27
+   rts
+
+.hideCursor = *
+   ;disable the sprite
+   lda #$ff
+   eor #SPRITEMASK
+   and vic+$15
+   sta vic+$15
+   rts
 
 !eof
 ┌────────────────────────────────────────────────────────────────────────┐

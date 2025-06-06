@@ -1,4 +1,4 @@
-; Idun Go64, Copyright© 2021 Brian Holdsworth, MIT License.
+; Idun Go64, Copyright© 2023 Brian Holdsworth, MIT License.
 
 ; This tool is used to launch C64 native binaries. The binary
 ; can be a PRG on any native or virtual drive. If running on
@@ -234,7 +234,7 @@ die = *
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2021 Brian Holdsworth                                    │
+;│ Copyright (c) 2023 Brian Holdsworth                                    │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │

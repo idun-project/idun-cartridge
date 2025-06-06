@@ -1,6 +1,6 @@
 ;'mode' cmd: change video and character set settings
 ;
-;Copyright© 2020 Brian Holdsworth
+;Copyright© 2023 Brian Holdsworth
 ; This is free software, released under the MIT License.
 ;
 ; Change video text & graphics modes. Also change loaded
@@ -944,7 +944,7 @@ die = *
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2020 Brian Holdsworth                                    │
+;│ Copyright (c) 2023 Brian Holdsworth                                    │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │

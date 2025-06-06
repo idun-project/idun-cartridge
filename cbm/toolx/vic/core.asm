@@ -48,15 +48,27 @@ xVicGrMode = *  ;(.A=mode): .X=cols, .Y=rows
    ldy #>VicBank128
    sta VicMemoryBank+1
    sty VicMemoryBank+2
-+  sei
++  lda .BmRows       ;mouse limits need setting
+   sec
+   sbc #1
+   ldy #0
+   sta aceMouseLimitY
+   sty aceMouseLimitY+1
+   lda #<319
+   ldy #>319
+   sta aceMouseLimitX
+   sty aceMouseLimitX+1
+   sei               ;setup bitmap mode
    jsr .ActivateHardware
+   cli
+   lda #0
+   jsr VicGrFill     ;clear bitmap
    lda .BmRows
    lsr
    lsr
    lsr
    tay
    ldx #40
-   cli
    clc
    rts
 
@@ -322,8 +334,8 @@ GrOpGet = *
    beq .GrOpContinue
    ldx #0
    ldy #0
--  lda #$00
-   sta (syswork+0,x)
+-  lda syswork+5
+   sta (syswork+0),y
    clc
    lda syswork+0
    adc #8
@@ -391,33 +403,6 @@ GrOpGet = *
    sta syswork+1
    jmp .GrOpLoop
 
-.VicbitWork !byte 0
-.Rgbi2vicbit = *  ;.A=color
-   pha
-   and #$0f
-   tax
-   lda .Rgbi2vicTab,x
-   asl
-   asl
-   asl
-   asl
-   sta .VicbitWork
-   pla
-   lsr
-   lsr
-   lsr
-   lsr
-   tax
-   lda .Rgbi2vicTab,x
-   ora .VicbitWork
-   rts
-.Rgbi2vic = *
-   and #$0f
-   tax
-   lda .Rgbi2vicTab,x
-   rts
-.Rgbi2vicTab !byte 0,11,6,14,5,13,12,3,2,10,8,4,9,7,15,1
-
 .Mult320 = * ;( .A=row, .X=col ) : (sw+0)=(row*80+col)*4
    jsr .Mult80
    asl syswork+0
@@ -474,7 +459,7 @@ GrOpGet = *
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        TERMS OF USE: MIT License                       │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Copyright (c) 2020 Brian Holdsworth                                    │
+│ Copyright (c) 2023 Brian Holdsworth                                    │
 │                                                                        │
 │ Permission is hereby granted, free of charge, to any person obtaining  │
 │ a copy of this software and associated documentation files (the        │

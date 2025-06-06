@@ -1,6 +1,6 @@
 ;'copy' cmd: copy files from source to dest device
 ;
-;Copyright© 2020 Brian Holdsworth
+;Copyright© 2023 Brian Holdsworth
 ; This is free software, released under the MIT License.
 ;
 ; Source and destination devices may be either native or
@@ -585,7 +585,7 @@ copyBufferPtr = copyNameBuf+256
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2020 Brian Holdsworth                                    │
+;│ Copyright (c) 2023 Brian Holdsworth                                    │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │

@@ -1,4 +1,4 @@
-; Idun Keys, Copyright© 2020 Brian Holdsworth, MIT License.
+; Idun Keys, Copyright© 2023 Brian Holdsworth, MIT License.
 
 ; This application provides a simple full-screen app for mapping
 ; keystrokes and/or key codes to characters.
@@ -383,7 +383,7 @@ tohex = *  ;( .A=val, .X=pos)
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2020 Brian Holdsworth                                    │
+;│ Copyright (c) 2023 Brian Holdsworth                                    │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │

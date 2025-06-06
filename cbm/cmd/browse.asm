@@ -1,4 +1,4 @@
-; Idun Browse, Copyright© 2021 Brian Holdsworth, MIT License.
+; Idun Browse, Copyright© 2023 Brian Holdsworth, MIT License.
 
 ;This application provides a simple full-screen app for 
 ;browsing the current device directory, changing to and
@@ -1189,7 +1189,7 @@ getarg = *
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2021 Brian Holdsworth                                    │
+;│ Copyright (c) 2023 Brian Holdsworth                                    │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │
