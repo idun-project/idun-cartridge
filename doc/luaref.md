@@ -9,11 +9,11 @@ Idun provides several methods by which Lua code running on the Raspberry Pi can 
 
 This is by far the easiest way to add applications written in Lua. The idun-shell has a `lua` command that will accept the name of a Lua script and launch it in a terminal. So, a simple text program written in Lua and using the Lua `print()` function would just work. To see this in action, switch to the `idun-base/apps` (usually mapped to `e:`) directory and type `lua sieve.lua`. The script is a generic thing that spits out prime numbers up to 10000. It only uses `print()` for output.
 
-To do a more interactive program that requires user input, you simply switch the Lua stdio to use the [minisock](#mini-socket) API described below. Now, every character typed or printed is available on both the Lua and C128 side. To see an example of a script that works this way, simply type `help` or press `F1` in the shell. The help system is implemented as a [Lua script](../cbm/resc/help.lua).
+To do a more interactive program that requires user input, you simply switch the Lua stdio to use the [minisock](#mini-socket) API described below. Now, every character typed or printed is available on both the Lua and C128 side. To see an example of a script that works this way, simply type `help` or press `F1` in the shell. The help system is implemented as a [Lua script](https://github.com/idun-project/idun-cartridge/cbm/resc/help.lua).
 
 2. Write a Lua "server" that handles requests from your idun "client" application.
 
-Included with Idun is an [idun-handler](#idun-handler) Lua object that makes it easy to create client/server applications where Lua does the "heavy lifting". For example, the `sidplay` command relies on a helpful [Lua server](../cbm/resc/sidplay.lua) to pre-process the SID files. 
+Included with Idun is an [idun-handler](#idun-handler) Lua object that makes it easy to create client/server applications where Lua does the "heavy lifting". For example, the `sidplay` command relies on a helpful [Lua server](https://github.com/idun-project/idun-cartridge/cbm/resc/sidplay.lua) to pre-process the SID files. 
 
 3. Write a "native" idun application in a combination of Lua and 6502 assembler.
 
@@ -36,7 +36,7 @@ Minisock can of course be used in a more structured way, such as for passing pre
 
 ### idun handler
 
-The handler is included, so you can just `require("idun-handler")` in your script. Then, you implement a function to handle the requests that your assembler code will send to Lua. In [sidplay.lua](../cbm/resc/sidplay.lua), for example, the `handleRequest(req)` function supports 2 types of requests using this simple bit of Lua script:
+The handler is included, so you can just `require("idun-handler")` in your script. Then, you implement a function to handle the requests that your assembler code will send to Lua. In [sidplay.lua](https://github.com/idun-project/idun-cartridge/cbm/resc/sidplay.lua), for example, the `handleRequest(req)` function supports 2 types of requests using this simple bit of Lua script:
 
 ```
 	-- Allowed requests: "H"=get sid header, "P"=get sid program
@@ -81,13 +81,13 @@ __UNDER CONSTRUCTION__
 
 `m8.waitevent` is the standard API for receiving input events from assembler in Lua.
 
-`m8.writeln` is for outputting lines of text to the display for a full-screen Lua application. For console applications in Lua, you can just use [minisock](#minisock) or the Lua `print()` function.
+`m8.writeln` is for outputting lines of text to the display for a full-screen Lua application. For console applications in Lua, you can just use minisock or the Lua `print()` function.
 
 `m8.file.load_prg` is for loading/starting a native program from a Lua script.
 
 ### m8x extensions
 
-m8x ("mate extensions") is the standard way to add application-dependent functionality to Lua apps. These extensions become part of the callable code in the m8 namespace created by the applications. So, it allows new functionality to be invoked on the assembler side. For an example, see: [cube.app.d](../samples/cube.app.d/) and [mandelbrot.app.d](../samples/mandelbrot.app.d/).
+m8x ("mate extensions") is the standard way to add application-dependent functionality to Lua apps. These extensions become part of the callable code in the m8 namespace created by the applications. So, it allows new functionality to be invoked on the assembler side. For an example, see: [cube.app.d](https://github.com/idun-project/idun-cartridge/samples/cube.app.d/) and [mandelbrot.app.d](https://github.com/idun-project/idun-cartridge/samples/mandelbrot.app.d/).
 
 ### System (sys.) functions
 

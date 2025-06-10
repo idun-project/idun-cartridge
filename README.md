@@ -2,7 +2,9 @@
 
 This is the home of the idun-cartridge for the C128/64. Here you will find the latest software, along with source code, sample applications, and other content.
 
-What does it do? Hopefully a [demo](https://www.youtube.com/watch?v=X_DMMz55Tpo) is worth a thousand words.
+This innovative cartridge integrates a Raspberry Pi to provide a fast hardware interface, enabling features such as virtual disks, networking, and the ability to run modern applications. Users can interact with the cartridge via BASIC commands, a web-based file browser, or SSH, and the project supports developing new software in 6502 Assembly, Lua, and even C and Z80 Assembly. There's an optional Commodore Kernal patch that allow native software to access cartridge functionality at high speeds, effectively turning the cartridge into a "hard drive" for Commodore.
+
+What does it do? It's easier to show in a demo, and there are many demo videos on [YouTube](https://www.youtube.com/@idunproject).
 
 There's also a [Discord Server](https://discord.gg/6Du9jhK4eF) for the project. This is for idun-project discussion, new user advice, beta testing new features, and general retro-computing banter with a  Commodore bias.
 
@@ -82,9 +84,9 @@ The idun-cartridge software in this repository is self-hosting. All of the assem
 
 1. Clone this repository to your idun home directory: `git clone https://github.com/idun-project/idun-cartridge`
 2. `cd idun-cartridge && ./setup.sh` -installs additional packages such as acme and idun-zcc.
-3. `cd cbm && make` -builds cartridge software and updates the `sys` directroy (`z:` device in the idun-shell)
+3. `cd cbm && make` -builds cartridge software and updates the `sys` directory (`z:` device in the idun-shell)
 
-See the [Makefile](cbm/Makefile) for details.
+See the [Makefile](https://github.com/idun-project/idun-cartridge/cbm/Makefile) for details.
 
 ### Patched Commodore Kernal (Optional)
 
@@ -104,7 +106,7 @@ The idun-cartridge works with many legacy applications. Single-file loaders in p
 
 This repository includes the acme 6502 cross-assembler, which can be used to build both the contents of this repo and your own programs on the idun-cartridge. You should first decide whether to build a Tool or an App.
 
-1. Tools load from the idun-shell using $6D00-$BFFF, have access to the [kernel api](doc/apiref.md) and the [toolbox](doc/toolbox.md), and return the user to the idun-shell on exit. They are typically command-line style programs, but can also take over the screen and run interactively. Many examples can be found in the [cmd](cbm/cmd/) sub-directory
+1. Tools load from the idun-shell using $6D00-$BFFF, have access to the [kernel api](doc/apiref.md) and the [toolbox](doc/toolbox.md), and return the user to the idun-shell on exit. They are typically command-line style programs, but can also take over the screen and run interactively. Many examples can be found in the [cmd](https://github.com/idun-project/idun-cartridge/cbm/cmd/) sub-directory
 2. An App is launched by the kernel at startup using $6000-$BFFF, has access to the kernel API, but not the toolbox _unless_ `sys/toolbox.asm` is explicitly included, and return to BASIC, or not at all. They typically take over the machine and reconfigure the hardware as needed. Examples are `dos.app` (the idun-shell) and `arcade.app` (the arcade game selector).
 
 It is certainly possible to use other assemblers besides acme; just requiring that the header files `acehead.asm` and `toolhead.asm` be ported over to your environment.
@@ -113,9 +115,9 @@ It is certainly possible to use other assemblers besides acme; just requiring th
 
 The idun software running on the Raspberry Pi embeds a Lua scripting engine. This allows you to create either Tools or Apps in which much, even a majority of the functionality, is implemented in Lua.
 
-Begin by reading [luaref.md](doc/luaref.md). There is sample Lua App code in [samples](samples/), and the [arcade.app](cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
+Begin by reading [luaref.md](doc/luaref.md). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/samples/), and the [arcade.app](https://github.com/idun-project/idun-cartridge/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
 
- _NOTE: There is a forthcoming tool called `idunc` that will generate new Lua Apps from a template, including all the boiler-plate needed._
+ _NOTE: There is a forthcoming tool called `mace` that will generate new Lua Apps automatically, including all the boiler-plate needed._
 
 #### C and Z80 Assembly 
 

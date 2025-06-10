@@ -32,7 +32,7 @@ Revised for Idun beginning in 2023.
 
 ## Introduction
 
-The core of the Idun software is comprised of a kernel, device drivers, command-line shell, and application API originally written by Craig Bruce in 1992-1997, and modified for Idun 30 years later. While the original shell was inspired by Unix, the one included with Idun is intended to be reminiscent of MS-DOS. The kernel and device drivers have been modified to work with the idun-cartridge, and many additions have been made to the API. This document covers the API. This API is used by all the tools that are included with and run within the idun-shell [(see: dos.app.s)](../cbm/dos.app.s). Perhaps, the best way to learn the API is to look at the assembly language source code for the tools [(see: cbm/cmd/)](../cbm/cmd/), and consult the reference below for better understanding.
+The core of the Idun software is comprised of a kernel, device drivers, command-line shell, and application API originally written by Craig Bruce in 1992-1997, and modified for Idun 30 years later. While the original shell was inspired by Unix, the one included with Idun is intended to be reminiscent of MS-DOS. The kernel and device drivers have been modified to work with the idun-cartridge, and many additions have been made to the API. This document covers the API. This API is used by all the tools that are included with and run within the idun-shell [(see: dos.app.s)](https://github.com/idun-project/idun-cartridge/cbm/dos.app.s). Perhaps, the best way to learn the API is to look at the assembly language source code for the tools [(see: cbm/cmd/)](https://github.com/idun-project/idun-cartridge/cbm/cmd/), and consult the reference below for better understanding.
 
 ## Reference
 
@@ -930,7 +930,7 @@ RETURNS:  .A   = mouse-button status: $80=left, $40=right, $20=middle
 ALTERS :  .A, .X, .Y
 ```
 
-Returns the current mouse status [see: toolx/vdc/pointer.asm](../cbm/toolx/vdc/pointer.asm).
+Returns the current mouse status [see: toolx/pointer.asm](https://github.com/idun-project/idun-cartridge/cbm/toolx/pointer.asm).
 
 ```
 NAME   :  aceConJoystick
@@ -962,7 +962,7 @@ button X    X    X    X  Left Right Up  Down Strt Sel L-Tr  R-Tr  Y    X    B   
 bit   15   14   13   12   11   10   9    8    7    6    5    4    3    2    1    0    
 ```
 
-In the case of configuring a gamepad, the carry-bit must be set, and the returned values are button numbers rather than a bitmask. For more details, [see: cmd/joys.asm.](../cbm/cmd/joys.asm)
+In the case of configuring a gamepad, the carry-bit must be set, and the returned values are button numbers rather than a bitmask. For more details, [see: cmd/joys.asm.](https://github.com/idun-project/idun-cartridge/cbm/cmd/joys.asm)
 
 ```
 NAME   :  aceConOption
@@ -1009,7 +1009,7 @@ Normally setup by the toolbox so that applications can easily set/restore hotkey
 
 #### 5. GRAPHICS CALLS
 
-** UNDER CONSTRUCTION ** [(see: toolx/vdc/core.asm)](../cbm/toolx/vdc/core.asm)
+** UNDER CONSTRUCTION ** [(see: toolx/gfx.asm)](https://github.com/idun-project/idun-cartridge/cbm/toolx/gfx.asm)
 
 #### 6. PROCESS-CONTROL CALLS
 
@@ -1479,7 +1479,7 @@ RETURNS:  .AY  = number of bytes read
 ALTERS :  .A, .X, .Y
 ```
 
-See source code for the [diskcopy](../cbm/cmd/diskcopy.asm) command for an example.
+See source code for the [diskcopy](https://github.com/idun-project/idun-cartridge/cbm/cmd/diskcopy.asm) command for an example.
 
 ```
 NAME   :  aceDirectWrite
