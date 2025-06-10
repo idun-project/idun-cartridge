@@ -17,7 +17,7 @@ BitmapAddr     = $e000
 .BmLine25  !byte %01111111
 GrOpFlags = syswork+15
 GrTemp    = syswork+14
-GrSor     = syswork+12
+GrSor     = $79   ;(2) from tbwork!
 
 ; This represents the _canonical_ VIC-II graphics modes, as defined
 ; by the specific register values for each standard mode.

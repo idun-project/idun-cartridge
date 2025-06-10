@@ -64,9 +64,14 @@ Ori !byte 0,0,0,20
     !byte 10,0,0,0
 Endpts = *
 
+doNothing = *
+    rts
+    
 main = *
-    lda #FALSE
-    jsr toolStatEnable
+    ; Disable toolbox IRQ
+    lda #<doNothing
+    ldy #>doNothing
+    jsr aceIrqHook
     lda #$10
     sta color
     ;** step num pixels
@@ -297,8 +302,7 @@ checkStop = *
 +   jsr aceConGetkey
 exit = *
     jsr aceGrExit
-    lda #TRUE
-    jsr toolStatEnable
+    jsr toolWinRestore
     lda #1
     ldx #0
     jmp aceProcExit

@@ -1,22 +1,25 @@
+doNothing = *
+   rts
 appInitialize = *
-   ;require VDC
+   lda #<doNothing
+   ldy #>doNothing
+   jsr aceIrqHook
    jsr aceMiscSysType
-   cmp #$80
-   beq +
--  jmp exit
-+  lda #3      ;VDC graphics Mode 3
-   ldx #0
+   cmp #%10001000
+   bne +
+   lda #3      ;VDC graphics Mode 3
+   jmp ++
++  lda #1      ;VIC graphics Mode 1
+++ ldx #0
    ldy #0
    jsr xGrMode
-   bcs -
+   bcs exit
    jsr xGrDblBuffer
    lda #0
    ldy #5
    jsr xGrClear
-   ; ;use green pen
-   ; ldx #$1a
-   ; lda #$50
-   ; jsr vdcWrite
+   lda #$50
+   jsr xGrSetColor
    rts
 
 appRunLoop = *
