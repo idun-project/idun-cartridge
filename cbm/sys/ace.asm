@@ -160,11 +160,6 @@ kernelRestor = $ff8a
 
 ;*** entrypoint()
 entryPoint = *
-   ;After bootstrapping from ROM code, this
-   ;code disables the EXROM soft-switch; causes
-   ;ROM bootstrap code to be replaced with NMI
-   ;handler code (dynamically loaded).
-   sta $de7e
    lda #0
    pha
    plp
@@ -184,6 +179,11 @@ entryPoint = *
    ;start ace
    lda #bkACE
    sta bkSelect
+   ;After bootstrapping from ROM code, this
+   ;code disables the EXROM soft-switch; causes
+   ;ROM bootstrap code to be replaced with NMI
+   ;handler code (dynamically loaded).
+   sta $de7e
 
 ;*** main()
    lda #147
