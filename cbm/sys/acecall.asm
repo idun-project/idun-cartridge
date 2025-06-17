@@ -281,6 +281,15 @@ cmdchOpen = *  ;( .A=device )
 +  rts
 
 cmdchClose = *
+   lda devtable,x
+   tax
+   lda configBuf+0,x
+   cmp #1
+   beq +
+   lda configBuf+2,x
+   sta closeFd
+   jmp pidClose
++  sec
    lda #cmdlf
    jsr kernelClose
    bcc +
