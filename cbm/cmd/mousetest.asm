@@ -15,18 +15,17 @@
 
 jmp main
 
-IMAGE_COLS = 2
-IMAGE_ROWS = 11
-
-.cursorX     = $02  ;(2)
-.cursorY     = $04  ;(2)
-startX       = $06  ;(2)
-startY       = $08  ;(2)
-temp         = $0a  ;(2)
-rndfill      = $0c  ;(1)
+cx       = $02  ;(2) current X/Y
+cy       = $04  ;(2)
+px       = $06  ;(2) previous X/Y
+py       = $08  ;(2)
+startX   = $0a  ;(2) start X/Y for draw
+startY   = $0c  ;(2)
+temp     = $0e  ;(2)
+rndfill  = $10  ;(1)
 
 main = *
-   ;** vdc mode 1
+   ;** gfx mode 1
    lda #FALSE
    jsr toolStatEnable
    lda #$01
@@ -52,33 +51,38 @@ main = *
    beq mainloop
    
    drawstart = *
-   ldx #.cursorX
+   ldx #cx
    jsr xPtrLoc
-   ;startX/Y = .cursorX/Y
-   ldx #.cursorX-1
+   ;startX/Y = cx/Y = px/Y
+   ldx #cx-1
 -  inx
    lda $00,x
    sta $04,x
-   cpx #.cursorX+3
+   sta $08,x
+   cpx #cx+3
    bne -
    lda $dc06
    sta rndfill
    drawloop = *
    jsr xPtrPoll
-   beq mainloop
-   ldx #.cursorX
+   beq drawFill
+   ldx #cx
    jsr xPtrLoc
    ldx #1
--  lda .cursorX,x
-   cmp startX,x
+-  lda cx,x
+   cmp px,x
    bne +
-   lda .cursorY,x
-   cmp startY,x
+   lda cy,x
+   cmp py,x
    bne +
    dex
    bpl -
    jmp drawloop
-+  lda startY+0
++  jsr drawRect
+   jmp drawloop
+   
+   drawFill = *
+   lda startY+0
    ldy startY+1
    sta syswork+0
    sty syswork+1
@@ -86,20 +90,20 @@ main = *
    sta syswork+4
    lda rndfill
    sta syswork+5
-   ;rows = .cursorY - startY
-   lda .cursorY+0
+   ;rows = cy - startY
+   lda cy+0
    sec
    sbc startY+0
    sta syswork+2
-   lda .cursorY+1
+   lda cy+1
    sbc startY+1
    sta syswork+3
-   ;cols = (.cursorX - startX) / 8
-   lda .cursorX+0
+   ;cols = (cx - startX) / 8
+   lda cx+0
    sec
    sbc startX+0
    sta temp+0
-   lda .cursorX+1
+   lda cx+1
    sbc startX+1
    sta temp+1
    jsr .tempDiv
@@ -113,7 +117,81 @@ main = *
    tax
    lda #$10
    jsr xGrOp
-   jmp drawloop
+   jmp mainloop
+
+   drawRect = *
+   jsr setUL
+   ldx #px
+   jsr setLR 
+   lda #<UL
+   ldy #>UL
+   clc
+   jsr xRectangle
+   ldx #cx
+   jsr setLR 
+   lda #<UL
+   ldy #>UL
+   sec
+   jsr xRectangle
+   ldx #cx
+   ldy #3
+-  lda $00,x
+   sta $04,x
+   inx
+   dey
+   bpl -
+   rts
+
+   setUL = *
+   lda startX+1
+   sta UL
+   lda startX
+   sta UL+1
+   asl UL+1
+   rol UL
+   asl UL+1
+   rol UL
+   asl UL+1
+   rol UL
+   asl UL+1
+   rol UL
+   asl UL+1
+   rol UL
+   lda startX
+   and #7
+   sta UL+1
+   lda startY
+   sta UL+3
+   lda #0
+   sta UL+2
+   rts
+   setLR = *
+   lda $01,x
+   sta LR
+   lda $00,x
+   sta LR+1
+   asl LR+1
+   rol LR
+   asl LR+1
+   rol LR
+   asl LR+1
+   rol LR
+   asl LR+1
+   rol LR
+   asl LR+1
+   rol LR
+   lda $00,x
+   and #7
+   sta LR+1
+   lda $02,x
+   sta LR+3
+   lda #0
+   sta LR+2
+   rts
+;Vertices for Rectangle
+UL !byte   0,0,0,0
+LR !byte   0,0,0,0
+
    .tempDiv = *
    lsr temp+1
    ror temp+0

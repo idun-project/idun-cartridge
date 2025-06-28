@@ -320,7 +320,7 @@ GrOpGet = *
 .GrOpCopy = *  ;xx not implemented
    lda GrOpFlags
    and #$20
-   beq .GrOpFill
+   beq VicGrOpFill
    ldx #0
    ldy #0
    nop
@@ -328,7 +328,7 @@ GrOpGet = *
    ldy GrSor+1
    sta syswork+0
    sty syswork+1
-.GrOpFill = *
+VicGrOpFill = *
    lda GrOpFlags
    and #$10
    beq .GrOpContinue
@@ -362,7 +362,7 @@ GrOpGet = *
    clc
    rts
 +  bit GrOpFlags
-   bmi +
+   bpl +
    clc
    lda syswork+8+0
    adc syswork+4

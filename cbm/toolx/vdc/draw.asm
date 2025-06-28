@@ -76,6 +76,95 @@ xVdcDot10:		;(.TP10)
 	lda CACHEPIXEL
 	jmp vdcRamWrite
 
+xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
+	;get bitmap addr of row
+	ldy $00,x
+	lda $01,x
+	jsr xVdcRowAddr
+	;add offset for column
+	lda X1+0	;X1hi
+	clc
+	adc TMP+0
+	sta CACHEADDR
+	lda TMP+1
+	adc #0
+	sta CACHEADDR+1
+	;first/partial byte
+	lda #$ff
+	ldx X1+1	;X1lo
+	beq +
+-	dex
+	bmi +
+	lsr
+	jmp -
++	sta CACHEPIXEL
+	jsr .writepixbyte
+	;full bytes X1(hi)->X2(hi)
+	lda #$ff
+	sta CACHEPIXEL
+	lda X1
+	sta VAR
+-	inc CACHEADDR
+	bne +
+	inc CACHEADDR+1
++	lda VAR
+	cmp X2
+	beq +
+	jsr .writepixbyte
+	inc VAR
+	jmp -
+	;last/partial byte
++	lda #$00
+	ldx X2+1	;X2lo
+	beq ++
+-	dex
+	bmi +
+	sec
+	ror
+	jmp -
++	sta CACHEPIXEL
+	jsr .writepixbyte
+++	rts
+
+xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
+	;offset for column
+	lda $00,x	;Xhi
+	sta CACHEADDR
+	;mask byte
+	lda $01,x
+	tax
+	lda .BITVAL,x
+	sta CACHEPIXEL
+	;get bitmap addr of row
+	ldy Y1
+	lda Y1+1
+	jsr xVdcRowAddr
+	;add to addr
+	lda CACHEADDR
+	clc
+	adc TMP+0
+	sta CACHEADDR
+	lda #0
+	adc TMP+1
+	sta CACHEADDR+1
+	;Y1->Y2
+	lda Y1+1
+	sta VAR
+-	jsr .writepixbyte
+	inc VAR
+	lda VAR
+	cmp Y2+1
+	bne +
+	rts
++	lda CACHEADDR
+	clc
+	adc vdcDispColumns
+	sta CACHEADDR
+	lda CACHEADDR+1
+	adc #0
+	sta CACHEADDR+1
+	jmp -
+
 .BITVAL 	!byte 128, 64, 32, 16, 8, 4, 2, 1
 CACHEPOINT	!byte $ff, 0, 0
 CACHEADDR	!byte $ff,$fe

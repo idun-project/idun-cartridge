@@ -12,7 +12,7 @@ VDC_GRMODE_MAX = 7
 .grmode !byte 0
 .gr_x !byte 80
 .gr_y !byte 25
-.columns !byte 0
+vdcDispColumns !byte 0
 .rows !byte 0
 .bmadr0 !word 0
 .bmadr1 !word 0
@@ -251,7 +251,7 @@ xVdcGrMode = *  ;(.A=mode, .X=cols, .Y=rows): .X=cols, .Y=rows, .CS=error
    inx
    lda .vdc_mode_preset,x
    sta zw
-   sta .columns
+   sta vdcDispColumns
    inx
    lda .vdc_mode_preset,x
    sta zw+1
@@ -517,7 +517,7 @@ vdcDumpRegs = *   ;((zp)=filename) : .CS=error
 
 vdcMult = *
    pha
-   lda .columns
+   lda vdcDispColumns
    cmp #100
    bne +
    pla
@@ -824,7 +824,7 @@ vdcGrOpContinue = *
    inc syswork+10+1
 +  bit .vdcInterlaced
    bmi +
-   lda .columns
+   lda vdcDispColumns
    ldy #0
    jmp ++
 +  lda .vdcBmFrame
@@ -841,7 +841,7 @@ vdcGrOpContinue = *
    lda syswork+1
    sbc .frame_base+1
    sta syswork+1
-   lda .columns
+   lda vdcDispColumns
    ldy #0
 ++ clc
    adc syswork+0
@@ -899,23 +899,15 @@ xVdcMemClear = *  ;(.A=fill bits, .Y=fill attrs)
 +  lda .mempattern+1
    jsr vdcRamWrite
    ldx #30
-   lda .columns
+   lda vdcDispColumns
    jsr vdcWrite
    jmp -
 .mempattern !byte 0,0
 
 xVdcRowAddr = *   ;(.AY=row): sw+0=addr
    sta syswork+0
+   sta cache_row_val
    sty syswork+1
-   jsr chkAddrCache
-   bcs +
-   ;row addr from cache
-   jmp frameBaseAdjust
-   ;compute row addr & cache
-+  lda syswork+0
-   ldy syswork+1
-   sta cache_row_val+0
-   sty cache_row_val+1
    bit .vdcInterlaced
    bpl +
    lsr syswork+1
@@ -923,15 +915,11 @@ xVdcRowAddr = *   ;(.AY=row): sw+0=addr
    ldy syswork+1
 +  ldx #0
    jsr vdcMult
-   lda syswork+0
-   sta cache_row_addr+0
-   lda syswork+1
-   sta cache_row_addr+1
    frameBaseAdjust = *
    bit .vdcInterlaced
    bpl +
    ;check if odd field
-   lda cache_row_val+0
+   lda cache_row_val
    and #$01
    beq +
    lda syswork+0
@@ -950,68 +938,7 @@ xVdcRowAddr = *   ;(.AY=row): sw+0=addr
    adc .bmadr0+1
    sta syswork+1
    rts
-chkAddrCache = *
-   cpy cache_row_val+1
-   beq +
-   sec
-   rts
-+  sbc cache_row_val+0
-   cmp #$ff
-   bne ++
-   ;up one row
-   dec cache_row_val+0
-   bit .vdcInterlaced
-   bpl +
-   lda cache_row_val+0
-   and #$01
-   beq +
-   jmp .notFromCache
-+  lda cache_row_addr+0
-   sec
-   sbc .columns
-   sta cache_row_addr+0
-   sta syswork+0
-   lda cache_row_addr+1
-   sbc #0
-   sta cache_row_addr+1
-   sta syswork+1
-   clc
-   rts
-++ cmp #$01
-   bne ++
-   ;down one row
-   inc cache_row_val+0
-   bit .vdcInterlaced
-   bpl +
-   lda cache_row_val+0
-   and #$01
-   beq +
-   jmp .notFromCache
-+  lda cache_row_addr+0
-   clc
-   adc .columns
-   sta cache_row_addr+0
-   sta syswork+0
-   lda cache_row_addr+1
-   adc #0
-   sta cache_row_addr+1
-   sta syswork+1
-   clc
-   rts
-++ cmp #0
-   bne +
-   ;same row; just use cached addr
-   lda cache_row_addr+0
-   ldy cache_row_addr+1
-   sta syswork+0
-   sty syswork+1
-   clc
-   rts
-   .notFromCache = *
-+  sec
-   rts
-cache_row_val !byte 0,$ff
-cache_row_addr !byte 0,0
+cache_row_val !byte 0
 
 xVdcDblBuffer = *
    bit .vdcInterlaced

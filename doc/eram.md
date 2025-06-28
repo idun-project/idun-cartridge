@@ -15,13 +15,14 @@ This API makes it very simple to use ERAM in an application or tool written for 
 
 ### File style API for tagged ERAM
 
-As mentioned above, a memory buffer in ERAM can be assigned a name, and then treated as a file in a call to the `open` routine. The key is to prefix the filename for `open` with the device prefix `_:`. This tells the `open` call to locate the file in ERAM. You can then use other file routines (`read`, `seek`, etc.) To access the data in a simple and familiar way. Since the data is in ERAM, access is even faster than the normal file access (already pretty fast). But even better is that it's a random access memory buffer that can also be shared by software running on the ARM CPU. This opens many exciting possibilities for future applications.
+As mentioned above, a memory buffer in ERAM can be assigned a name, and then treated as a file in a call to the `open` routine. The key is to prefix the filename for `open` with the device previx `_:`. This tells the `open` call to locate the file in ERAM. You can then use other file routines (`read`, `seek`, etc.) To access the data in a simple and familiar way. Since the data is in ERAM, access is even faster than the normal file access (already pretty fast). But even better is that it's a random access memory buffer that can also be shared by software running on the ARM CPU. This opens many exciting possibilities for future applications.
 
 ## Low-level ERAM API (Stash/Fetch)
 
 ERAM is also compatible with the existing, low-level `aceMem` API calls which still work with local RAM banks too. The routines are `aceMemAlloc, aceMemStash, aceMemFetch, and aceMemFree`. You should note that memory is automatically garbage collected when a process exits, so calls to `aceMemFree` are unnecessary and ignored when using ERAM. This API is familiar to many Commodore programmers because it is the same approach used for additional local RAM banks and the *REU*. You are free to mix & match calls to this API with the ones from the New API and with direct hardware access, if needed. You just have to be sure that you address the RAM buffers correctly, which is done by treating all far memory pointers as 32-bit values.
 
-*far memory pointer (mp)*
+_A far memory pointer is stored in zero-page using `mp`_
+
 | ptr byte | mp+0        | mp+1 | mp+2       | mp+3        |
 | -------- | ----------- | ---- | ---------- | ----------- |
 |          | byte offset | page | bank/block | memory type |

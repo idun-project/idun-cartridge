@@ -3,7 +3,13 @@
 ;
 ;This extension can only be included immediately after the Toolbox,
 ;meaning either sys/toolbox.asm, or sys/toolhead.asm must precede it.
-* = aceToolboxEnd
+;If the Toolbox is not used, then it is assumed you are building
+;an App, and this is the *first* included source extension.
+!ifdef aceToolboxEnd {
+	* = aceToolboxEnd
+} else {
+	* = aceAppAddress
+}
 
 jmp GfxInit
 !byte aceID1,aceID2,aceID3
@@ -19,8 +25,11 @@ xGrSetColor:	jmp xVdcColor
 xGrDblBuffer:   jmp xVdcDblBuffer
 xGrBufswap:     jmp xVdcBufswap
 xPoint:			jmp xVdcDot10
+xHorLine		jmp xVdcHorLine
+xVerLine		jmp xVdcVerLine
 xPlot:          jmp GfxPlot
 xPolygon:       jmp GfxPolygon
+xRectangle		jmp GfxRect
 
 !source "toolx/vdc/core.asm"
 !source "toolx/vic/core.asm"
@@ -163,6 +172,39 @@ GfxPolygon = *
 	sty Points+1
 	jmp .line
 .pts_head !byte 0,0
+
+GfxRect = *
+	sta Points			;upper-left, lower-right
+	sty Points+1
+	lda #1
+	bcs +
+	lda #0
++	sta .SET	
+	ldy #0
+	ldx #X1
+-	lda (Points),y		;copy UL/LR to X1,Y1 and X2,Y2
+	sta $00,x
+	inx
+	iny
+	cpy #8
+	bne -
+	lda X1
+	cmp X2				;insist X2>X1
+	bcs +
+	ldx #Y1
+	jsr xHorLine		;top
+	lda #Y1+1
+	cmp #Y2+1			;insist Y2>Y1
+	bcs +				;just draw horiz. line
+	ldx #Y2
+	jsr xHorLine		;bottom
+	inc Y1+1			;do not overdraw top
+	ldx #X1
+	jsr xVerLine		;left
+	inc X2
+	ldx #X2
+	jsr xVerLine		;right
++	rts
 
 .copyTP10 = *	;(.AY=POINT): .TP10=POINT
 	sta TMP
@@ -365,7 +407,7 @@ notImpl = *
    sec
    rts
 
-xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,VicGrFill,xVicColor,notImpl,notImpl,xVicDot10
+xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,VicGrFill,xVicColor,notImpl,notImpl,xVicDot10,notImpl,notImpl;xVicHorLine,xVicVerLine
 GfxInit = *
     jsr aceMiscSysType
     cmp #WIN_DRIVER_VDC
@@ -380,7 +422,7 @@ GfxInit = *
     ldy #>xGrMode
     sta syswork
     sty syswork+1
-    ldy #26
+    ldy #32
 -   lda #>notImpl
     sta (syswork),y
     dey
@@ -395,7 +437,7 @@ GfxInit = *
     sta syswork
     sty syswork+1
     ldx #(GfxInit-xVicGfx-1)
-    ldy #26
+    ldy #32
 -   lda xVicGfx,x
     sta (syswork),y
     dey
