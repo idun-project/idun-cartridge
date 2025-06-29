@@ -77,6 +77,121 @@ xVicDot10:		;(.TP10)
 	sta (TMP),y
 	rts
 
+xVicHorLine = *		;(X1,X2 .X=Y zpoff)
+	;get bitmap addr
+	lda $01,x
+	sta TMP+0
+	lda #0
+	sta TMP+1
+	ldx X1
+	ldy #0		;set to zero to get pix addr
+	lda #$80	;get op
+	jsr xVicGrOp
+	lda TMP
+	sta CACHEADDR
+	lda TMP+1
+	sta CACHEADDR+1
+	;first/partial byte
+	lda #$ff
+	ldx X1+1	;X1lo
+	beq +
+-	dex
+	bmi +
+	lsr
+	jmp -
++	sta CACHEPIXEL
+	jsr .setpixbyteV2
+	;full bytes X1(hi)->X2(hi)
+	lda #$ff
+	sta CACHEPIXEL
+	lda X1
+	sta VAR
+-	lda CACHEADDR
+	clc
+	adc #8
+	sta CACHEADDR
+	lda CACHEADDR+1
+	adc #0
+	sta CACHEADDR+1
+	lda VAR
+	cmp X2
+	beq +
+	jsr .setpixbyteV2
+	inc VAR
+	jmp -
+	;last/partial byte
++	lda #$00
+	ldx X2+1	;X2lo
+	beq ++
+-	dex
+	bmi +
+	sec
+	ror
+	jmp -
++	sta CACHEPIXEL
+	jsr .setpixbyteV2
+++	rts
+
+xVicVerLine = *		;(Y1,Y2 .X=X zpoff)
+	;offset for column
+	lda $00,x	;Xhi
+	sta CACHEADDR
+	;mask byte
+	lda $01,x
+	tax
+	lda .BITVAL,x
+	sta CACHEPIXEL
+	;get bitmap addr
+	lda Y1+1
+	sta TMP+0
+	lda #0
+	sta TMP+1
+	ldx CACHEADDR
+	ldy #0		;set to zero to get pix addr
+	lda #$80	;get op
+	jsr xVicGrOp
+	lda TMP
+	sta CACHEADDR
+	lda TMP+1
+	sta CACHEADDR+1
+	;Y1->Y2
+	lda Y1+1
+	sta VAR
+-	jsr .setpixbyteV2
+	inc VAR
+	lda VAR
+	cmp Y2+1
+	bne +
+	rts
++	lda #$07
+	and CACHEADDR
+	cmp #$07
+	bne +
+	lda CACHEADDR
+	clc
+	adc #<313
+	sta CACHEADDR
+	lda CACHEADDR+1
+	adc #>313
+	sta CACHEADDR+1
+	jmp -
++	inc CACHEADDR
+	bne -
+	inc CACHEADDR+1
+	jmp -
+.setpixbyteV2:
+	lda CACHEADDR+0
+	ldy CACHEADDR+1
+	sta TMP
+	sty TMP+1
+	ldy #0
+	lda #0
+	ldx .SET
+	beq +
+	lda CACHEPIXEL
++	sta (TMP),y
+	rts
+
 !eof
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        TERMS OF USE: MIT License                       │

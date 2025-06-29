@@ -98,7 +98,7 @@ xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
 	lsr
 	jmp -
 +	sta CACHEPIXEL
-	jsr .writepixbyte
+	jsr .setpixbyte
 	;full bytes X1(hi)->X2(hi)
 	lda #$ff
 	sta CACHEPIXEL
@@ -110,7 +110,7 @@ xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
 +	lda VAR
 	cmp X2
 	beq +
-	jsr .writepixbyte
+	jsr .setpixbyte
 	inc VAR
 	jmp -
 	;last/partial byte
@@ -123,7 +123,7 @@ xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
 	ror
 	jmp -
 +	sta CACHEPIXEL
-	jsr .writepixbyte
+	jsr .setpixbyte
 ++	rts
 
 xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
@@ -150,7 +150,7 @@ xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	;Y1->Y2
 	lda Y1+1
 	sta VAR
--	jsr .writepixbyte
+-	jsr .setpixbyte
 	inc VAR
 	lda VAR
 	cmp Y2+1
@@ -164,6 +164,15 @@ xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	adc #0
 	sta CACHEADDR+1
 	jmp -
+.setpixbyte:
+	lda CACHEADDR+0
+	ldy CACHEADDR+1
+	jsr vdcAddrWrite16
+	lda CACHEPIXEL
+	ldx .SET
+	bne +
+	lda #$00
++	jmp vdcRamWrite
 
 .BITVAL 	!byte 128, 64, 32, 16, 8, 4, 2, 1
 CACHEPOINT	!byte $ff, 0, 0

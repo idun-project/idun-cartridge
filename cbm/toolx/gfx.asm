@@ -179,7 +179,7 @@ GfxRect = *
 	lda #1
 	bcs +
 	lda #0
-+	sta .SET	
++	sta .SET
 	ldy #0
 	ldx #X1
 -	lda (Points),y		;copy UL/LR to X1,Y1 and X2,Y2
@@ -407,7 +407,7 @@ notImpl = *
    sec
    rts
 
-xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,VicGrFill,xVicColor,notImpl,notImpl,xVicDot10,notImpl,notImpl;xVicHorLine,xVicVerLine
+xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,VicGrFill,xVicColor,notImpl,notImpl,xVicDot10,xVicHorLine,xVicVerLine
 GfxInit = *
     jsr aceMiscSysType
     cmp #WIN_DRIVER_VDC

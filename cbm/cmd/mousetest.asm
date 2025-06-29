@@ -63,6 +63,7 @@ main = *
    bne -
    lda $dc06
    sta rndfill
+   jsr setUL
    drawloop = *
    jsr xPtrPoll
    beq drawFill
@@ -120,7 +121,6 @@ main = *
    jmp mainloop
 
    drawRect = *
-   jsr setUL
    ldx #px
    jsr setLR 
    lda #<UL
