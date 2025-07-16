@@ -12,17 +12,13 @@ xVicDot10:		;(.TP10)
 +	jsr .writepixbyteV2
 	;get bitmap addr (sw+0)
 	lda .TP10+3
-	sta TMP+0
+	sta CACHEADDR+0
 	lda #0
-	sta TMP+1
+	sta CACHEADDR+1
 	ldx .TP10+0
 	ldy #0		;set to zero to get pix addr
 	lda #$80	;get op
 	jsr xVicGrOp
-	lda TMP
-	sta CACHEADDR
-	lda TMP+1
-	sta CACHEADDR+1
 	;update cached point
 	lda .TP10+0
 	sta CACHEPOINT+0
@@ -35,7 +31,7 @@ xVicDot10:		;(.TP10)
 	lda .SET
 	beq .clearpointV2
 	ldy #0
-	lda (TMP),y
+	lda (CACHEADDR),y
 	ldx .TP10+1	;Xlo
 	ora .BITVAL,x
 	sta CACHEPIXEL
@@ -49,7 +45,7 @@ xVicDot10:		;(.TP10)
 	eor #$ff
 	sta VAR
 	ldy #0
-	lda (TMP),y
+	lda (CACHEADDR),y
 	and VAR
 	sta CACHEPIXEL
 	jmp -
@@ -68,29 +64,21 @@ xVicDot10:		;(.TP10)
 	sta CACHEPIXEL
 ++	rts
 .writepixbyteV2:
-	lda CACHEADDR+0
-	ldy CACHEADDR+1
-	sta TMP
-	sty TMP+1
 	ldy #0
 	lda CACHEPIXEL
-	sta (TMP),y
+	sta (CACHEADDR),y
 	rts
 
 xVicHorLine = *		;(X1,X2 .X=Y zpoff)
 	;get bitmap addr
 	lda $01,x
-	sta TMP+0
+	sta CACHEADDR+0
 	lda #0
-	sta TMP+1
+	sta CACHEADDR+1
 	ldx X1
 	ldy #0		;set to zero to get pix addr
 	lda #$80	;get op
 	jsr xVicGrOp
-	lda TMP
-	sta CACHEADDR
-	lda TMP+1
-	sta CACHEADDR+1
 	;first/partial byte
 	lda #$ff
 	ldx X1+1	;X1lo
@@ -135,7 +123,7 @@ xVicHorLine = *		;(X1,X2 .X=Y zpoff)
 xVicVerLine = *		;(Y1,Y2 .X=X zpoff)
 	;offset for column
 	lda $00,x	;Xhi
-	sta CACHEADDR
+	pha
 	;mask byte
 	lda $01,x
 	tax
@@ -143,17 +131,14 @@ xVicVerLine = *		;(Y1,Y2 .X=X zpoff)
 	sta CACHEPIXEL
 	;get bitmap addr
 	lda Y1+1
-	sta TMP+0
+	sta CACHEADDR+0
 	lda #0
-	sta TMP+1
-	ldx CACHEADDR
+	sta CACHEADDR+1
+	pla
+	tax
 	ldy #0		;set to zero to get pix addr
 	lda #$80	;get op
 	jsr xVicGrOp
-	lda TMP
-	sta CACHEADDR
-	lda TMP+1
-	sta CACHEADDR+1
 	;Y1->Y2
 	lda Y1+1
 	sta VAR
@@ -180,16 +165,12 @@ xVicVerLine = *		;(Y1,Y2 .X=X zpoff)
 	inc CACHEADDR+1
 	jmp -
 .setpixbyteV2:
-	lda CACHEADDR+0
-	ldy CACHEADDR+1
-	sta TMP
-	sty TMP+1
 	ldy #0
 	lda #0
 	ldx .SET
 	beq +
 	lda CACHEPIXEL
-+	sta (TMP),y
++	sta (CACHEADDR),y
 	rts
 
 !eof

@@ -36,8 +36,10 @@ xRectangle		jmp GfxRect
 !zone xGfx
 
 ;ZP vars
-TMP  = syswork+0	;(2)    
-VAR  = syswork+2	;(2)
+CACHEADDR	= syswork+0	;(2)
+CACHEPIXEL	= syswork+2	;(1)
+VAR  		= syswork+3	;(1)
+
 ;16-bit X,Y
 X1	 = syswork+4
 Y1 	 = syswork+6
@@ -60,6 +62,7 @@ Points = syswork+12	;(2) a POINT list ptr
 .SX  !byte 0,0	;step X
 .SY  !byte 0,0	;step Y
 .ERR !byte 0,0	;error
+.ER2 !byte 0,0	;error 2
 
 ; CMP16
 ;   Signed 16-bit CMP
@@ -71,15 +74,15 @@ Points = syswork+12	;(2) a POINT list ptr
 !macro CMP16 val1, val2 {
 	lda val2
 	ldy val2+1
-	sta syswork+0
-	sty syswork+1
+	sta Scmpval16+0
+	sty Scmpval16+1
 	ldy val1
 	lda val1+1
 	jsr Scmp16
 }
 Scmp16 = *
 	sec
-	sbc syswork+1	;compare Hi
+	sbc Scmpval16+1	;compare Hi
 	bvc +
 	eor #$80
 +	bmi ScmpLT
@@ -87,7 +90,7 @@ Scmp16 = *
 	eor #$80		;restore .Z
 +	bne ScmpGT
 	tya 			;compare Lo
-	sbc syswork+0
+	sbc Scmpval16+0
 	beq +
 	bcc ScmpLT
 	lda #1
@@ -98,6 +101,7 @@ Scmp16 = *
 	ScmpGT = *
 	sec
 	rts
+Scmpval16 !byte 0,0
 
 ; SBC16
 !macro SBC16 res, val1, val2 {
@@ -132,6 +136,14 @@ GfxPlot = *	;(.AY=POINT's, .X=count. .CC=clear pixels)
     bcs +
     lda #0
 +   sta .SET
+	;zp var init
+	lda #$ff
+	sta CACHEADDR
+	lda #$fe
+	sta CACHEADDR+1
+	lda #$00
+	sta CACHEPIXEL
+	;how many points to plot?
 	pla
 	cpx #0
 	bne +
@@ -191,11 +203,13 @@ GfxRect = *
 	lda X1
 	cmp X2				;insist X2>X1
 	bcs +
+	beq +
 	ldx #Y1
 	jsr xHorLine		;top
 	lda #Y1+1
 	cmp #Y2+1			;insist Y2>Y1
 	bcs +				;just draw horiz. line
+	beq +
 	ldx #Y2
 	jsr xHorLine		;bottom
 	inc Y1+1			;do not overdraw top
@@ -207,19 +221,19 @@ GfxRect = *
 +	rts
 
 .copyTP10 = *	;(.AY=POINT): .TP10=POINT
-	sta TMP
-	sty TMP+1
+	sta zp
+	sty zp+1
 	ldy #0
-	lda (TMP),y
+	lda (zp),y
 	sta .TP10+0
 	iny
-	lda (TMP),y
+	lda (zp),y
 	sta .TP10+1
 	iny
-	lda (TMP),y
+	lda (zp),y
 	sta .TP10+2
 	iny
-	lda (TMP),y
+	lda (zp),y
 	sta .TP10+3
 	rts
 .p10to16 = *		;(.TP10=POINT, .X=zp addr of 16-bit X,Y)
@@ -331,13 +345,13 @@ GfxRect = *
 .linestep:
 	; err2 = err
 	lda .ERR+1
-	sta VAR+1
+	sta .ER2+1
 	lda .ERR
-	sta VAR
+	sta .ER2
 	; if err2 > -dx:
 	;   err = err - dy
 	;   x = x + sx
-	+CMP16 VAR, .minusDX
+	+CMP16 .ER2, .minusDX
 	bmi +
 	beq +
 	;sign-extend ERR
@@ -358,7 +372,7 @@ GfxRect = *
 	; if err2 < dy:
 	;   err = err + dx
 	;   y = y + sy
-+	+CMP16 VAR, .DY
++	+CMP16 .ER2, .DY
 	bpl +
 	lda .ERR
 	clc

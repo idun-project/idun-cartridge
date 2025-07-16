@@ -1,5 +1,5 @@
 ;idunc: generated file ! DO NOT MODIFY !
-!source "sys/toolbox.asm"
+!source "sys/acehead.asm"
 !source "toolx/gfx.asm"
 
 __mailbox    = $9b   ;(2)
@@ -55,31 +55,7 @@ idunAppInit = *
    ldy zp+1
    sta __work
    sty __work+1
-!ifdef TOOLBAR {
-   jsr ToolwinInit
-   ;set toolbar title
-   lda __work
-   ldy __work+1
-   jsr toolStatTitle
-   ;set popup menu
-   lda #<__idun_main_menu
-   ldy #>__idun_main_menu
-   jsr toolStatMenu
    jsr __app_init
-   jmp __lua_init
-__idun_main_menu = *
-} else {
-   lda #FALSE
-   jsr toolStatEnable
-   jsr aceWinMax
-   jsr aceWinSize
-   lda #$c0
-   ldx #$20
-   ldy toolWinPalette+0
-   jsr aceWinCls
-   jsr __app_init
-}
-
 __lua_init = *
    ;launch lua script
    lda #<luaPath

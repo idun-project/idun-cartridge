@@ -19,15 +19,14 @@ xVdcDot10:		;(.TP10)
 	ldy .TP10+2
 	jsr xVdcRowAddr
 	;add offset for column
-	lda .TP10+0	;Xhi
+	lda CACHEADDR
 	clc
-	adc TMP+0
+	adc .TP10+0	;Xhi
 	sta CACHEADDR
-	lda TMP+1
-	adc #0
-	sta CACHEADDR+1
+	bcc +
+	inc CACHEADDR+1
 	;update cached point
-	lda .TP10+0
++	lda .TP10+0
 	sta CACHEPOINT+0
 	lda .TP10+2
 	sta CACHEPOINT+1
@@ -82,15 +81,14 @@ xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
 	lda $01,x
 	jsr xVdcRowAddr
 	;add offset for column
-	lda X1+0	;X1hi
+	lda CACHEADDR
 	clc
-	adc TMP+0
+	adc X1+0	;X1hi
 	sta CACHEADDR
-	lda TMP+1
-	adc #0
-	sta CACHEADDR+1
+	bcc +
+	inc CACHEADDR+1
 	;first/partial byte
-	lda #$ff
++	lda #$ff
 	ldx X1+1	;X1lo
 	beq +
 -	dex
@@ -129,7 +127,7 @@ xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
 xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	;offset for column
 	lda $00,x	;Xhi
-	sta CACHEADDR
+	pha
 	;mask byte
 	lda $01,x
 	tax
@@ -139,16 +137,15 @@ xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	ldy Y1
 	lda Y1+1
 	jsr xVdcRowAddr
-	;add to addr
-	lda CACHEADDR
+	;add column offset
+	pla
 	clc
-	adc TMP+0
+	adc CACHEADDR
 	sta CACHEADDR
-	lda #0
-	adc TMP+1
-	sta CACHEADDR+1
+	bcc +
+	inc CACHEADDR+1
 	;Y1->Y2
-	lda Y1+1
++	lda Y1+1
 	sta VAR
 -	jsr .setpixbyte
 	inc VAR
@@ -176,8 +173,6 @@ xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 
 .BITVAL 	!byte 128, 64, 32, 16, 8, 4, 2, 1
 CACHEPOINT	!byte $ff, 0, 0
-CACHEADDR	!byte $ff,$fe
-CACHEPIXEL	!byte 0
 
 !eof
 ┌────────────────────────────────────────────────────────────────────────┐

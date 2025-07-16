@@ -51,7 +51,8 @@ build/liner\
 build/go64\
 build/browse\
 build/zload\
-build/koala
+build/koala\
+build/tunnel
 
 TEST=\
 build/eram
