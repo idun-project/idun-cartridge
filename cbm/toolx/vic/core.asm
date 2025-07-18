@@ -338,7 +338,7 @@ VicGrOpFill = *
    sta (syswork+0),y
    clc
    lda syswork+0
-   adc #8
+   adc #7
    sta syswork+0
    bcc +
    inc syswork+1

@@ -32,8 +32,8 @@ xVicPointerMove = *  ;( mouseX, mouseY )
    adc #25
    sta vic+SPRITE_NUM
    lda mouseX+1
-   adc #0
    sta cursorX+1
+   adc #0
    cmp #1
    bne +
    ora vic+$10

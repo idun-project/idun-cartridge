@@ -180,7 +180,9 @@ main = *
    rol LR
    asl LR+1
    rol LR
-   lda $00,x
+   beq +
+   dec LR
++  lda $00,x
    and #7
    sta LR+1
    lda $02,x
