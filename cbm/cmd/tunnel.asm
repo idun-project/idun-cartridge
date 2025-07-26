@@ -7,10 +7,10 @@ jmp main
 ; Constants
 CENTER_X  = 20         ; Screen center X (for 40c bitmap)
 CENTER_Y  = 100        ; Screen center Y
-NUM_RECT  = 16         ; Number of rectangles
+NUM_RECT  = 8          ; Number of rectangles
 NEAR_Z    = 8          ; Smallest Z before reset
 FAR_Z     = 24         ; Largest Z (starting depth)
-SPEED     = 1          ; Z decrement per frame
+SPEED     = 2          ; Z decrement per frame
 PI        = 3.14159265358979323846
 
 ; Zero Page variables
@@ -57,10 +57,10 @@ loop:
 ; --------------------------------------
 ; Initialize rectangle Z depths
 init_rectangles:
-    ldx #NUM_RECT
-    stx zrect
     ldx #0
     stx zp_angle
+    ldx #NUM_RECT
+    stx zrect
 init_loop:
     lda #FAR_Z
     sta zp_z, x

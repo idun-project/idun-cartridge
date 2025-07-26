@@ -126,8 +126,24 @@ modemOpen = *
    bne modemOpenErr
    ldx syswork+1
    stx work+4
+   ;IF C64 and modem device is X:, then try to set the
+   ;soft-80 screen mode.
+   ldy #0
+   lda (zp),y
+   cmp #"X"
+   bne +
+   jsr aceMiscSysType
+   bmi +
+   lda screenWidth
+   cmp #80
+   beq +
+   ;Try to enable soft-80
+   lda #0
+   ldx #80
+   jsr aceWinScreen
+   jsr toolWinRestore
    ;send io ctrl message with term size
-   jsr getTermsz
++  jsr getTermsz
    ldx work+4
    lda #<termSzctl
    ldy #>termSzctl
@@ -148,21 +164,9 @@ modemOpen = *
    jsr eputs
    jmp die
 +  sta modemFd
-   ;IF C64 and modem device is X:, then try to set the
-   ;soft-80 screen mode.
-   ldy #0
-   lda (zp),y
-   cmp #"X"
-   bne +
-   jsr aceMiscSysType
-   bmi +
-   ;Try to enable soft-80
-   lda #0
-   ldx #80
-   jsr aceWinScreen
    ;if argument was like "d:cmd", then make
    ;the cmd string the default tool title
-+  ldy #2
+   ldy #2
    lda (zp),y
    bne +
    ldy #0

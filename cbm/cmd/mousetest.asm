@@ -61,8 +61,7 @@ main = *
    sta $08,x
    cpx #cx+3
    bne -
-   lda $dc06
-   sta rndfill
+   jsr setFill
    jsr setUL
    drawloop = *
    jsr xPtrPoll
@@ -142,6 +141,14 @@ main = *
    bpl -
    rts
 
+   setFill = *
+   lda $dc06
+   sta rndfill
+   jsr aceMiscSysType
+   bmi +
+   lda $dc04
+   sta rndfill
++  rts
    setUL = *
    lda startX+1
    sta UL
