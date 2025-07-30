@@ -90,8 +90,13 @@ __lua_init = *
    lda #"W"
    jsr open
    sta __luaFd
-   bcc __forever
+   bcc __start
    rts
+__start = *
+   lda __mailbox
+   ora __mailbox+1
+   beq __start
+   ;fall-through once Lua sends first message
 __forever = *
    ;main application loop
    lda __mailbox

@@ -1311,6 +1311,7 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    ;app loaded to aceAppAddress ($6000)
    lda #>aceAppAddress
    sta st+1
+   sta execAddr+1
 +  ldy #3
    lda (st),y
    cmp #aceID1
