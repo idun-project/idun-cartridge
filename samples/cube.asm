@@ -5,6 +5,7 @@
 __mailbox    = $9b   ;(2)
 __work       = $9d   ;(2)
 __luaFd      = $02   ;(1)
+cubeRows     = $03   ;(1)
 
 jmp idunAppInit
 

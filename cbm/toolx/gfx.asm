@@ -421,7 +421,7 @@ notImpl = *
    sec
    rts
 
-xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,VicGrFill,xVicColor,notImpl,notImpl,xVicDot10,xVicHorLine,xVicVerLine
+xVicGfx !word xVicGrMode,xVicGrExtents,xVicGrOp,notImpl,xVicGrFill,xVicColor,notImpl,notImpl,xVicDot10,xVicHorLine,xVicVerLine
 GfxInit = *
     jsr aceMiscSysType
     cmp #WIN_DRIVER_VDC

@@ -62,7 +62,7 @@ xVicGrMode = *  ;(.A=mode): .X=cols, .Y=rows
    jsr .ActivateHardware
    cli
    lda #0
-   jsr VicGrFill     ;clear bitmap
+   jsr xVicGrFill    ;clear bitmap
    lda .BmRows
    lsr
    lsr
@@ -109,7 +109,7 @@ VicBank64:
 +  sta $01
    rts
 
-VicGrFill = *  ;(.A = fill value)
+xVicGrFill = *  ;(.A = fill value)
    ;init bitmap
    tax
    lda #<BitmapAddr
@@ -320,7 +320,7 @@ GrOpGet = *
 .GrOpCopy = *  ;xx not implemented
    lda GrOpFlags
    and #$20
-   beq VicGrOpFill
+   beq .GrOpFill
    ldx #0
    ldy #0
    nop
@@ -328,7 +328,7 @@ GrOpGet = *
    ldy GrSor+1
    sta syswork+0
    sty syswork+1
-VicGrOpFill = *
+.GrOpFill = *
    lda GrOpFlags
    and #$10
    beq .GrOpContinue
@@ -388,7 +388,11 @@ VicGrOpFill = *
    inc syswork+10+1
 +  inc .BmRow
    lda .BmRow
-   and #$07
+   cmp .BmRows
+   bne +
+   clc
+   rts
++  and #$07
    beq +
    lda #<1
    ldy #>1

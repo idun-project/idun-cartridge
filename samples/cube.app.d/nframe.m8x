@@ -6,12 +6,12 @@ m8_nframe_handler = *
     sta syswork+1
     lda #48
     sta syswork+0
-    lda #160
+    lda cubeRows
     sta syswork+2
     ldy #30
     ldx #5
     lda #$10
-    jsr xGrOp
+    jsr xGrOp       ;FIXME: This call setting @$00=0
     ;process new frame data
     lda #<.nframe_callback
     ldy #>.nframe_callback

@@ -20,6 +20,14 @@ appInitialize = *
    jsr xGrClear
    lda #$50
    jsr xGrSetColor
+   jsr xGrExtents
+   tya
+   sec
+   sbc #6
+   asl
+   asl
+   asl
+   sta cubeRows
    rts
 
 appRunLoop = *
