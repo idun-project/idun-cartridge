@@ -27,3 +27,6 @@ searchBoxPos= $03	;1
 focusEntry	= $04	;2
 endRow		= $06	;1
 numProgs    = $07   ;1
+luaFd       = $08   ;1
+;need this kernel location
+aceVic40Page = aceStatB+96

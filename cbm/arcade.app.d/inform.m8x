@@ -1,6 +1,10 @@
 m8_inform_handler = *
+    lda aceVic40Page
+    sta info_header_offs+2
+    sta result_count_offs+2
 	ldx #3
 -	lda .info_txt,x
+info_header_offs:
 	sta $f800+info_header-screen_codes,x
 	dex
 	bpl -
@@ -16,39 +20,44 @@ m8_inform_handler = *
 -   lda mailboxB,x
     clc
     adc #$c0
+result_count_offs:
     sta $f800+result_count-screen_codes,x
     inx
     cpx #4
     bne -
-    lda #<$f800+(publisher-screen_codes)
-    ldy #>$f800+(publisher-screen_codes)
+    lda #<(publisher-screen_codes)
+    ldy #>(publisher-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(byline1-screen_codes)
-    ldy #>$f800+(byline1-screen_codes)
+    lda #<(byline1-screen_codes)
+    ldy #>(byline1-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(byline2-screen_codes)
-    ldy #>$f800+(byline2-screen_codes)
+    lda #<(byline2-screen_codes)
+    ldy #>(byline2-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(byline3-screen_codes)
-    ldy #>$f800+(byline3-screen_codes)
+    lda #<(byline3-screen_codes)
+    ldy #>(byline3-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(language-screen_codes)
-    ldy #>$f800+(language-screen_codes)
+    lda #<(language-screen_codes)
+    ldy #>(language-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(genre-screen_codes)
-    ldy #>$f800+(genre-screen_codes)
+    lda #<(genre-screen_codes)
+    ldy #>(genre-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(controls-screen_codes)
-    ldy #>$f800+(controls-screen_codes)
+    lda #<(controls-screen_codes)
+    ldy #>(controls-screen_codes)
     jsr .copyAttribute
-    lda #<$f800+(trainers-screen_codes)
-    ldy #>$f800+(trainers-screen_codes)
+    lda #<(trainers-screen_codes)
+    ldy #>(trainers-screen_codes)
     jsr .copyAttribute
     rts
 
     .copyAttribute = *
     sta zp
     sty zp+1
+    lda zp+1
+    clc
+    adc aceVic40Page
+    sta zp+1
     ldy #0
 -   lda mailboxB,x
     beq +

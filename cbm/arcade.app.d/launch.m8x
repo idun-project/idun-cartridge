@@ -13,7 +13,7 @@ m8_launch_handler = *
     lda #0
     jsr __m8_mailbox_reset
     ;close lua comms
-    lda #3
+    lda luaFd
     jsr close
     ;switch to G: drive
     lda #<g_drive

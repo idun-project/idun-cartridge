@@ -2,6 +2,8 @@
 .save_y     !byte 4
 
 m8_results_handler = *
+   lda aceVic40Page
+   sta _result_count_offs+2
    lda #0
    sta endRow
    lda #<.copyResults
@@ -30,6 +32,7 @@ m8_results_handler = *
 -  lda mailboxB,x
    clc
    adc #$c0
+_result_count_offs:
    sta $f800+result_count-screen_codes-1,x
    inx
    cpx #11

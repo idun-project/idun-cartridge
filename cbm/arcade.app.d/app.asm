@@ -293,15 +293,22 @@ checkSearchInput = *
 	rts
 
 updateSearchBox = *
+	lda aceVic40Page
+	sta search_box_offs+2
 	ldx searchBoxPos
 	bne +
 	lda #$20
+search_box_offs:
 	sta $f800+search_box-screen_codes+1
 	jmp ++
-+	lda #<($f800+search_box-screen_codes)
-	ldy #>($f800+search_box-screen_codes)
++	lda #<(search_box-screen_codes)
+	ldy #>(search_box-screen_codes)
 	sta syswork+0
 	sty syswork+1
+	lda syswork+1
+	clc
+	adc aceVic40Page
+	sta syswork+1
 	lda #<search_box
 	ldy #>search_box
 	sta syswork+2
@@ -313,13 +320,13 @@ updateSearchBox = *
 	lda #$c0
 	ldy toolWinPalette+0
 	jsr aceWinPut	;put text
-++	lda #<($f800+search_box-screen_codes)
-	ldy #>($f800+search_box-screen_codes)
+++	lda #<(search_box-screen_codes)
+	ldy #>(search_box-screen_codes)
 	clc
 	adc searchBoxPos
 	sta syswork+0
 	tya
-	adc #0
+	adc aceVic40Page
 	sta syswork+1
 	lda #$e0
 	sta syswork+4

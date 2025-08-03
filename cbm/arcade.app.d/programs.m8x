@@ -10,11 +10,12 @@ m8_programs_handler = *
     sty .save+2
     lda #1
     sta rowc
-    ldx #0
--   lda header_text,x
+    jsr prgheader_offs
+    ldy #0
+-   lda header_text,y
     beq +
-    sta $f800+prgheader-screen_codes,x
-    inx
+    sta (zp),y
+    iny
     jmp -
 +   lda #<.copyProgs
     ldy #>.copyProgs
@@ -24,11 +25,19 @@ m8_programs_handler = *
     jsr select_ui_programs
     rts
 
-unselect_ui_programs = *
-    lda #<($f800+prgheader-screen_codes)
-    ldy #>($f800+prgheader-screen_codes)
+prgheader_offs = *
+    lda #<(prgheader-screen_codes)
+    ldy #>(prgheader-screen_codes)
     sta zp
     sty zp+1
+    lda zp+1
+    clc
+    adc aceVic40Page
+    sta zp+1
+    rts
+
+unselect_ui_programs = *
+    jsr prgheader_offs
     lda #0
     sta .count
 --  inc .count
@@ -68,10 +77,13 @@ unselect_ui_programs = *
     lda mailboxB,x
     cmp #TRUE
     bne +
+    jsr prgheader_offs
     lda #$7b
-    sta $f800+prgheader-screen_codes+1
+    ldy #1
+    sta (zp),y
     lda #$7c
-    sta $f800+prgheader-screen_codes+2
+    iny
+    sta (zp),y
 +   inx
     lda mailboxB,x
     sta numProgs

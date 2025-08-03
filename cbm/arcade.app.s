@@ -131,6 +131,7 @@ __lua_init = *
    sty zp+1
    lda #"W"
    jsr open
+   sta luaFd
    bcc __lua_start
    rts
 __lua_start = *
