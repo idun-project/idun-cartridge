@@ -51,7 +51,7 @@ build/liner\
 build/go64\
 build/browse\
 build/zload\
-build/koala\
+build/showkoa\
 build/tunnel
 
 TEST=\

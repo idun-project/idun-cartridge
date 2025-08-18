@@ -33,7 +33,8 @@ main = *
    ;check for C128
    jsr aceMiscSysType
    and #C128_VDC_ON
-   bne +
+   cmp #C128_VDC_ON
+   beq +
    jmp showUsageError
    ;check for at least one arg
 +  lda aceArgc

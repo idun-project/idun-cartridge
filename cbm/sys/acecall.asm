@@ -940,7 +940,9 @@ kernFileStat = *
    sta errno
    sec
    rts
-+  lda syswork+1
++  tya
+   pha
+   lda syswork+1
    sta openDevice
    lda #"r"
    sta openMode

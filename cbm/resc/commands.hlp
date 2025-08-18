@@ -109,6 +109,9 @@ ${bold}Usage:${normal} rename <old> <new> ... -- This command will rename one (o
 resident
 keep a tool RAM-resident
 The ${green}resident${white} command pre-loads a tool into dynamic memory, allowing it to be started faster when used repeatedly. The default 'z:autoexec.bat' file uses this to pre-load the ${green}tty${white} command.
+showkoa
+display koala image files
+The ${green}showkoa${white} command displays multi-color bitmap images in Koala format using the VIC-II. When displaying multiple image files, press any key to display the next image. To exit, press STOP.
 showvdc
 display image files
 The ${green}showvdc${white} command displays hi-res monochrome and color images using the VDC bitmap display modes. It can handle image files up to 60Kb and 800x600 resolution. Most modes require a C128 with 64Kb of VRAM. The files may be in '.vdc' format for color or monochrome images, or '.pbm' format for monochrome only. When displaying multiple image files, press SPACE to display the next image. To exit, press 'Q' or STOP.

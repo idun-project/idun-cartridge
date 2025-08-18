@@ -1,7 +1,8 @@
 appInitialize = *
    ;require VDC
    jsr aceMiscSysType
-   bmi +
+   cmp #WIN_DRIVER_VDC
+   beq +
 -  jmp exit
 +  lda #3      ;VDC graphics Mode 3
    ldx #32     ;width in cells (256px)

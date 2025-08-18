@@ -1,6 +1,6 @@
-;'koala': Simple Koala slideshow viewer
+;'showkoa': Simple Koala image viewer
 ;
-;Copyright© 2024 Brian Holdsworth
+;Copyright© 2024-2025 Brian Holdsworth
 ;
 ; This is free software, released under the MIT License.
 ;
@@ -14,150 +14,62 @@ jmp init
 ;constants
 KOA_FILE_SZ = 10003
 VIC_II_MODE = 3
-FILENM_SIZE = 17
 
 ;zp vars
-dirFd    = $02 ;(1)
-dirPtr   = $03 ;(2)
-count    = $05 ;(1)
-source   = $06 ;(2)
+source   = $02 ;(2)
+argnum   = $04 ;(1)
+scrnMode = $05 ;(1)
+sysType  = $06 ;(1)
 
 showUsageErrMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "Usage: koala in directory with",13,10
-!pet ".koa image files.",13,10
-!pet "No images found. <Press any key>",0
+!pet "Usage: showkoa <koa_file> [koa2..koaN]",13,10
+contErrMsg = *
+!pet "No images found. <Press any key>",13,0
 showDisplayErrMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "koala only for VIC-II 40c display.",13,10,0
+!pet "showkoa only for VIC-II 40c display.",13,10,0
+showLoadErrMsg !pet ": Fail load Koala format",chrCR,0
 
 
 currDir: !pet ".:",0
 init = *
+   lda #0
+   sta argnum
+   sta scrnMode
    ;check for VIC-II display
    jsr aceMiscSysType
+   sta sysType
    cmp #WIN_DRIVER_VDC
    bne +
    jmp showDisplayError
-+  lda #0
-   sta count
-   lda #<directory
-   ldy #>directory
-   sta dirPtr
-   sty dirPtr+1
-   ;open current directory
-   lda #<currDir
-   ldy #>currDir
-   sta zp
-   sty zp+1
-   jsr aceDirOpen
-   bcc scanImages
-   jmp exit
-   scanImages = *
-   sta dirFd
--  ldx dirFd
-   jsr aceDirRead
-   beq showKoalas
-   bcs showKoalas
-   jsr isKoalaImage
-   jmp -
-   showKoalas = *
-   lda dirFd
-   jsr aceDirClose
-   lda count
-   bne +
-   jsr showUsageError
-   jmp exit
-+  lda #<directory
-   ldy #>directory
-   sta dirPtr
-   sty dirPtr+1
-   jsr graphicOn
+   ;check for at least one arg
++  lda aceArgc
+   cmp #2
    bcs +
--  jsr showKoaBmap
-   bcs +    ;failed to load image
-   dec count
-   beq +    ;all images shown
-   jsr nextDirEntry
-   ;wait for keystroke
-   jsr aceConGetkey
-   cmp #$03    ;STOP?
-   bne -
-+  jmp quit
-
-isKoalaImage = *
-   lda #<KOA_FILE_SZ
-   ldy #>KOA_FILE_SZ
-   cmp aceDirentBytes+0
    beq +
--  rts
-+  cpy aceDirentBytes+1
-   bne -
-   ldy #FILENM_SIZE-1
--  lda aceDirentName,y
-   sta (dirPtr),y
-   dey
-   bpl -
-   inc count
-   ;fall-through
-nextDirEntry = *
-   lda dirPtr
-   clc
-   adc #FILENM_SIZE
-   sta dirPtr
-   lda dirPtr+1
-   adc #0
-   sta dirPtr+1
-   rts
-
-quit = *
-   jsr graphicOff
-exit = *
-	lda #0
-   ldx #0
-	jmp aceProcExit
-showUsageError = *
-   lda #<showUsageErrMsg
-   ldy #>showUsageErrMsg
-   jmp contError
-showDisplayError = *
-   lda #<showDisplayErrMsg
-   ldy #>showDisplayErrMsg
-   contError = *
-   jsr eputs
-   jsr aceConGetkey
-   rts
-
-graphicOn = *
-   lda #FALSE
-   jsr toolStatEnable
-   lda #VIC_II_MODE
-   ldx #0
+   jmp showUsageError
+   ;get image file from args
+   nextImageFile = *
++  jsr graphicOn
+   inc argnum
    ldy #0
-   jmp xGrMode
-
-graphicOff = *
-   lda #TRUE
-   jsr toolStatEnable
-   lda #0
-   jsr xGrMode
+   lda argnum
+   jsr getarg
+   bne +
+   jmp exit
++  jsr showKoala
+   bcc +
+   jsr showLoadError
++  jsr aceConGetkey
+   cmp #$03          ;STOP key?
+   beq exit
+   jmp nextImageFile
+exit = *
+   jsr graphicOff
    rts
 
-loadImageFile = *
-   lda dirPtr
-   ldy dirPtr+1
-   sta zp
-   sty zp+1
-   lda #<(bmapBuffer+KOA_FILE_SZ)
-   ldy #>(bmapBuffer+KOA_FILE_SZ)
-   iny
-   sta zw+0
-   sty zw+1
-   lda #<bmapBuffer
-   ldy #>bmapBuffer
-   jmp aceFileBload
-
-showKoaBmap = *
+showKoala = *
    jsr loadImageFile
    bcc +
    rts
@@ -184,16 +96,15 @@ showKoaBmap = *
    lda syswork+1
    cmp #$ff
    bne -
-   ;avoid writing to MCRs ($ff00-$ff04)
-   cmp #$ff
-   bne _copy_bmp_last
-   ldy #5
+   ;avoid writing to $ffxx on C128
+   lda sysType
+   bmi +
    _copy_bmp_last = *
    lda (source),y
    sta (syswork),y
    iny
    bne _copy_bmp_last
-   rts
++  rts
    _copy_color = *
    ldx #0
 -  lda colorData,x
@@ -215,6 +126,77 @@ showKoaBmap = *
    dex
    bne -
    rts
+
+loadImageFile = *
+   jsr isKoalaImage
+   bcc +
+   rts
++  lda #<(bmapBuffer+KOA_FILE_SZ)
+   ldy #>(bmapBuffer+KOA_FILE_SZ)
+   iny
+   sta zw+0
+   sty zw+1
+   lda #<bmapBuffer
+   ldy #>bmapBuffer
+   jmp aceFileBload
+
+isKoalaImage = *
+   jsr aceFileStat
+   cmp #<KOA_FILE_SZ
+   beq +
+-  sec
+   rts
++  cpy #>KOA_FILE_SZ
+   bne -
+   clc
+   rts
+
+showUsageError = *
+   lda #<showUsageErrMsg
+   ldy #>showUsageErrMsg
+   jmp contError
+showDisplayError = *
+   lda #<showDisplayErrMsg
+   ldy #>showDisplayErrMsg
+   jsr eputs
+-  lda #<contErrMsg
+   ldy #>contErrMsg
+   jmp contError
+showLoadError = *
+   jsr graphicOff
+   jsr zpputs
+   lda #<showLoadErrMsg
+   ldy #>showLoadErrMsg
+   jsr eputs
+   jmp -
+   contError = *
+   jsr eputs
+   jsr aceConGetkey
+   rts
+
+graphicOn = *
+   lda #VIC_II_MODE
+   cmp scrnMode
+   beq +
+   sta scrnMode
+   lda #FALSE
+   jsr toolStatEnable
+   lda #VIC_II_MODE
+   ldx #0
+   ldy #0
+   jsr xGrMode
++  rts
+
+graphicOff = *
+   lda scrnMode
+   beq +
+   lda #0
+   sta scrnMode
+   jsr aceGrExit
+   jsr toolWinRestore
+   lda #TRUE
+   jsr toolStatEnable
++  rts
 
 ;******** standard library ********
 eputs = *
@@ -267,8 +249,7 @@ getarg = *
    rts
 
 * = $8000
-directory = *
-bmapBuffer= directory+FILENM_SIZE*100
+bmapBuffer= *
 bmapData  = bmapBuffer+2
 colorData = bmapData+8000
 colorMem  = colorData+1000
@@ -278,7 +259,7 @@ bssAppEnd = *
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
 ;├────────────────────────────────────────────────────────────────────────┤
-;│ Copyright (c) 2023 Brian Holdsworth                                    │
+;│ Copyright (c) 2023-2025 Brian Holdsworth                               │
 ;│                                                                        │
 ;│ Permission is hereby granted, free of charge, to any person obtaining  │
 ;│ a copy of this software and associated documentation files (the        │

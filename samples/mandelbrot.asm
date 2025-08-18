@@ -49,6 +49,7 @@ idunAppInit = *
    lda #0
    sta __mailbox
    sta __mailbox+1
+   sta __luaFd
    ;get app filename
    ldy #0
    jsr __getarg

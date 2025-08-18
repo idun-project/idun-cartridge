@@ -79,10 +79,10 @@ kernMapperProcmsg = *
   beq .mapperLastPg
   ldx #0        ; this means read whole page (256 bytes)
   jsr pidGetbuf
+  jsr .mapperUntalk
   lda #0
   jsr .mapper_proc_callback
   dec zz+1
-  jsr .mapperUntalk
   ; TALK for next page
   lda #<aceSharedBuf
   ldy #>aceSharedBuf
@@ -94,10 +94,10 @@ kernMapperProcmsg = *
   beq +
   tax
   jsr pidGetbuf
+  jsr .mapperUntalk
   lda zz
   jsr .mapper_proc_callback
-+ jsr .mapperUntalk
-  lda @zs
++ lda @zs
   ldy @zs+1
   rts
   .mapperUntalk  = *
