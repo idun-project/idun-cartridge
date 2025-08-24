@@ -52,7 +52,7 @@ build/go64\
 build/browse\
 build/zload\
 build/showkoa\
-build/tunnel
+build/boxer
 
 TEST=\
 build/eram
