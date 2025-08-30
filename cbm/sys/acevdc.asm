@@ -36,8 +36,6 @@ vdcStartup = *
 vdcHardwareReset = *
    lda configBuf+$c7
    beq +
-   lda #$7f
-   sta vdcHardData+0 ;R0=$7f for PAL
    lda #$26
    sta vdcHardData+4 ;R4=$26 for PAL
    lda #$20
