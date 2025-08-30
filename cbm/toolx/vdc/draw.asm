@@ -77,65 +77,64 @@ xVdcDot10:		;(.TP10)
 
 xVdcHorLine = *		;(X1,X2 .X=Y zpoff)
 	;get bitmap addr of row
-	ldy $00,x
-	lda $01,x
+	lda $00,x
+	ldy $01,x
 	jsr xVdcRowAddr
 	;add offset for column
-	lda CACHEADDR
+	ldx #X1
+	jsr .column
 	clc
-	adc X1+0	;X1hi
+	adc CACHEADDR
 	sta CACHEADDR
 	bcc +
 	inc CACHEADDR+1
 	;first/partial byte
-+	lda #$ff
-	ldx X1+1	;X1lo
-	beq +
--	dex
-	bmi +
-	lsr
-	jmp -
-+	sta CACHEPIXEL
++	lda X1
+	and #$07
+	tax
+	lda .LEFTFILL,x
+	sta CACHEPIXEL
 	jsr .setpixbyte
 	;full bytes X1(hi)->X2(hi)
 	lda #$ff
 	sta CACHEPIXEL
-	lda X1
+	ldx #X1
+	jsr .column
 	sta VAR
--	inc CACHEADDR
+	ldx #X2
+	jsr .column
+-	cmp VAR
+	beq ++
+	inc CACHEADDR
 	bne +
 	inc CACHEADDR+1
-+	lda VAR
-	cmp X2
-	beq +
++	pha
 	jsr .setpixbyte
 	inc VAR
+	pla
 	jmp -
 	;last/partial byte
-+	lda #$00
-	ldx X2+1	;X2lo
-	beq ++
--	dex
-	bmi +
-	sec
-	ror
-	jmp -
-+	sta CACHEPIXEL
+++	lda X2
+	and #$07
+	tax
+	lda .RIGHTFILL,x
+	sta CACHEPIXEL
 	jsr .setpixbyte
-++	rts
+	rts
 
 xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	;offset for column
-	lda $00,x	;Xhi
+	jsr .column
 	pha
 	;mask byte
-	lda $01,x
+	lda $00,x
+	and #$07
 	tax
 	lda .BITVAL,x
 	sta CACHEPIXEL
 	;get bitmap addr of row
-	ldy Y1
-	lda Y1+1
+	lda Y1
+	ldy Y1+1
 	jsr xVdcRowAddr
 	;add column offset
 	pla
@@ -145,12 +144,16 @@ xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	bcc +
 	inc CACHEADDR+1
 	;Y1->Y2
-+	lda Y1+1
++	lda Y1
 	sta VAR
+	cmp Y2
+	bne +
+	rts			;don't fall for this trap!
++	nop
 -	jsr .setpixbyte
 	inc VAR
 	lda VAR
-	cmp Y2+1
+	cmp Y2
 	bne +
 	rts
 +	lda CACHEADDR
@@ -170,9 +173,24 @@ xVdcVerLine = *		;(Y1,Y2 .X=X zpoff)
 	bne +
 	lda #$00
 +	jmp vdcRamWrite
+.column:
+	lda $0,x
+	sta .temp
+	lda $1,x
+	lsr
+	ror .temp
+	lsr
+	ror .temp
+	lsr
+	ror .temp
+	lda .temp
+	rts 
 
 .BITVAL 	!byte 128, 64, 32, 16, 8, 4, 2, 1
+.LEFTFILL   !byte $ff,$7f,$3f,$1f,$0f,$07,$03,$01
+.RIGHTFILL  !byte $80,$c0,$e0,$f0,$f8,$fc,$fe,$ff
 CACHEPOINT	!byte $ff, 0, 0
+.temp		!byte 0
 
 !eof
 ┌────────────────────────────────────────────────────────────────────────┐

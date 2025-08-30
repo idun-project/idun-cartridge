@@ -71,66 +71,65 @@ xVicDot10:		;(.TP10)
 
 xVicHorLine = *		;(X1,X2 .X=Y zpoff)
 	;get bitmap addr
-	lda $01,x
+	lda $0,x
 	sta CACHEADDR+0
 	lda #0
 	sta CACHEADDR+1
-	ldx X1
+	ldx #X1
+	jsr .column
+	tax
 	ldy #0		;set to zero to get pix addr
 	lda #$80	;get op
 	jsr xVicGrOp
 	;first/partial byte
-	lda #$ff
-	ldx X1+1	;X1lo
-	beq +
--	dex
-	bmi +
-	lsr
-	jmp -
-+	sta CACHEPIXEL
+	lda X1
+	and #$07
+	tax
+	lda .LEFTFILL,x
+	sta CACHEPIXEL
 	jsr .setpixbyteV2
 	;full bytes X1(hi)->X2(hi)
 	lda #$ff
 	sta CACHEPIXEL
-	lda X1
+	ldx #X1
+	jsr .column
 	sta VAR
--	lda CACHEADDR
+	ldx #X2
+	jsr .column
+-	cmp VAR
+	beq +
+	lda CACHEADDR
 	clc
 	adc #8
 	sta CACHEADDR
 	lda CACHEADDR+1
 	adc #0
 	sta CACHEADDR+1
-	lda VAR
-	cmp X2
-	beq +
 	jsr .setpixbyteV2
 	inc VAR
+	lda .temp
 	jmp -
 	;last/partial byte
-+	lda #$00
-	ldx X2+1	;X2lo
-	beq ++
--	dex
-	bmi +
-	sec
-	ror
-	jmp -
-+	sta CACHEPIXEL
++	lda X2
+	and #$07
+	tax
+	lda .RIGHTFILL,x
+	sta CACHEPIXEL
 	jsr .setpixbyteV2
-++	rts
+	rts
 
 xVicVerLine = *		;(Y1,Y2 .X=X zpoff)
 	;offset for column
-	lda $00,x	;Xhi
+	jsr .column
 	pha
 	;mask byte
-	lda $01,x
+	lda $0,x
+	and #$07
 	tax
 	lda .BITVAL,x
 	sta CACHEPIXEL
 	;get bitmap addr
-	lda Y1+1
+	lda Y1
 	sta CACHEADDR+0
 	lda #0
 	sta CACHEADDR+1
@@ -140,12 +139,16 @@ xVicVerLine = *		;(Y1,Y2 .X=X zpoff)
 	lda #$80	;get op
 	jsr xVicGrOp
 	;Y1->Y2
-	lda Y1+1
+	lda Y1
 	sta VAR
+	cmp Y2
+	bne +
+	rts			;don't fall for this trap!
++	nop
 -	jsr .setpixbyteV2
 	inc VAR
 	lda VAR
-	cmp Y2+1
+	cmp Y2
 	bne +
 	rts
 +	lda #$07

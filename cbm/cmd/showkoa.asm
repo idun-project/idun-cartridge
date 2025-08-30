@@ -248,7 +248,7 @@ getarg = *
    sta zp+1
    rts
 
-* = $8000
+* = $8100
 bmapBuffer= *
 bmapData  = bmapBuffer+2
 colorData = bmapData+8000

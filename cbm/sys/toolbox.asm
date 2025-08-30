@@ -559,8 +559,6 @@ _toolStatusEnableOp = *
 
 
 updateStatPutKb = *
-   ;divn = tbwork+4
-   ;carry= tbwork+14
    ;80 column mode?
    lda toolWinRegion+1
    cmp #40

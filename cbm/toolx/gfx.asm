@@ -129,6 +129,21 @@ Scmpval16 !byte 0,0
 	sta res+1
 }
 
+; SWAP16
+!macro SWAP16 val1, val2 {
+	lda val1
+	pha
+	lda val1+1
+	pha
+	lda val2
+	sta val1
+	lda val2+1
+	sta val1+1
+	pla
+	sta val2+1
+	pla
+	sta val2	
+}
 
 GfxPlot = *	;(.AY=POINT's, .X=count. .CC=clear pixels)
 	pha
@@ -185,40 +200,32 @@ GfxPolygon = *
 	jmp .line
 .pts_head !byte 0,0
 
-GfxRect = *
-	sta Points			;upper-left, lower-right
-	sty Points+1
-	lda #1
+GfxRect = *		;(X1,Y1->X2,Y2) treated as a diagonal
+	lda #1		;(.CS,CC=set/clear pixels)
 	bcs +
 	lda #0
 +	sta .SET
-	ldy #0
-	ldx #X1
--	lda (Points),y		;copy UL/LR to X1,Y1 and X2,Y2
-	sta $00,x
-	inx
-	iny
-	cpy #8
-	bne -
-	lda X1
-	cmp X2				;insist X2>X1
-	bcs +
-	beq +
+	+CMP16 X1,X2		;insist X2>X1
+	beq ++
+	bcc +
+	+SWAP16 X1,X2
++	+CMP16 Y1,Y2		;insist Y2>Y1
+	bne +
 	ldx #Y1
+	jmp xHorLine		;just draw horiz. line
++	bcc +
+	+SWAP16 Y1,Y2
++	ldx #Y1
 	jsr xHorLine		;top
-	lda #Y1+1
-	cmp #Y2+1			;insist Y2>Y1
-	bcs +				;just draw horiz. line
-	beq +
 	ldx #Y2
 	jsr xHorLine		;bottom
-	inc Y1+1			;do not overdraw top
+	inc Y1				;do not overdraw top
 	ldx #X1
 	jsr xVerLine		;left
-	inc X2
 	ldx #X2
 	jsr xVerLine		;right
-+	rts
+	dec Y1
+++	rts
 
 .copyTP10 = *	;(.AY=POINT): .TP10=POINT
 	sta zp

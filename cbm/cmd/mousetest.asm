@@ -52,7 +52,7 @@ main = *
    
    drawstart = *
    ldx #cx
-   jsr xPtrLoc
+   jsr getCursor
    ;startX/Y = cx/Y = px/Y
    ldx #cx-1
 -  inx
@@ -62,12 +62,11 @@ main = *
    cpx #cx+3
    bne -
    jsr setFill
-   jsr setUL
    drawloop = *
    jsr xPtrPoll
    beq drawFill
    ldx #cx
-   jsr xPtrLoc
+   jsr getCursor
    ldx #1
 -  lda cx,x
    cmp px,x
@@ -82,54 +81,51 @@ main = *
    jmp drawloop
    
    drawFill = *
-   lda startY+0
-   ldy startY+1
+
+   lda Y1+0
+   ldy Y1+1
    sta syswork+0
    sty syswork+1
+   ;rows = Y2 - Y1
+   lda Y2
+   sec
+   sbc Y1
+   sta syswork+2
+   lda Y2+1
+   sbc Y1+1
+   sta syswork+3
+   ;cols = (X2 - X1) / 8
+   lda X2
+   sec
+   sbc X1
+   sta temp+0
+   lda X2+1
+   sbc X1+1
+   sta temp+1
+   jsr .tempDiv
+   tay
+   ;.X = X1 / 8
+   lda X1+1
+   sta temp+1
+   lda X1+0
+   sta temp+0
+   jsr .tempDiv
+   tax
    lda #$00
    sta syswork+4
    lda rndfill
    sta syswork+5
-   ;rows = cy - startY
-   lda cy+0
-   sec
-   sbc startY+0
-   sta syswork+2
-   lda cy+1
-   sbc startY+1
-   sta syswork+3
-   ;cols = (cx - startX) / 8
-   lda cx+0
-   sec
-   sbc startX+0
-   sta temp+0
-   lda cx+1
-   sbc startX+1
-   sta temp+1
-   jsr .tempDiv
-   tay
-   ;.X = startX / 8
-   lda startX+1
-   sta temp+1
-   lda startX+0
-   sta temp+0
-   jsr .tempDiv
-   tax
    lda #$10
    jsr xGrOp
    jmp mainloop
 
    drawRect = *
    ldx #px
-   jsr setLR 
-   lda #<UL
-   ldy #>UL
+   jsr setRect 
    clc
    jsr xRectangle
    ldx #cx
-   jsr setLR 
-   lda #<UL
-   ldy #>UL
+   jsr setRect
    sec
    jsr xRectangle
    ldx #cx
@@ -141,6 +137,21 @@ main = *
    bpl -
    rts
 
+   getCursor = *
+   txa
+   pha
+   jsr xPtrLoc
+   pla
+   tax
+   lda $0,x
+   sec
+   sbc #1
+   sta $0,x
+   lda $1,x
+   sbc #0
+   sta $1,x
+   rts
+
    setFill = *
    lda $dc06
    sta rndfill
@@ -149,57 +160,24 @@ main = *
    lda $dc04
    sta rndfill
 +  rts
-   setUL = *
-   lda startX+1
-   sta UL
-   lda startX
-   sta UL+1
-   asl UL+1
-   rol UL
-   asl UL+1
-   rol UL
-   asl UL+1
-   rol UL
-   asl UL+1
-   rol UL
-   asl UL+1
-   rol UL
-   lda startX
-   and #7
-   sta UL+1
-   lda startY
-   sta UL+3
-   lda #0
-   sta UL+2
-   rts
-   setLR = *
+   setRect = *
    lda $01,x
-   sta LR
+   sta X2+1
    lda $00,x
-   sta LR+1
-   asl LR+1
-   rol LR
-   asl LR+1
-   rol LR
-   asl LR+1
-   rol LR
-   asl LR+1
-   rol LR
-   asl LR+1
-   rol LR
-   beq +
-   dec LR
-+  lda $00,x
-   and #7
-   sta LR+1
+   sta X2
    lda $02,x
-   sta LR+3
+   sta Y2
    lda #0
-   sta LR+2
+   sta Y2+1
+   lda startX+1
+   sta X1+1
+   lda startX
+   sta X1
+   lda startY
+   sta Y1
+   lda #0
+   sta Y1+1
    rts
-;Vertices for Rectangle
-UL !byte   0,0,0,0
-LR !byte   0,0,0,0
 
    .tempDiv = *
    lsr temp+1
