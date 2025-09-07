@@ -957,7 +957,7 @@ kernRestart = *
    sta setparam+1
    lda #$0c
    sta romjmp+1
-   jmp viceCheck
+   jmp loadPrgCont
 !if useC128 {
 +  lda #2      ;Mmap device loading
 } else {
@@ -966,22 +966,15 @@ kernRestart = *
    sta setparam+1
    lda #$09
    sta romjmp+1
-viceCheck:
-   jsr kernViceEmuCheck
-   beq viceemu
+loadPrgCont:
    jsr kernShutdownSystem
-   ;For Idun hardware, use aceMapperCommand to invoke
-   ;an NMI that will handle loading
+   ;Use aceMapperCommand to load via NMI
    ldx #0      ;CMD_SYS_LOADER
    setparam = *
    lda #1      ;parameter=1 (iec) or 2 (mmap)
    jsr kernMapperCommand
 -  nop         ;wait for NMI
    jmp -
-viceemu:
-   ;*** Not supported in emulator ***
-   jsr kernShutdownSystem
-   jmp aceExitBasic
    romjmp = *
    jmp $8009    ;into rom code
 

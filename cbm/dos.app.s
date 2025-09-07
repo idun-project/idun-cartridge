@@ -1269,8 +1269,7 @@ nixPrefix !pet "tty ",chrQuote,"x:",0
 ; Exit shell into a Basic 7.80 environment (C128 only)
 basic = *
    jsr aceMiscSysType
-   cmp #128
-   bne +       ;C64 just exit to regular BASIC
+   bpl +       ;C64 just exit to regular BASIC
    lda #<basicExtPrg
    ldy #>basicExtPrg
    sta zp+0
