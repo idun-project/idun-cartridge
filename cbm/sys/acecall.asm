@@ -82,6 +82,7 @@ internOpen = *
    sta lftable,x
    lda #$00
    sta eoftable,x
+   sta checkStat
    stx openFcb
    jsr getDevice
    sty openNameScan
@@ -89,8 +90,6 @@ internOpen = *
    sta devtable,x
    sta openDevice
    tax
-   lda #true
-   sta checkStat
    ;get sa here
    lda configBuf+0,x
    cmp #0
@@ -146,6 +145,8 @@ internOpen = *
    rts
 
    openDiskSa = *
+   lda #true
+   sta checkStat
    ldy #2
    diskSaSearch = *
    ldx #fcbCount-1
@@ -227,8 +228,6 @@ internOpen = *
    lda configBuf+0,x
    cmp #1
    bne +
-   lda checkStat
-   beq +
    txa
    jsr openDiskStatus
    bcc +
@@ -250,6 +249,11 @@ internOpen = *
    rts
 
 openDiskStatus = *  ;( .A=device ) : errno=.A=errcode, .CS=errflag
+   bit checkStat
+   bne +
+   clc
+   rts
++  sta checkStat        ;temp. store device here!
    jsr cmdchOpen
    bcc +
    cmp #aceErrFileOpen
@@ -257,15 +261,16 @@ openDiskStatus = *  ;( .A=device ) : errno=.A=errcode, .CS=errflag
 +  jsr checkDiskStatus
    php
    pha
+   ldx checkStat
    jsr cmdchClose
    pla
    plp
 ++ rts
 
 cmdchOpen = *  ;( .A=device )
-   pha
-   jsr cmdchClose
-   pla
+   ; pha
+   ; jsr cmdchClose
+   ; pla
    tax
    lda configBuf+2,x
    tay
@@ -792,7 +797,8 @@ kernFileBload = *
 internBload = *
    ldx #0
    stx bloadBank
-+  stx BloadAppflag
++  stx checkStat
+   stx BloadAppflag
    sta bloadAddress+0
    sty bloadAddress+1
    jsr getDevice
@@ -831,7 +837,9 @@ internBload = *
    sta errno
    sec
    rts
-+  lda configBuf+1,x
++  lda #true
+   sta checkStat
+   lda configBuf+1,x
    tax
    lda #0
    ldy #0
@@ -855,8 +863,6 @@ internBload = *
    ldx bloadAddress+0
    ldy bloadAddress+1
    jsr kernelLoad
-   stx bloadAddress+0
-   sty bloadAddress+1
    bcc bloadOk
    pha
    cmp #aceErrDeviceNotPresent
@@ -1015,7 +1021,7 @@ kernFileFdswap = *
 ;*** aceDirOpen( (zp)=deviceName ) : .A=fcb
 
 kernDirOpen = *
-   lda #true
+   lda #false
    sta checkStat
    jsr getDiskDevice
    bcc +
@@ -1042,7 +1048,9 @@ kernDirOpen = *
 +  cmp #7
    bne +
    jmp pidDirOpen
-+  +ldaSCII "$"
++  lda #true
+   sta checkStat
+   +ldaSCII "$"
    sta stringBuffer+0
    +ldaSCII "0"
    sta stringBuffer+1
