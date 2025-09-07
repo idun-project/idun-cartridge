@@ -1297,13 +1297,15 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    jsr getloadRestoreZp
    jsr getLoadPathname
    lda execAddr+0
-   sta st
    ldy execAddr+1
-   sty st+1
    jsr internBload
    jsr getloadRestoreZp
    bcs execLoadError
    ;IDUN: Special case for reload shell
+   lda execAddr+0
+   sta st
+   ldy execAddr+1
+   sty st+1
    jsr isAppLoad
    bcc +
    ;app loaded to aceAppAddress ($6000)
