@@ -26,11 +26,12 @@ chrQuote = $22
 overwriteAllFlag !byte 0
 insertHeaderFlag !byte 0
 abortFlag        !byte 0
-;start with assuming src and dest are virtual
-virtualDevsFlag  !byte 1
+;start with assuming src and dest are IEC devices
+virtualDevIn     !byte 0
+virtualDevOut    !byte 0
 
-copyBufferPtr    = 2 ;(2)
-copyBufferLength = 4 ;(2)
+;*** zero page vars
+virtualFileSz    = 4 ;(2)
 copyInFile       = 6 ;(1)
 copyOutFile      = 7 ;(1)
 scanPos          = 8 ;(1)
@@ -56,7 +57,6 @@ copymain = *
    sta overwriteAllFlag
    sta insertHeaderFlag
    sta abortFlag
-   jsr getBufferParms
    ;** check for at least three arguments
    lda aceArgc+1
    bne +
@@ -158,11 +158,16 @@ copyfile = *
    jsr aceMiscDeviceInfo
    lda syswork+1
    sta copyInDevice
-   bcs +
-   lda #0
-   sta virtualDevsFlag
-+  lda #"P"
-   jsr open
+   lda #"P"
+   bcc +
+   ;source is virtual device
+   lda #1
+   sta virtualDevIn
+   jsr aceFileStat
+   sta virtualFileSz
+   sty virtualFileSz+1
+   lda #"b"
++  jsr open
    bcc +
    lda copyInName
    ldy copyInName+1
@@ -179,12 +184,12 @@ copyfileOutput = *
    cmp copyInDevice
    beq copyUsageError
    jsr aceMiscDeviceInfo
-   bcs +
-   lda #0
-   sta virtualDevsFlag
+   bcc +
+   lda #1
+   sta virtualDevOut
 -  +ldaSCII "W"
    jmp ++
-+  lda virtualDevsFlag
++  lda virtualDevOut
    beq -
    +ldaSCII "C"   ;open Command channel
 ++ jsr open
@@ -208,7 +213,8 @@ copyfileOutput = *
 
    copyWriteOk = *
    sta copyOutFile
-   lda virtualDevsFlag
+   lda virtualDevIn
+   and virtualDevOut
    beq +
    lda copyInFile
    ldx copyOutFile
@@ -294,13 +300,12 @@ copyFileContents = *
    jmp copyFileError
    ;** copy file contents
    copyFileContinue = *
-   lda copyBufferPtr
-   ldy copyBufferPtr+1
+   lda #<copyBufferPtr
+   ldy #>copyBufferPtr
    sta zp
    sty zp+1
    jsr checkstop
-   lda copyBufferLength
-   ldy copyBufferLength+1
+   jsr copyBlockSz   
    ldx copyInFile
    jsr read
    bcs ++
@@ -314,10 +319,28 @@ copyFileContents = *
    ldx copyOutFile
    jsr write
    bcs ++
+   lda zw+1
+   beq +
    jmp copyFileContinue
 +  rts
 ++ jmp copyFileError
    
+   copyBlockSz = *
+   lda virtualDevIn
+   bne +
+   lda #0
+   ldy #1
+   rts
++  lda virtualFileSz
+   dec virtualFileSz+1
+   ldy virtualFileSz+1
+   cpy #$ff
+   beq +
+   ldy #1
+   rts
++  ldy #0
+   rts
+
    copyOpenError = *
    ldx errno
    stx cpErrno+0
@@ -465,34 +488,14 @@ copyFileToDir = *
    jsr copyfile
    rts
 
-nameSpace !byte 0
-
+toChars !pet " -> ",0
 copyToDirStatus = *
    lda copyInName+0
    ldy copyInName+1
    jsr puts
-
-   ldy #255
--  iny
-   lda (copyInName),y
-   bne -
-   tya
--  sec
-   sbc #10
-   bcs -
-   adc #10
-   sta nameSpace
-   sta nameSpace
-   sec
-   lda #10
-   sbc nameSpace
-   sta nameSpace
-
--  lda #" "
-   jsr putchar
-   dec nameSpace
-   bne -
-
+   lda #<toChars
+   ldy #>toChars
+   jsr puts
    lda copyOutName+0
    ldy copyOutName+1
    jsr puts
@@ -548,28 +551,6 @@ getc = *
 getcBuffer !byte 0
 
 ;===copy library===
-getBufferParms = *
-   lda #<cpEnd
-   ldy #>cpEnd
-   sta copyBufferPtr+0
-   sty copyBufferPtr+1
-   sec
-   lda aceMemTop+0
-   sbc copyBufferPtr+0
-   sta copyBufferLength+0
-   lda aceMemTop+1
-   sbc copyBufferPtr+1
-   sta copyBufferLength+1
-   bcc +
-   rts
-+  lda #"!"
-   jmp putchar
-;   lda #$00
-;   ldy #$01
-;   sta copyBufferLength+0
-;   sty copyBufferLength+1
-   rts
-
 getarg = *
    sty zp+1
    asl
@@ -601,7 +582,7 @@ getLastArg = *
 ;===the end===
 cpBss = *
 copyNameBuf = cpBss+0
-cpEnd = cpBss+256
+copyBufferPtr = copyNameBuf+256
 
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │
