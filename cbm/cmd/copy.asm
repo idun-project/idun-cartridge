@@ -187,11 +187,11 @@ copyfileOutput = *
    bcc +
    lda #1
    sta virtualDevOut
--  +ldaSCII "W"
-   jmp ++
-+  lda virtualDevOut
-   beq -
+   and virtualDevIn
+   beq +
    +ldaSCII "C"   ;open Command channel
+   jmp ++
++  +ldaSCII "W"
 ++ jsr open
    bcc copyWriteOk
    lda errno
@@ -332,14 +332,12 @@ copyFileContents = *
    ldy #1
    rts
 +  lda virtualFileSz
-   dec virtualFileSz+1
    ldy virtualFileSz+1
-   cpy #$ff
    beq +
+   dec virtualFileSz+1
+   lda #0
    ldy #1
-   rts
-+  ldy #0
-   rts
++  rts
 
    copyOpenError = *
    ldx errno

@@ -912,8 +912,7 @@ kernDirStat = *
    sta openDevice
    lda #"r"
    sta openMode
-   lda #2
-   sta openNameScan
+   sty openNameScan
    jsr pidCommandSend
    lda #<dstatRespHandler
    ldy #>dstatRespHandler
@@ -947,8 +946,7 @@ kernFileStat = *
    sta openMode
    lda #"#"
    sta cmdPrefix
-   lda #2
-   sta openNameScan
+   sty openNameScan
    jsr pidCommandSend
    lda #<fstatRespHandler
    ldy #>fstatRespHandler
