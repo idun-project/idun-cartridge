@@ -1356,14 +1356,14 @@ execLoadExternal = * ;( (zp)=given program name, (zw)=high load address ) : (zp)
    sec
    rts
 
-   execBadProg = *
-   lda #aceErrBadProgFormat
+   execCmdNotFound = *
+   lda #aceErrFileNotFound
    sta errno
    sec
    rts
 
-   execCmdNotFound = *
-   lda #aceErrFileNotFound
+   execBadProg = *
+   lda #aceErrBadProgFormat
    sta errno
    sec
    rts
