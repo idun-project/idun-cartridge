@@ -1,73 +1,59 @@
 m8_nframe_handler = *
-    ;clear drawing area
     lda #0
-    sta syswork+5
-    sta syswork+3
-    sta syswork+1
-    lda #48
-    sta syswork+0
-    lda cubeRows
-    sta syswork+2
-    ldy #30
-    ldx #5
-    lda #$10
-    jsr xGrOp       ;FIXME: This call setting @$00=0
+    ldy activePage
+    sta scrPtr
+    sty scrPtr+1
+    jsr vdcMemStart
     ;process new frame data
-    lda #<.nframe_callback
-    ldy #>.nframe_callback
+    lda #<nframe_callback
+    ldy #>nframe_callback
     jsr aceMapperProcmsg
     ;swap buffers
-    jsr xGrBufswap
+    jsr swap
     lda #0
     jmp __m8_mailbox_reset
-.nframe_callback = *
-    lda #<mailboxB
-    ldy #>mailboxB
-    sta .verts+0
-    sty .verts+1
-    ;draw 1st polygon quad
-    ldx #4
+nframe_callback = *
+    sta cbDataSz
+    ldx #0
+-   lda scrPage
+    bne +
+    lda mailboxB,x
+    jsr vdcMemWrite
+    jmp ++
++   lda mailboxB,x
+    ldy #0
+    sta (scrPtr),y
+++  inc scrPtr
+    bne +
+    inc scrPtr+1
++   inx
+    dec cbDataSz
+    beq +
+    jmp -
++   rts
+swap = *
+    lda scrPage
+    bne +
+    lda activePage
+    ora #$0f
+    ldx #$1c
+    jsr vdcWrite
+    jmp ++
++   lda activePage
     sec
-    jsr xPolygon
-    ;draw 2nd polygon quad
-    ldy #16
-    jsr .next_vert
-    ldx #4
-    sec
-    jsr xPolygon
-    ;draw 4 connecting lines
-    ldy #16
-    jsr .next_vert
-    ldx #2
-    sec
-    jsr xPlot
-    ldy #8
-    jsr .next_vert
-    ldx #2
-    sec
-    jsr xPlot
-    ldy #8
-    jsr .next_vert
-    ldx #2
-    sec
-    jsr xPlot
-    ldy #8
-    jsr .next_vert
-    ldx #2
-    sec
-    jsr xPlot
+    sbc #$c0
+    lsr
+    lsr
+    sta temp
+    lda $d018
+    and #$f0
+    ora temp
+    sta $d018
+++  lda chrPage1
+    cmp activePage
+    bne +
+    lda chrPage2
+    sta activePage 
     rts
-.next_vert = *
-    sty .incr
-    lda .verts+0
-    clc
-    .incr = *+1
-    adc #0
-    sta .verts+0
-    lda .verts+1
-    adc #0
-    sta .verts+1
-    tay
-    lda .verts+0
++   sta activePage
     rts
-.verts !byte 0,0

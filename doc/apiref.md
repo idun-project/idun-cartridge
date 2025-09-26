@@ -454,7 +454,7 @@ The result is a null-terminated path string in aceSharedBuf.
 
 #### 3. SCREEN-CONTROL CALLS
 
-This section describes the system calls that are available to application programmers for full-screen applications.  These calls are intended to be general enough to handle different screen hardware (the VIC and VDC chips and the VIC soft-80-column bitmap screen, and possibly others).  These calls are also designed to be efficient as possible, to discourage progammers from attempting to bypass using them.  Bypassing these calls would be a bad thing.
+This section describes the system calls that are available to application programmers for full-screen applications.  These calls are intended to be general enough to handle different screen hardware (the VIC and VDC chips and the VIC soft-80-column bitmap screen, and possibly others).  These calls are also designed to be efficient as possible, to discourage programmers from attempting to bypass using them.  Bypassing these calls would be a bad thing.
 
 The calls are designed around the C-128/PET concept of a window.  There is only one active window on the display at a time, which may be is large as the entire screen or as small as a 1x1 character cell.  This window is very cheap to setup and tear down.  An application can have multiple windows on the screen by switching the active window around.
 

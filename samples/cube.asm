@@ -1,13 +1,15 @@
 ;idunc: generated file ! DO NOT MODIFY !
 !source "sys/acehead.asm"
-!source "toolx/gfx.asm"
 
 __mailbox    = $9b   ;(2)
 __work       = $9d   ;(2)
 __luaFd      = $02   ;(1)
-cubeRows     = $03   ;(1)
+
+* = aceAppAddress
 
 jmp idunAppInit
+!byte aceID1,aceID2,aceID3
+!byte 64,0  ;** stack,reserved
 
 ;jump table for mailbox message handlers
 __m8_jmptbl = *-1
@@ -43,6 +45,7 @@ __m8_viceemu_handler = *
 +  lda #0
    jmp __m8_mailbox_reset
    
+!source "cube.app.d/defs.asm"
 !source "cube.app.d/nframe.m8x"
 
 idunAppInit = *
