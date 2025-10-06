@@ -27,22 +27,22 @@ escState      = 13  ;(1)  ;current state in ESC sequence
 escParm       = 14  ;(1)  ;current parameter index of parm data
 escQuesFlag   = 15  ;(1)  ;flag for question-mark char used in ESC seq
 keyshift      = 17  ;(1)  ;shift pattern of last key struck
-keypadMode    = 38  ;(1)  ;$00=normal, $ff=application
-cursorMode    = 39  ;(1)  ;$00=normal, $ff=application
-linefeedMode  = 40  ;(1)  ;$00=linefeed, $ff=newline
-screenMode    = 41  ;(1)  ;$00=normal, $ff=reversed
-autowrapMode  = 42  ;(1)  ;$00=off, $ff=on
-extentMode    = 43  ;(1)  ;$00=scroll_region, $ff=full_screen
-attribMode    = 44  ;(1)  ;current attrib of cursor
+keypadMode    = 18  ;(1)  ;$00=normal, $ff=application
+cursorMode    = 19  ;(1)  ;$00=normal, $ff=application
+linefeedMode  = 20  ;(1)  ;$00=linefeed, $ff=newline
+screenMode    = 21  ;(1)  ;$00=normal, $ff=reversed
+autowrapMode  = 22  ;(1)  ;$00=off, $ff=on
+extentMode    = 23  ;(1)  ;$00=scroll_region, $ff=full_screen
+attribMode    = 24  ;(1)  ;current attrib of cursor
                           ;  ($80=rvs,$40=underline,$20=blink,$10=intensity)
-cursorDispMode= 45  ;(1)  ;$00=disable, $ff=enable
-cursorSavePos = 46  ;(2)  ;(ACE) row and column of saved cursor
-cursorSaveAttr= 48  ;(1)  ;saved attribute of cursor
-emulateMode   = 50  ;(1)  ;0=literal,1=glasstty,2=vt100
-escChar       = 52  ;(1)  ;current char in esc sequence
-charColor     = 53  ;(1)  ;color of characters
-cursorSaveColor = 54 ;(1) ;saved color of characters
-work          = 96 ;(16) ;lowest-level temporary work area
+cursorDispMode= 25  ;(1)  ;$00=disable, $ff=enable
+cursorSavePos = 26  ;(2)  ;(ACE) row and column of saved cursor
+cursorSaveAttr= 28  ;(1)  ;saved attribute of cursor
+emulateMode   = 29  ;(1)  ;0=literal,1=glasstty,2=vt100
+escChar       = 30  ;(1)  ;current char in esc sequence
+charColor     = 31  ;(1)  ;color of characters
+cursorSaveColor = 32 ;(1) ;saved color of characters
+work          = 48 ;(16) ;lowest-level temporary work area
 
 escParmData:  !fill 24,0     ;accept up to 24 parameters for ESC sequences
 readbufLenMax = 256     ;maximum size in bytes
@@ -147,6 +147,7 @@ modemOpen = *
    beq +
    iny
    lda (zp),y
+   cmp #$20
    bne -
    ;fill any remainder with spc
 -  cpx #16
@@ -280,7 +281,7 @@ termLoop = *
    termExit = *
 +  jsr cursorOff
    jsr HotkeyRevert
-   jsr toolWinRestore
+   ; jsr toolWinRestore
    rts
 writeChar: !byte 1
 

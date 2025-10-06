@@ -18,7 +18,7 @@
 ;*   $0100-$01ff = processor stack (0.25K)
 ;*   $0200-$0aff = system storage (2.25K)
 ;*   $0b00-$0cff = kernel shared data/config buffers (0.5K)
-;*   $0d00-$0eff = Reserved for ESP (0.5K)
+;*   $0d00-$0eff = Reserved for VSP (0.5K)
 ;*   $0f00-$0fff = kernel-interface variables (0.25K)
 ;*   $1000-$12ff = Reserved kernel code space (0.75K)
 ;*   $1300-$5fff = ACE kernel and device drivers (19.25K)
@@ -67,7 +67,7 @@ freemap      = $800  ;(256 bytes)
 ram0FreeMap  = $900  ;(256 bytes)
 aceSharedBuf = $b00  ;(256 bytes)
 configBuf    = $c00  ;(256 bytes)
-ESP          = $d00  ;(512 bytes)
+VSP          = $d00  ;(512 bytes)
 
 !if useC128 {
    bkACE = $0e
@@ -921,7 +921,12 @@ configErrMainExit = *
 ;*** aceRestart (.A=flag,.X=device,(zp)=appname) : no RTS!
 ;    This call does not return to the caller!
 kernRestart = *
-+  cmp #aceRestartWarmReset
+   ;Ensure we disable the EXROM soft-switch and restore bkACE.
+   ;EXROM is enabled if we used NMI code to get to here!
+   ldy #bkACE
+   sty $de7e
+   sty bkSelect
+   cmp #aceRestartWarmReset
    bne +
    jmp ($fffc)       ;soft machine reset
 +  cmp #aceRestartApplReset

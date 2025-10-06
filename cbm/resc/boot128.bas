@@ -19,7 +19,7 @@ start tok128 resc/boot128.prg
 170 GOSUB 230:GOTO 110
 180 KEY 3,"catalog u"+STR$(PEEK(iec))+CHR$(13)
 190 KEY 5,"run"+CHR$(34)+"*"+CHR$(34)+",u"+STR$(PEEK(iec))+CHR$(13)
-200 KEY 7,"go"+CHR$(34)+"dos"+CHR$(34)+CHR$(13)
+200 KEY 7,"go"+CHR$(34)+"shell"+CHR$(34)+CHR$(13)
 210 PRINT CHR$(19);CHR$(17);CHR$(14);"{yellow}Commodore "
 211 rf=PEEK(65408):IFrfAND128 THEN rom$="ROM":ELSE rom$="CBM"
 212 IFrf=0 THEN rom$="JIF"

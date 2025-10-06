@@ -31,7 +31,8 @@ APPS=\
 build/dos.app \
 build/cpm.app \
 build/arcade.app \
-build/koala.app
+build/koala.app \
+build/shell.app
 
 CMDS=\
 build/tty\
@@ -107,6 +108,9 @@ $(BUILD)/dos.app: dos.app.s $(ACEHDRS) sys/toolbox.asm
 
 $(BUILD)/cpm.app: cpm.app.s $(ACEHDRS) sys/toolbox.asm
 	$(ACME) --cpu 6510 --vicelabels $(BUILD)/cpm.sym -f plain -o $(BUILD)/cpm.app cpm.app.s
+
+$(BUILD)/shell.app: shell.app.s $(ACEHDRS) sys/toolbox.asm
+	$(ACME) --cpu 6510 --vicelabels $(BUILD)/shell.sym -f plain -o $(BUILD)/shell.app shell.app.s
 
 $(BUILD)/arcade.app: arcade.app.s $(wildcard arcade.app.d/*.asm) $(wildcard arcade.app.d/*.m8x)
 	$(ACME) --cpu 6510 --vicelabels $(BUILD)/arcade.sym -f plain -o $(BUILD)/arcade.app -I../cbm arcade.app.s

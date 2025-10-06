@@ -427,7 +427,7 @@ idunWedge = *
     lda #$d0
     sta CHRGET+2
     jmp CHRGOT
-    ;is direct mode, check for "@" or "%"
+    ;is direct mode, check for "@", "%", or "go64"
 +   ldy #0
     lda (TXTPTR),y
     cmp #"%"
