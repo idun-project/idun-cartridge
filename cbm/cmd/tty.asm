@@ -18,6 +18,7 @@ jmp main
 ;*** global declarations
 
 modemFd       =  2  ;(1)  ;fd for modem
+startCls      =  3  ;(1)  ;clear screen at startup
 trptr         =  4  ;(2)  ;pointer to bytes to be translated
 trcount       =  6  ;(2)  ;number of bytes to be translated
 troutptr      =  8  ;(2)  ;pointer to output bytes from translation
@@ -86,6 +87,7 @@ mainInit = *
    sta attribMode
    sta aceSignalProc
    lda #TRUE
+   sta startCls
    sta autowrapMode
    sta cursorDispMode
    lda defEmulate
@@ -139,8 +141,12 @@ modemOpen = *
    ;the cmd string the default tool title
    ldy #2
    lda (zp),y
-   beq +
-   ldx #0
+   bne +
+   ldy #0
+   lda (zp),y
+   +cmpASCII "x"
+   beq noClearScreen
++  ldx #0
 -  sta tooltitle,x
    inx
    cpx #16
@@ -157,6 +163,10 @@ modemOpen = *
    inx
    jmp -
 +  rts
+   noClearScreen = *
+   lda #FALSE
+   sta startCls
+   rts
 modemFilenameErr: !pet "Cannot open device or process",13,0
 
 getTermsz = *
@@ -231,8 +241,10 @@ ascToPetTable = *
 
 
 term = *
+   lda startCls
+   beq +
    jsr HotClr
-   jsr cursorInit
++  jsr cursorInit
 termLoop = *
    lda #0
    ;IDUN: Disable keys/joys forwarding

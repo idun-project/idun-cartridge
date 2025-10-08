@@ -13,6 +13,7 @@ cmdPtr   = $60  ;(1)
 argPtr   = $62  ;(2)  ;pointer to args
 tempPtr  = $64  ;(2)  ;temp. pointer
 count    = $66  ;(1)  ;temp. counter
+argCnt   = $66  ;(1)  ;reuse for args counter
 
 ; String constants we'll need
 ; home !pet "c:",0
@@ -171,6 +172,19 @@ Startup = *
    ldy argPtr+1
    sta zw
    sty zw+1
+   ; if cmdPtr==0, load external process
+   ; otherwise, call local sub-routine.
+   lda cmdPtr
+   bne +
+   lda #0
+   ldy #0
+   jsr getarg
+   lda argCnt
+   ldy #0
+   jsr aceProcExec
+   jmp Tty
++  lda argCnt
+   ldy #0
    jsr aceProcExecSub
    jmp Tty
 
