@@ -14,7 +14,7 @@ argPtr   = $62  ;(2)  ;pointer to args
 tempPtr  = $64  ;(2)  ;temp. pointer
 count    = $66  ;(1)  ;temp. counter
 argCnt   = $66  ;(1)  ;reuse for args counter
-
+procId   = $68  ;(4)  ;process Id for redirection
 ; String constants we'll need
 ; home !pet "c:",0
 tty_path !pet "z:tty",0
@@ -39,7 +39,9 @@ CmdTable:
    jmp exec          ;0 command
    jmp go            ;1
    jmp load          ;2
-
+   jmp dir           ;3
+   jmp catalog       ;4
+   
 ;=== Init (one-time) ===
 Init = *
    ; aceSharedBuf is used for linux sharing it's cd path
@@ -136,7 +138,8 @@ Startup = *
    sta cmdPtr
    ; Shell exec signalled -> run command
    ; The args are already present in hi-mem
-   ; w/ argPtr pointing to the args block.
+   ; w/ argPtr pointing to the args block and
+   ; process Id set if redirect is enabled.
    ; First, check if we need to update to a
    ; new working directory.
    lda aceSharedBuf
@@ -151,6 +154,14 @@ Startup = *
    ; try to reuse it.
    lda #0
    sta aceSharedBuf
+   ; Setup redirect?
++  lda #$ff
+   sta shellRedirectStdout
+   lda procId+0
+   ora procId+1
+   ora procId+2
+   beq +
+   jsr setupRedirect
    ; We have to calculate the jump table
    ; entry that corresponds to the cmdPtr.
 +  lda #<CmdTable
@@ -182,13 +193,48 @@ Startup = *
    lda argCnt
    ldy #0
    jsr aceProcExec
+   jsr closeRedirect
    jmp Tty
 +  lda argCnt
    ldy #0
    jsr aceProcExecSub
+   jsr closeRedirect
    jmp Tty
 
    normalExit = *
+   rts
+
+setupRedirect = *
+   lda #<UtoaNumber
+   ldy #>UtoaNumber
+   sta zp+0
+   sty zp+1
+   lda #1
+   ldx #procId
+   jsr aceMiscUtoa
+   lda #<redirFile
+   ldy #>redirFile
+   sta zp+0
+   sty zp+1
+   +ldaSCII "W"
+   jsr open
+   bcs +
+   sta shellRedirectStdout
+   tay
+   ldx #1
+   jsr aceFileFdswap
++  rts
+
+closeRedirect = *
+   lda shellRedirectStdout
+   bpl +
+   rts
++  pha
+   tay
+   ldx #1
+   jsr aceFileFdswap
+   pla
+   jsr close
    rts
 
 reTagName = $02
@@ -231,9 +277,6 @@ waitKey = *
 
 ;******** command handlers ********
 
-exec = *
-   rts
-
 go = *
    lda #0
    ldy #0
@@ -275,6 +318,557 @@ load = *
    lda #aceRestartLoadPrg
    jmp aceRestart
 
+;directory zp vars
+dirArg     = 2
+dirName    = 4
+dirString  = 8
+dirFcb     = 16
+dirColumns = 17
+dirCurCol  = 18
+dirLong    = 19
+dirSpaces  = 20
+dirlineLen = 21
+dirChCols  = 22
+dirPaged   = 23
+dirShown   = 24
+dirCls     = 25
+dirFiles   = 26
+dirBytes   = 30
+dirFree    = 34
+dirFileSum = 38
+dirCheckFi = 39
+dirWork    = 40
+;directory constants
+chrQuote = 34
+
+dir = *
+   lda #FALSE
+   sta dirFileSum
+   sta dirLong
+   sta dirCls
+   jmp dirMainEntry
+catalog = *
+   lda #TRUE
+   sta dirFileSum
+   sta dirLong
+   sta dirCls
+   ;fall-through
+dirMainEntry = *
+   ldy toolWinScroll+0
+   dey
+   sty dirPaged
+   lda #FALSE
+   sta dirShown
+   lda #TRUE
+   sta dirCheckFi
+   ;get dirName argument
+   lda #0
+   ldy #0
+   jsr getarg
+   lda zp+0
+   ldy zp+1
+   sta dirName+0
+   sty dirName+1
+   jmp dirShow
+
+dirStopped = *
+   lda #<dirStoppedMsg
+   ldy #>dirStoppedMsg
+   jsr eputs
+   lda #1
+   ldx #0
+   jmp aceProcExit
+   dirStoppedMsg = *
+   !pet "<Stopped>"
+   !byte chrCR,0
+
+dirError = *
+   lda #<dirErrorMsg1
+   ldy #>dirErrorMsg1
+   jsr eputs
+   lda dirName+0
+   ldy dirName+1
+   jsr eputs
+   lda #<dirErrorMsg2
+   ldy #>dirErrorMsg2
+   jmp eputs
+
+   dirErrorMsg1 = *
+   !pet "Error reading file/directory "
+   !byte chrQuote,0
+   dirErrorMsg2 = *
+   !byte chrQuote,chrCR,0
+
+dirShow = *
+   bit dirCheckFi
+   bpl +
+   lda #<dirName
+   ldy #>dirName
+   jsr aceDirIsdir
+   cpy #0
+   bne +
+   jmp dirFile
++  lda dirCls
+   beq +
+   lda #chrCLS
+   jsr putchar
++  lda dirLong
+   bne dirLsLong
+
+dirLsShort = *
+   ldx toolWinScroll+1
+   stx dirChCols
+   txa
+   ldx #0
+-  inx
+   sbc #20
+   bcs -
+   txa
+   bne ++
+   lda #1
+++ sta dirColumns
+   jmp dirCommon
+
+dirLsLong = *
+   ldx toolWinScroll+1
+   stx dirChCols
+   lda #1
+   sta dirColumns
+
+dirCommon = *
+   lda #0
+   sta dirCurCol
+   ldx #3
+-  sta dirBytes,x
+   sta dirFiles,x
+   sta dirFree,x
+   dex
+   bpl -
+
+   dirGotName = *
+   lda dirName+0
+   ldy dirName+1
+   sta zp+0
+   sty zp+1
+   jsr aceDirOpen
+   bcc +
+   jmp dirError
++  sta dirFcb
+   ldx dirFcb
+   jsr aceDirRead
+   bcs dirExit
+   ;Name of disk/directory can be zero-length
+   ;beq dirExit
+   jsr aceConStopkey
+   bcc +
+   jmp dirStopped
++  lda dirLong
+   bpl dirNext
+   jsr dirDisplayHeading
+
+   dirNext = *
+   ldx dirFcb 
+   jsr aceDirRead
+   bcs dirExit
+   beq dirTrailerExit
+   jsr aceConStopkey
+   bcc +
+   jsr dirExit
+   jmp dirStopped
++  lda aceDirentName+0
+   beq dirTrailerExit
+   lda aceDirentUsage
+   and #%00010000
+   bne dirNext
+   jsr dirDisplay
+   jmp dirNext
+
+   dirTrailerExit = *
+   lda dirLong
+   bpl dirExit
+   jsr dirDisplayTrailer
+   jmp dirExit
+
+   dirExit = *
+   lda dirCurCol
+   beq +
+   lda #chrCR
+   jsr putchar
++  lda dirFcb
+   jmp aceDirClose
+
+dirDisplay = *
+   ;check cls/paging flag
+   bit dirCls
+   bpl +
+   jsr dirPaging
++  bit aceDirentFlags
+   bmi ++
+   inc dirFiles+0
+   bne +
+   inc dirFiles+1
+   bne +
+   inc dirFiles+2
+   bne +
+   inc dirFiles+3
++  ldx #0
+   ldy #4
+   clc
+-  lda dirBytes,x
+   adc aceDirentBytes,x
+   sta dirBytes,x
+   inx
+   dey
+   bne -
+++ bit dirLong
+   bmi +
+   jmp dirDisplayShort
++  jsr dirSetupDirline
+   lda #<dirline
+   ldy #>dirline
+   sta zp+0
+   sty zp+1
+   lda dirlineLen
+   ldy #0
+   ldx #stdout
+   jmp write
+
+dirPaging = *
+   dec dirPaged
+   bne +
+   lda #<dirPauseMsg
+   ldy #>dirPauseMsg
+   jsr puts
+   jsr aceConGetkey
+   ldy toolWinScroll+0
+   dey
+   sty dirPaged
++  rts
+dirPauseMsg !pet "<Pause>",chrBOL,0
+
+;*            000000000011111111112222222222333333333344444444445555555555
+;*       pos: 012345678901234567890123456789012345678901234567890123456789
+dirline !pet "drwx*e-t  00-Xxx-00  12:00a 12345678 *SEQ  1234567890123456\n"
+        !byte 0
+dirFlagNames !pet "drwx*e-t"
+dirDateStr   !pet "  00-Xxx-00  12:00a "
+dirDateEnd = *
+
+dirSetupDirline = *
+   ;** flags
+   ldx #0
+   lda aceDirentFlags
+-  asl
+   pha
+   +ldaSCII "-"
+   bcc +
+   lda dirFlagNames,x
++  sta dirline+0,x
+   pla
+   inx
+   cpx #8
+   bcc -
+
+   ;** date
+   jsr dirPutInDate
+   ldx #dirDateEnd-dirDateStr-1
+-  lda dirDateStr,x
+   sta dirline+8,x
+   dex
+   bpl -
+
+   ;** bytes
+   ldx #3
+-  lda aceDirentBytes,x
+   sta dirFree,x
+   dex
+   bpl -
+   lda #<UtoaNumber
+   ldy #>UtoaNumber
+   sta zp+0
+   sty zp+1
+   lda #8
+   ldx #dirFree
+   jsr aceMiscUtoa
+   ldy #28
+   lda dirChCols
+   cmp #60
+   bcs +
+   ldy #8
++  ldx #0
+-  lda UtoaNumber,x
+   sta dirline,y
+   iny
+   inx
+   cpx #8
+   bcc -
+   +ldaSCII " "
+   sta dirline,y
+   iny
+
+   ;** unclosed flag
+   lda dirline+4
+   +cmpASCII "-"
+   bne +
+   +ldaSCII " "
++  sta dirline,y
+   iny
+
+   ;** filetype
+   ldx #0
+-  lda aceDirentType,x
+   ora #$80
+   sta dirline,y
+   iny
+   inx
+   cpx #3
+   bcc -
+   +ldaSCII " "
+   sta dirline,y
+   iny
+   sta dirline,y
+   iny
+
+   ;** filename
+   ldx #0
+-  lda aceDirentName,x
+   beq +
+   sta dirline,y
+   iny
+   inx
+   bne -
++  lda #chrCR
+   sta dirline,y
+   iny
+   lda #0
+   sta dirline,y
+   sty dirlineLen
+   rts
+
+dirDisplayShort = *
+   lda #<aceDirentName
+   ldy #>aceDirentName
+   jsr puts
+   inc dirCurCol
+   lda dirCurCol
+   cmp dirColumns
+   bcc +
+   lda #0
+   sta dirCurCol
+   lda #chrCR
+   jmp putchar
++  ldy #$ff
+-  iny
+   lda aceDirentName,y
+   bne -
+   sty dirSpaces
+   lda #20
+   sbc dirSpaces
+   sta dirSpaces
+-  +ldaSCII " "
+   jsr putchar
+   dec dirSpaces
+   bne -
+   rts
+
+dirDisplayHeading = *
+   lda #<dirHeadingMsg
+   ldy #>dirHeadingMsg
+   jsr puts
+   lda #<aceDirentName
+   ldy #>aceDirentName
+   jsr puts
+   lda #chrCR
+   jsr putchar
+   rts
+
+   dirHeadingMsg = *
+   !pet "Dir: "
+   !byte 0
+
+dirDisplayTrailer = *
+   ldx #3
+-  lda aceDirentBytes,x
+   sta dirFree,x
+   dex
+   bpl -
+   ldx dirFileSum
+   beq dirDisplayShortTrailer
+   ldx #0
+   ldy #0
+-- lda dirTrailingMsg,x
+   beq +
+   cmp #4
+   bcc dirStoreNum
+   sta dirTrailBuf,y
+   inx
+   iny
+   bne --
++  lda #<dirTrailBuf
+   ldx #>dirTrailBuf
+   sta zp+0
+   stx zp+1
+   tya
+   ldy #0
+   ldx #stdout
+   jmp write
+
+   dirDisplayShortTrailer = *
+   lda #<UtoaNumber
+   ldy #>UtoaNumber
+   sta zp+0
+   sty zp+1
+   ldx #dirFree
+   lda #0
+   jsr aceMiscUtoa
+   lda #<UtoaNumber
+   ldy #>UtoaNumber
+   jsr puts
+   lda #<dirTrailShMsg
+   ldy #>dirTrailShMsg
+   jmp puts
+
+   dirTrailShMsg = *
+   !pet " bytes free"
+   !byte chrCR,0
+
+   dirStoreNum = *
+   stx dirWork+0
+   sty dirWork+1
+   sec
+   sbc #1
+   asl
+   asl
+   adc #dirFiles
+   tax
+   lda #<UtoaNumber
+   ldy #>UtoaNumber
+   sta zp+0
+   sty zp+1
+   lda #1
+   jsr aceMiscUtoa
+   ldx #0
+   ldy dirWork+1
+-  lda UtoaNumber,x
+   beq +
+   sta dirTrailBuf,y
+   inx
+   iny
+   bne -
++  ldx dirWork+0
+   inx
+   jmp --
+
+   dirTrailingMsg = *
+   !pet "files="
+   !byte 1
+   !pet "  bytes="
+   !byte 2
+   !pet "  free="
+   !byte 3,chrCR,0
+
+dirTrailBuf !fill 64,0
+
+dirPutInDate = *
+   ;** year
+   lda aceDirentDate+1
+   ldx #9
+   jsr dirPutDigits
+   ;** month
+   lda aceDirentDate+2
+   cmp #$10
+   bcc +
+   sec
+   sbc #$10-10
++  tax
+   lda dirMonthStr+0,x
+   sta dirDateStr+5
+   lda dirMonthStr+13,x
+   sta dirDateStr+6
+   lda dirMonthStr+26,x
+   sta dirDateStr+7
+   ;** day
+   lda aceDirentDate+3
+   ldx #2
+   jsr dirPutDigits
+   ;** hour
+   +ldaSCII "a"
+   tax
+   lda aceDirentDate+4
+   cmp #$00
+   bne +
+   lda #$12
+   jmp dirPutHour
++  cmp #$12
+   bcc dirPutHour
+   pha
+   +ldaSCII "p"
+   tax
+   pla
+   cmp #$12
+   beq dirPutHour
+   sed
+   sec
+   sbc #$12
+   cld
+   dirPutHour = *
+   stx dirDateStr+18
+   ldx #13
+   jsr dirPutDigits
+   ;** minute
+   lda aceDirentDate+5
+   ldx #16
+   jsr dirPutDigits
+   rts
+
+   dirPutDigits = *  ;( .A=num, .X=offset )
+   pha
+   lsr
+   lsr
+   lsr
+   lsr
+   ora #$30
+   sta dirDateStr,x
+   pla
+   and #$0f
+   ora #$30
+   sta dirDateStr+1,x
+   rts
+ 
+   dirMonthStr = *
+   !pet "XJFMAMJJASOND"
+   !pet "xaeapauuuecoe"
+   !pet "xnbrrynlgptvc"
+
+
+dirFile = *
+   ldx toolWinScroll+1
+   cpx #60
+   bcc +
+   lda #<dirFileLongMsg
+   ldy #>dirFileLongMsg
+   jmp ++
++  lda #<dirFileShortMsg
+   ldy #>dirFileShortMsg
+++ jsr puts
+   lda dirName+0
+   ldy dirName+1
+   jsr puts
+   lda #chrCR
+   jsr putchar
+   rts
+
+   dirFileLongMsg = *
+   !pet "*argument is a file--option not supported: "
+   !byte 0
+   dirFileShortMsg = *
+   !pet "*argument is a file-n: "
+   !byte 0
+
+;This is a plaeholder, since using exec causes an
+;external command tool to be executed.
+exec = *
+   rts
 
 ;******** standard library ********
 
@@ -290,6 +884,9 @@ putc = *
    ldy #0
    jmp write
 putcBuffer !byte 0
+eputs = *
+   ldx #stderr
+   jmp fputs
 puts = *
    ldx #stdout
 fputs = *
@@ -324,6 +921,8 @@ getarg = *
    stx zp+0
    sta zp+1
    rts
+redirFile      !pet "[:"
+UtoaNumber     !fill 11,0
 
 ;=== bss ===
 bss = *
