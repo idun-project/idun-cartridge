@@ -41,7 +41,10 @@ CmdTable:
    jmp load          ;2
    jmp dir           ;3
    jmp catalog       ;4
-   
+   jmp drives        ;5
+   jmp mount         ;6
+   jmp assign        ;7
+
 ;=== Init (one-time) ===
 Init = *
    ; aceSharedBuf is used for linux sharing it's cd path
@@ -277,6 +280,7 @@ waitKey = *
 
 ;******** command handlers ********
 
+;===go===
 go = *
    lda #0
    ldy #0
@@ -284,6 +288,7 @@ go = *
    lda #aceRestartApplReset
    jmp aceRestart
 
+;===load===
 loadFd      = $02
 loadDevType = $03
 load = *
@@ -318,6 +323,7 @@ load = *
    lda #aceRestartLoadPrg
    jmp aceRestart
 
+;===dir/catalog===
 ;directory zp vars
 dirArg     = 2
 dirName    = 4
@@ -864,6 +870,144 @@ dirFile = *
    dirFileShortMsg = *
    !pet "*argument is a file-n: "
    !byte 0
+
+;===drives===
+devDrive !pet "a:",0
+drives = *
+   lda #0
+   ldy #0
+   jsr getarg
+   lda zp
+   ora zp+1
+   beq DrivesShowAll
+   ldy #0
+   lda (zp),y
+   sta devDrive
+   lda #<devDrive
+   ldy #>devDrive
+   sta zp
+   sty zp+1
+   ;fall-through
+   DrivesShowDrv = *
+   lda #$80
+   jsr aceDirStat
+   bcc +
+   rts
++  ldx #stdout
+   jsr zpputs
+   lda #"="
+   jsr putchar
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jsr puts
+   lda #chrCR
+   jmp putchar
+
+   DrivesShowAll = *
+   lda #$40
+   sta devDrive
+-  inc devDrive
+   lda #<devDrive
+   ldy #>devDrive
+   sta zp
+   sty zp+1
+   jsr aceMiscDeviceInfo
+   cpx #4
+   bne +
+   jsr DrivesShowDrv
+   jmp ++
++  cpx #7
+   bne ++
+   jsr DrivesShowDrv
+++ lda devDrive
+   cmp #$5a
+   bne -
+   rts
+
+;===mount/assign===
+devType = $02
+mtErrorMsg1 = *
+   !pet "Error: illegal target device",chrCR,0
+mtErrorMsg2 = *
+   !pet "Error: cannot open path",chrCR,0
+mtErrorMsg3 = *
+   !pet "Error: cannot mount path",chrCR,0
+mtDoneMsg1   = *
+   !pet "Mounted ",0
+mtDoneMsg2   = *
+   !pet " on ",0
+mount = *
+   lda #7
+   sta devType
+   jmp mountCont
+assign = *
+   lda #4
+   sta devType
+   ;fall-through
+   mountCont = *
+   ; get device argument (e.g. "d:")
+   lda #0
+   ldy #0
+   jsr getarg
+   ldy #0
+   lda (zp),y
+   sta devDrive
+   ; get device type of mount drive
+   lda #<devDrive
+   ldy #>devDrive
+   sta zp
+   sty zp+1
+   jsr aceMiscDeviceInfo
+   cpx devType
+   bne mtDeviceError
+   ; get path argument
+   lda #1
+   ldy #0
+   jsr getarg
+   ; open the path
+   lda devDrive
+   +as_device
+   tax
+   lda devType
+   cmp #7
+   beq +
+   jsr aceDirAssign     ;assign device
+   jmp ++
+   ; default is read-write
++  lda #"W"
+   jsr aceMountImage    ;mount image
+++ bcc mtDone
+   lda errno
+   cmp #aceErrFileTypeMismatch
+   beq mtMountError
+   jmp mtOpenError
+
+   mtDeviceError = *
+   lda #<mtErrorMsg1
+   ldy #>mtErrorMsg1
+   jmp eputs
+   mtOpenError = *
+   lda #<mtErrorMsg2
+   ldy #>mtErrorMsg2
+   jmp eputs
+   mtMountError = *
+   lda #<mtErrorMsg3
+   ldy #>mtErrorMsg3
+   jmp eputs
+   mtDone = *
+   lda #<mtDoneMsg1
+   ldy #>mtDoneMsg1
+   jsr puts
+   ldx #stdout
+   jsr zpputs
+   lda #<mtDoneMsg2
+   ldy #>mtDoneMsg2
+   jsr puts
+   lda #<devDrive
+   ldy #>devDrive
+   jsr puts
+   lda #chrCR
+   jmp putchar
 
 ;This is a plaeholder, since using exec causes an
 ;external command tool to be executed.
