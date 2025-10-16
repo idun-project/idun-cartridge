@@ -247,9 +247,6 @@ term = *
 +  jsr cursorInit
 termLoop = *
    lda #0
-   ;IDUN: Disable keys/joys forwarding
-   ; For now, don't allow any forwarding in console.
-   sta joykeyCapture
    sta zw+1
    jsr aceTtyAvail
    sta zw
@@ -567,8 +564,22 @@ HotKeyInit = *
    jsr toolKeysSet
    inc consKeyPtr
    lda consKeyPtr
-   jmp -  
-+  rts
+   jmp -
+   ; If run from shell.app, enable CmdK for keyboard switching
+   ; otherwise, disable the default CmdK behavior.
++  ldx #4
+-  lda $cd0,x
+   cmp isShellApp,x
+   beq +
+   lda #HotkeyCmdK
+   jmp toolKeysRemove
++  dex
+   bpl -
+   lda #HotkeyCmdK
+   ldx #<HotK
+   ldy #>HotK
+   jmp toolKeysSet
+isShellApp !pet "shell"
 
 HotkeyRevert = *
    lda #0
@@ -580,6 +591,12 @@ HotkeyRevert = *
    inc consKeyPtr
    jmp -
 +  rts
+
+HotK = *
+   ; Signal to shell.app switch keyboard (JMP offs 8)
+   lda #(64+8)
+   sta aceSignalProc
+   rts
 
 HotI = *
    lda #<helpMsg

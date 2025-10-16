@@ -5,6 +5,7 @@
 ; shell. It includes a set of Idun command handlers for those
 ; commands that Linux will forward to this app.
 !source "sys/toolbox.asm"
+!source "sys/toolhead.asm"
 
 jmp Init
 
@@ -44,6 +45,7 @@ CmdTable:
    jmp drives        ;5
    jmp mount         ;6
    jmp assign        ;7
+   jmp keyswitch     ;8
 
 ;=== Init (one-time) ===
 Init = *
@@ -357,6 +359,24 @@ catalog = *
    lda #TRUE
    sta dirFileSum
    sta dirLong
+   ldx aceArgc
+   cpx #1
+   beq +
+   lda #0
+   ldy #0
+   jsr getarg
+   ldy #0
+   lda (zp),y
+   +cmpASCII "/"
+   bne +
+   iny
+   lda (zp),y
+   +cmpASCII "p"
+   bne +
+   lda #TRUE
+   sta dirCls
+   jmp dirMainEntry
++  lda #FALSE
    sta dirCls
    ;fall-through
 dirMainEntry = *
@@ -368,7 +388,9 @@ dirMainEntry = *
    lda #TRUE
    sta dirCheckFi
    ;get dirName argument
-   lda #0
+   lda aceArgc
+   sec
+   sbc #1
    ldy #0
    jsr getarg
    lda zp+0
@@ -1008,6 +1030,24 @@ assign = *
    jsr puts
    lda #chrCR
    jmp putchar
+
+keyswitch = *
+   ; Ensure default CmdK handler is set so we can get keyboard back!
+   lda #HotkeyCmdK
+   ldx #<CmdCapKeys
+   ldy #>CmdCapKeys
+   jsr toolKeysSet
+   ; Print warning message
+   lda #<keyswMsg
+   ldy #>keyswMsg
+   jsr puts
+   ; Do the switcheroo
+   jsr CmdCapKeys
+   ; And monitor input keys
+   jsr aceConGetkey
+   rts
+keyswMsg !pet 13,10,"Keyboard connected to Rasp Pi!"
+!pet 13,10,"Press Com+k to switch back.",0
 
 ;This is a plaeholder, since using exec causes an
 ;external command tool to be executed.
