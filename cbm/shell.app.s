@@ -109,6 +109,25 @@ Startup = *
    sta zp
    sty zp+1
    jsr resident
+   ; set the machine type and num. mem banks
+   jsr aceMiscSysType
+   pha
+   ; assume .Y is the count for ERAM 16K banks
+   cpy #255
+   bne +
+   ldy #64
+   sty count
+   jmp ++
++  sty count
+   lsr count
+   lsr count
+++ txa
+   clc
+   adc count
+   tay
+   pla
+   ldx #$f2
+   jsr aceMapperSetreg
    ;fall-through
    ;=== Initial bash tty runs fetch. ===
    NeoTty = *
@@ -138,7 +157,7 @@ Startup = *
    lda aceSignalProc
    bmi normalExit             ;Killed
    cmp #64
-   bcc Startup
+   bcc Tty
    and #$3f
    sta cmdPtr
    ; Shell exec signalled -> run command
