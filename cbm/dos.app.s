@@ -12,6 +12,7 @@
 ; Toolbox code. Toolbox remains resident for usage by those "tools"
 ; that are loaded into the TPA by Idun Shell.
 !source "sys/toolbox.asm"
+!source "sys/toolhead.asm"
 jmp DosStartup
 
 chrQuote = 34
@@ -104,9 +105,10 @@ idunDosMain = *
    lda #<minuteTimeout
    ldy #>minuteTimeout
    jsr toolTmoSecs
-   ; cd HOME
-   ; lda #$80
-   ; jsr aceDirChange
+   lda #HotkeyCmdK
+   ldx #<HotCmdK
+   ldy #>HotCmdK
+   jsr toolKeysSet
    ; Start shell
    lda #stdin
    sta inputFd
@@ -139,7 +141,12 @@ dosReinit = *
    jsr macrosUpdate
    beq +
    jsr aceMemFetch
-+  rts
+   ; Make sure Com+k enabled for keyboard switching
++  lda #HotkeyCmdK
+   ldx #<HotCmdK
+   ldy #>HotCmdK
+   jsr toolKeysSet
+   rts
 macrosUpdateStash = *
    ; Stash user macros
    jsr macrosUpdate
@@ -164,6 +171,13 @@ macrosUpdate = *
    lda #<256
    ldy #>256
 +  rts
+HotCmdK = *
+   lda joykeyCapture
+   eor #$80
+   and #$80
+   sta joykeyCapture
+   lda #TRUE
+   jmp toolStatEnable
 
 tempIndex = $3
 minuteTimeout = *

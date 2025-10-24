@@ -599,17 +599,22 @@ HotkeyRevert = *
 +  rts
 
 HotK = *
-   ; Built-in keyboard control switching
+   ; Toggle keyboard capture
+   lda joykeyCapture
+   eor #$80
+   and #$80
+   sta joykeyCapture
+   lda #TRUE
+   jsr toolStatEnable
+   lda joykeyCapture
+   bmi +
+   rts
    ; We have to pause the terminal
-   jsr modemClose
++  jsr modemClose
    ; Print warning message
    lda #<keyswMsg
    ldy #>keyswMsg
    jsr puts
-   ; Enable keyboard capture (so keys go to RPi)
-   lda joykeyCapture
-   ora #$80
-   sta joykeyCapture
    ; This will forward keys until it returns
    KeyboardForward = *
    jsr aceConGetkey
@@ -619,13 +624,8 @@ HotK = *
    jsr cursorOff
    jsr HotkeyRevert
    jmp die
-   ; Or, disable keyboard capture
-+  lda joykeyCapture
-   eor #$80
-   sta joykeyCapture
-   ; And restore the terminal connection
-   jsr modemOpen
-   rts
++  jsr HotK    ;Toggle capture OFF
+   jmp modemOpen
 keyswMsg !pet 13,10,"Keyboard connected to RaspPi!"
 !pet 13,10,"Press Com+k to switch back.",13,10,0
 

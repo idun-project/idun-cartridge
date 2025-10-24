@@ -234,7 +234,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$9c-$9f
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a0-$a3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a4-$a7
-   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdCapKeys  ;$a8-$ab
+   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdNotImp   ;$a8-$ab
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$ac-$af
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b0-$b3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
@@ -478,20 +478,6 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
    sta $d011
    rts
 +  jmp CmdMode4
-
-;=== Hotkey handlers for capturing keyboard/joysticks
-
-CmdCapKeys = *
-   lda joykeyCapture
-   eor #$80
-   and #$80
-   sta joykeyCapture
-   jsr updateStatPutCap
-   ;refresh
-   dec refreshStatusBar40
-   dec refreshStatusBar80
-   clc
-   rts
 
 ;=== Status Line (Top Bar) routines ===
 
