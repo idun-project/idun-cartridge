@@ -93,8 +93,16 @@ mainInit = *
    lda defEmulate
    sta emulateMode
    jsr userkeyInit
-   jsr modemOpen
-   ldx #0
+   ;Check keyboard capture
+   lda #HotkeyCmdK
+   jsr toolKeysRemove
+   lda joykeyCapture
+   bpl +
+   ;If keyboard captured, continue forwarding keys
+   jsr KeyboardForward
+   jmp ++
++  jsr modemOpen
+++ ldx #0
    jsr RestoreVersion
    lda toolWinPalette+0
    sta charColor
@@ -290,7 +298,6 @@ termLoop = *
    termExit = *
 +  jsr cursorOff
    jsr HotkeyRevert
-   ; jsr toolWinRestore
    rts
 writeChar: !byte 1
 
@@ -571,8 +578,7 @@ HotKeyInit = *
 -  lda $cd0,x
    cmp isShellApp,x
    beq +
-   lda #HotkeyCmdK
-   jmp toolKeysRemove
+   rts
 +  dex
    bpl -
    lda #HotkeyCmdK
@@ -593,10 +599,35 @@ HotkeyRevert = *
 +  rts
 
 HotK = *
-   ; Signal to shell.app switch keyboard (JMP offs 8)
-   lda #(64+8)
-   sta aceSignalProc
+   ; Built-in keyboard control switching
+   ; We have to pause the terminal
+   jsr modemClose
+   ; Print warning message
+   lda #<keyswMsg
+   ldy #>keyswMsg
+   jsr puts
+   ; Enable keyboard capture (so keys go to RPi)
+   lda joykeyCapture
+   ora #$80
+   sta joykeyCapture
+   ; This will forward keys until it returns
+   KeyboardForward = *
+   jsr aceConGetkey
+   ; Process any active signals
+   lda aceSignalProc
+   beq +
+   jsr cursorOff
+   jsr HotkeyRevert
+   jmp die
+   ; Or, disable keyboard capture
++  lda joykeyCapture
+   eor #$80
+   sta joykeyCapture
+   ; And restore the terminal connection
+   jsr modemOpen
    rts
+keyswMsg !pet 13,10,"Keyboard connected to RaspPi!"
+!pet 13,10,"Press Com+k to switch back.",13,10,0
 
 HotI = *
    lda #<helpMsg

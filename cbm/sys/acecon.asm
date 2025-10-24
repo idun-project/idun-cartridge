@@ -1608,17 +1608,21 @@ kernConGetkey = *
 conGetkey = *
    php
 -  cli
-   ; BKH: Check if joys/keys forwarded
+   ; Idun: Check if joys/keys forwarded
    bit joykeyCapture    ;$80=capture keys, $40=capture joy
    bpl ++
-   sei
+   ; Forward keyboard until detect Com+k or signal
+   lda aceSignalProc
+   beq +
+   plp
+   rts
++  sei
    lda conButtonChange
    and #$04
    beq ++
    lda conButtonChange
    and #$fb
    sta conButtonChange
-   ; filter command to toggle keys forward OFF
    lda keycode
    cmp #$25 ;"k"
    bne +

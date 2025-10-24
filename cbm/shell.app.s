@@ -45,7 +45,6 @@ CmdTable:
    jmp drives        ;5
    jmp mount         ;6
    jmp assign        ;7
-   jmp keyswitch     ;8
 
 ;=== Init (one-time) ===
 Init = *
@@ -155,8 +154,9 @@ Startup = *
 
    waitTty = *
    lda aceSignalProc
-   bmi normalExit             ;Killed
-   cmp #64
+   bpl +
+   rts             ;Killed
++  cmp #64
    bcc Tty
    and #$3f
    sta cmdPtr
@@ -211,9 +211,14 @@ Startup = *
    ; otherwise, call local sub-routine.
    lda cmdPtr
    bne +
+   ; First arg is cmd name
    lda #0
    ldy #0
    jsr getarg
+   ; Release joystick capture for extern cmds
+   lda joykeyCapture
+   and #$7f
+   sta joykeyCapture
    lda argCnt
    ldy #0
    jsr aceProcExec
@@ -224,9 +229,6 @@ Startup = *
    jsr aceProcExecSub
    jsr closeRedirect
    jmp Tty
-
-   normalExit = *
-   rts
 
 setupRedirect = *
    lda #<UtoaNumber
@@ -1049,24 +1051,6 @@ assign = *
    jsr puts
    lda #chrCR
    jmp putchar
-
-keyswitch = *
-   ; Ensure default CmdK handler is set so we can get keyboard back!
-   lda #HotkeyCmdK
-   ldx #<CmdCapKeys
-   ldy #>CmdCapKeys
-   jsr toolKeysSet
-   ; Print warning message
-   lda #<keyswMsg
-   ldy #>keyswMsg
-   jsr puts
-   ; Do the switcheroo
-   jsr CmdCapKeys
-   ; And monitor input keys
-   jsr aceConGetkey
-   rts
-keyswMsg !pet 13,10,"Keyboard connected to Rasp Pi!"
-!pet 13,10,"Press Com+k to switch back.",0
 
 ;This is a plaeholder, since using exec causes an
 ;external command tool to be executed.
