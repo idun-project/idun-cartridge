@@ -53,7 +53,17 @@ Init = *
    ; empty/ignored.
    lda #0
    sta aceSharedBuf
-   jmp Startup
+   ;Try to enable coft-80 columns for C64 mode
+   jsr aceMiscSysType
+   bmi +
+   jsr aceWinSize
+   cpx #80
+   beq +
+   lda #0
+   ldx #80
+   jsr aceWinScreen
+   jsr toolWinRestore
++  jmp Startup
 
    errorLoadCmd = *
    lda #<errResident

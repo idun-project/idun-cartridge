@@ -20,6 +20,7 @@ local function relocSid(fname)
 
 	-- Check type is PSID
 	local psid = io.open(fname, "r")
+	assert(psid,"Failed to open "..fname)
 	local prefix = psid:read(4)
 	psid:close()
 	if prefix ~= "PSID" then

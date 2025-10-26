@@ -232,8 +232,8 @@ modemClose = *
    lda #0
    ldx screenWidth
    jsr aceWinScreen
-+  jsr toolWinRestore
-   rts
+   jsr toolWinRestore
++  rts
 
 
 petToAscTable = *   ;$ff=ignore, $fe=special

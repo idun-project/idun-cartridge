@@ -273,6 +273,33 @@ entryPoint = *
    jsr shellApp
    jmp callApplication
 
+!if useC64 {
+;*** kernel close with pseudo-close for disk command channel for the 64
+kernelClose = *
+   bcs +
+   jmp $ffc3
++  ldx $98
+-  dex
+   bmi kernelCloseExit
+   cmp $259,x
+   bne -
+   beq +
+   brk
+   ;** found entry; copy last entry on top if it
++  ldy $98
+   dey
+   lda $259,y   ;move lfn
+   sta $259,x
+   lda $263,y   ;move dev num
+   sta $263,x
+   lda $26d,y   ;move sec addr
+   sta $26d,x
+   dec $98
+   kernelCloseExit = *
+   clc
+   rts
+}
+
 ;***jump table
 * = aceCallB
 jmp kernFileOpen
@@ -375,40 +402,11 @@ jmp kernDirectWrite
 jmp kernViceEmuCheck
 jmp kernSearchPath
 
-!byte $ff,$fe,$3c,$e2,$fc
-
 notImp = *
    lda #aceErrNotImplemented
    sta errno
    sec
    rts
-
-!if useC64 {
-;*** kernel close with pseudo-close for disk command channel for the 64
-kernelClose = *
-   bcs +
-   jmp $ffc3
-+  ldx $98
--  dex
-   bmi kernelCloseExit
-   cmp $259,x
-   bne -
-   beq +
-   brk
-   ;** found entry; copy last entry on top if it
-+  ldy $98
-   dey
-   lda $259,y   ;move lfn
-   sta $259,x
-   lda $263,y   ;move dev num
-   sta $263,x
-   lda $26d,y   ;move sec addr
-   sta $26d,x
-   dec $98
-   kernelCloseExit = *
-   clc
-   rts
-}
 
 ;*** startup()
 
