@@ -1,9 +1,13 @@
-doNothing = *
-   rts
 appInitialize = *
-   ; Remember initial screen size
-   jsr aceWinSize
-   stx initSize
+   ; Full screen
+   lda #0
+   ldx #0
+   jsr aceWinScreen
+   ; Clear screen/color memory
+   lda #$c0
+   ldx #$ff    ;chr($ff) is a blank space
+   ldy #$0f
+   jsr aceWinCls
    ; Check screen in use
    jsr aceMiscSysType
    cmp #%10001000
@@ -24,22 +28,29 @@ appInitialize = *
    jsr vdcRead
    ora #$10
    jsr vdcWrite      ;pixel double width
+   ldx #$00
+   lda #$3f
+   jsr vdcWrite      ;total columns=63
+   ldx #$06
+   lda #$19
+   jsr vdcWrite      ;screen rows
    ldx #$01
    lda #$28
-   jsr vdcWrite      ;40 column mode
+   jsr vdcWrite      ;40 columns visible
+   ldx #$02
+   lda #$37
+   jsr vdcWrite      ;vert. sync column
+   ldx #$16
+   lda #$89
+   jsr vdcWrite      ;8x8 glyphs
    lda #$20
    sta chrPage1
-   lda #$40
+   lda #$60
    sta chrPage2
    lda #$00
    sta scrPage
    contInit = *
    jsr blankChrs
-   ; Clear screen/color memory
-   lda #$c0
-   ldx #$ff    ;chr($ff) is a blank space
-   ldy #$0f
-   jsr aceWinCls
    lda chrPage1
    sta activePage
    ; Init the cube display area
@@ -56,11 +67,9 @@ appInitialize = *
    ldy #0
 -  lda scrPage
    bne +
-   ; scrPage==$00 -> vdc display
    txa
    jsr vdcMemWrite
    jmp initDisplayCont
-   ; otherwise, vic display
 +  txa
    sta (scrPtr),y
    initDisplayCont = *
@@ -96,16 +105,25 @@ appInitialize = *
    sta scrPtr
    lda scrPage
    bne +
-   jsr vdcMemStart
+   jmp vdcBlankChrs
 +  lda #0
    ldy #7
--  ldx scrPage
-   bne +
-   jsr vdcMemWrite
+-  sta (scrPtr),y
    dey
    bpl -
    rts
-+  sta (scrPtr),y
+   vdcBlankChrs = *
+   lda scrPtr
+   clc
+   adc #<2040
+   sta scrPtr
+   lda scrPtr+1
+   adc #>2040
+   sta scrPtr+1
+   jsr vdcMemStart
+   lda #0
+   ldy #15
+-  jsr vdcMemWrite
    dey
    bpl -
    rts
@@ -117,6 +135,7 @@ appRunLoop = *
    exit = *
    lda __luaFd
    jsr close
+   jsr aceGrExit
    lda #0
    sta zp
    sta zp+1
@@ -143,10 +162,12 @@ vdcWrite = *  ;( .X=register, .A=value )
    rts
 
 vdcMemStart = *   ;( scrPtr )
+   ;save .A,.X, and .Y
    pha
    tya
    pha
    stx temp
+   ;VDC $12/$13 = scrPtr (big-endian!)
    ldx #$12
    lda scrPtr
    ldy scrPtr+1
@@ -159,6 +180,7 @@ vdcMemStart = *   ;( scrPtr )
 -  bit vdcStatus
    bpl -
    sta vdcData
+   ;restore .A,.X, and .Y
    pla
    tay
    pla
@@ -172,6 +194,26 @@ vdcMemWrite = *   ;( .A=value )
    bpl -
    sta vdcData
    ldx temp
+   rts
+
+vdcWriteChrs = * ;( cbDataSz )
+   ldx #0
+   ldy #7
+-  lda mailboxB,x
+   jsr vdcMemWrite
+   inx
+   dec cbDataSz
+   beq +
+   dey
+   bpl -
+   jsr +
+   jmp -
++  lda #0
+   ldy #7
+-  jsr vdcMemWrite
+   dey
+   bpl -
+   ldy #7
    rts
 
 ;=== bss ===

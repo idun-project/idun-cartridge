@@ -3,9 +3,11 @@ m8_nframe_handler = *
     ldy activePage
     sta scrPtr
     sty scrPtr+1
+    lda scrPage
+    bne +
     jsr vdcMemStart
     ;process new frame data
-    lda #<nframe_callback
++   lda #<nframe_callback
     ldy #>nframe_callback
     jsr aceMapperProcmsg
     ;swap buffers
@@ -14,16 +16,16 @@ m8_nframe_handler = *
     jmp __m8_mailbox_reset
 nframe_callback = *
     sta cbDataSz
-    ldx #0
--   lda scrPage
+    lda scrPage
     bne +
-    lda mailboxB,x
-    jsr vdcMemWrite
-    jmp ++
-+   lda mailboxB,x
+    ;copy to VDC character memory
+    jmp vdcWriteChrs
+    ;copy to VIC-II character memory
++   ldx #0
+-   lda mailboxB,x
     ldy #0
     sta (scrPtr),y
-++  inc scrPtr
+    inc scrPtr
     bne +
     inc scrPtr+1
 +   inx
