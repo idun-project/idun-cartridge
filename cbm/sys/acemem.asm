@@ -1103,7 +1103,8 @@ kernProcExecSub = *
    bpl -
    lda aceEramCur
    sta execFrame+28+4
-
+   inc aceEramCur
+   
    ;** store new frame info
    sec
    lda syswork+0

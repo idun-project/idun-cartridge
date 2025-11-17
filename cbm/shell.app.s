@@ -53,7 +53,7 @@ Init = *
    ; empty/ignored.
    lda #0
    sta aceSharedBuf
-   ;Try to enable coft-80 columns for C64 mode
+   ;Try to enable soft-80 columns for C64 mode
    jsr aceMiscSysType
    bmi +
    jsr aceWinSize
