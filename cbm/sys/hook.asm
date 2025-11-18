@@ -433,6 +433,9 @@ idunWedge = *
     cmp #"%"
     bne +
     jmp runProg
+!if useC128 {
++   jsr go64    ;only returns if not "go64"
+}
 +   cmp #"@"
     bne wedgeOut
     ;might be a wedge command
@@ -544,7 +547,49 @@ wedgeIecCmd = *
 dirSymbol !pet "$"
 invdiskMsg !pet "?not a virtual disk",13,0
 iecAddress !byte 0
-
+!if useC128 {
+go64 = *
+    ldy #3
+    lda (TXTPTR),y
+    cmp #"4"
+    beq +
+    jmp ++
++   dey
+    lda (TXTPTR),y
+    cmp #"6"
+    beq +
+    jmp ++
++   dey
+    lda (TXTPTR),y
+    cmp #"O"
+    beq +
+    cmp #"o"
+    beq +
+    jmp ++
++   dey
+    lda (TXTPTR),y
+    cmp #"G"
+    beq do_go64
+    cmp #"g"
+    beq do_go64
+    ;not a "go64"
+++  ldy #0
+    lda (TXTPTR),y
+    rts
+    ;"go64" was found. Reboot cart.
+    do_go64 = *
+    ; LISTEN channel @:
+    lda #$20
+    jsr idunChOut
+    ; SECOND $7F
+    lda #$7F
+    jsr idunChOut
+    ; Send 2-byte message
+    lda #1      ;CMD_SYS_REBOOT
+    jsr idunChOut
+    lda #64     ;reboot C64 mode
+    jmp idunChOut
+}
 ;BASIC extensions handled via IError trap
 locateName = *
     ldx #0
