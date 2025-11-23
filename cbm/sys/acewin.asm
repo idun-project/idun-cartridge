@@ -721,9 +721,8 @@ winIrqCursor = *
 +  jmp seIrqCursor
 
 kernGrExit = *
-   lda winCols
-   cmp #80
-   bne +
+   lda winDriver
+   bpl +
    jmp vdcGrExit
 +  jmp vicGrExit
 

@@ -158,7 +158,7 @@ showUsageError = *
 showDisplayError = *
    lda #<showDisplayErrMsg
    ldy #>showDisplayErrMsg
-   jsr eputs
+   jsr puts
 -  lda #<contErrMsg
    ldy #>contErrMsg
    jmp contError
@@ -167,10 +167,10 @@ showLoadError = *
    jsr zpputs
    lda #<showLoadErrMsg
    ldy #>showLoadErrMsg
-   jsr eputs
+   jsr puts
    jmp -
    contError = *
-   jsr eputs
+   jsr puts
    jsr aceConGetkey
    rts
 
@@ -181,6 +181,8 @@ graphicOn = *
    sta scrnMode
    lda #FALSE
    jsr toolStatEnable
+   lda vic+$21
+   sta saveBkgd
    lda #VIC_II_MODE
    ldx #0
    ldy #0
@@ -188,15 +190,16 @@ graphicOn = *
 +  rts
 
 graphicOff = *
+   lda saveBkgd
+   sta vic+$21
    lda scrnMode
    beq +
    lda #0
    sta scrnMode
    jsr aceGrExit
-   jsr toolWinRestore
-   lda #TRUE
++  lda #TRUE
    jsr toolStatEnable
-+  rts
+   jmp toolWinRestore
 
 ;******** standard library ********
 eputs = *
@@ -254,7 +257,8 @@ bmapData  = bmapBuffer+2
 colorData = bmapData+8000
 colorMem  = colorData+1000
 bkgdColor = colorMem+1000
-bssAppEnd = *
+saveBkgd  = bkgdColor+1
+bssAppEnd = saveBkgd+1
 
 ;┌────────────────────────────────────────────────────────────────────────┐
 ;│                        TERMS OF USE: MIT License                       │

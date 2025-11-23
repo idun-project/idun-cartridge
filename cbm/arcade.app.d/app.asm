@@ -98,6 +98,10 @@ _prg9:
 	rts
 
 appInitialize = *
+	;ensure 40-column VIC-II screen only!
+    lda #0
+    ldx #40
+    jsr aceWinScreen
 	;init vars
 	lda #0
 	sta rowc

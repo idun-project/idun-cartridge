@@ -456,7 +456,7 @@ aceBootstrap = *
    bne -
    pla
    sta aceSuperCpuFlag
-   lda $9c
+   lda #3   ; C: is default device
    asl
    asl
    sta aceCurrentDevice

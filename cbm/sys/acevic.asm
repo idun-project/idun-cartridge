@@ -115,6 +115,9 @@ vicGrExit = *
    sei
    lda $0a37
    sta vic+$30    ;restore 2Mhz mode
+   lda vic+$16
+   and #%11101111
+   sta vic+$16    ;multicolor disabled
    jsr vicLoadCharset
    lda winRows
    ldx winCols
