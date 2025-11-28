@@ -152,9 +152,7 @@ modemOpen = *
    jsr aceFileIoctl
    bcs modemOpenErr
    ;open device
-   lda #1
-   ldy #0
-   jsr getarg
+   jsr allArgs
    +ldaSCII "w"
    jsr open
    bcc +
@@ -1911,6 +1909,45 @@ getarg = *
    stx zp+0
    sta zp+1
    ora zp+0
+   rts
+
+allArgs = *
+   lda #0
+   sta work+0
+   sta work+1
+   sta readbuf
+   
+   eacharg = *
+   inc work+0
+   lda work+0
+   ldy #0
+   jsr getarg
+   bne +
+   jmp lastarg   
+   rts
++  ldy #0
+-  lda (zp),y
+   beq +
+   ldx work+1
+   sta readbuf,x
+   inc work+1
+   iny
+   jmp -
++  ldx work+1
+   lda #$20
+   sta readbuf,x
+   inc work+1
+   jmp eacharg
+
+   lastarg = *
+   dec work+1
+   ldx work+1
+   lda #0
+   sta readbuf,x
+   lda #<readbuf
+   ldy #>readbuf
+   sta zp
+   sty zp+1
    rts
 
 ;===bss===

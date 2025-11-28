@@ -1,5 +1,5 @@
 --[[
-Lua script for displaying Idun help text in the termimal.
+Lua script for displaying Idun help text in the terminal.
 Uses the "eansi" module for text decoration.
 --]]
 
@@ -90,7 +90,7 @@ end
 -- full command helptext
 local function fc(msg)
 	if string.sub(msg, 1, 1)=='<' then
-		local f = io.open('sys/'..string.sub(msg, 2), 'r')
+		local f = assert(io.open('sys/'..string.sub(msg, 2), 'r'))
 		local count = 1
 		local line = f:read('*l')
 		out(clear)
@@ -110,17 +110,33 @@ local function fc(msg)
 	end
 end
 
+local function isalpha(c)
+    return c:match("^%a$") ~= nil
+end
+
 ---------------------
 -- Display help text
 ---------------------
-local function loadtxt()
-	local f = io.open('sys/commands.hlp', 'r')
+local function loadtxt(flag)
+	-- flag == '$' means running in shell.app
+	-- set flag == '!' if running in dos.app
+	if flag ~= '$' then
+		flag = '!'
+	end
+	local f = assert(io.open('sys/commands.hlp', 'r'))
 	local cmd = f:read('*l')
 	while cmd do
 		local next = {}
 		next['short'] = f:read('*l')
 		next['long'] = f:read('*l')
-		helptxt[cmd] = next
+		-- Check for flag at end of command name
+		local last = string.sub(cmd, -1)
+		if isalpha(last) then
+			helptxt[cmd] = next
+		elseif last == flag then
+			local trim = string.sub(cmd, 1, -2)
+			helptxt[trim] = next
+		end
 		cmd = f:read('*l')
 	end
 	f:close()
@@ -180,7 +196,14 @@ local mycmd = arg[1]
 -- Switch to directory with .hlp files
 local path = os.getenv('IDUN_SYS_DIR')
 sys.chdir(path)
-loadtxt()
+-- Load the main help text
+loadtxt(mycmd)
+-- Check args; remove shell.app flag
+if #arg > 1 then
+	mycmd = arg[2]
+elseif mycmd == '$' then
+	mycmd = nil
+end
 
 repeat
 	local input, count, quit
