@@ -1162,9 +1162,17 @@ reboot = *
    jsr aceViceEmuCheck
    beq reset   ;just do a warm reset for emulator
    ldx #1      ;CMD_SYS_REBOOT
-   lda #0      ;reboot C128 mode
+   lda #0      ;full cartridge reboot
    jmp aceMapperCommand
 
+;===basic===
+; Restart cartridge in BASIC mode
+basic = *
+   jsr aceViceEmuCheck
+   beq reset   ;just do a warm reset for emulator
+   jsr aceMiscSysType
+   ldx #1      ;CMD_SYS_REBOOT
+   jmp aceMapperCommand
 
 ;===load===
 loadFd      = 2
@@ -1278,19 +1286,6 @@ roboCmdCont = *
    jsr aceMiscRobokey
    rts
 nixPrefix !pet "tty ",chrQuote,"x:",0
-
-;===basic===
-; Exit shell into a Basic 7.80 environment (C128 only)
-basic = *
-   jsr aceMiscSysType
-   bpl +       ;C64 just exit to regular BASIC
-   lda #<basicExtPrg
-   ldy #>basicExtPrg
-   sta zp+0
-   sty zp+1
-   jmp loaderCont
-+  jmp shellExit
-basicExtPrg !pet "z:basic780",0
 
 ;===unmount===
 ; unmtUsageMsg = *
