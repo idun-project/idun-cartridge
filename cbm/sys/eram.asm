@@ -159,36 +159,20 @@ mmapEramDest = *
     lda zw+1
     cmp #64
     bcc +
-    jmp multiBlockDest
+    ;for multi-block mmap, the Eram handler will do
+    ;the block allocations in the BAM for us. So, just
+    ;return the next free block
+    lda #0
+    sta mp+1
+    lda aceEramCur
+    sta mp+2
+    clc
+    rts
 +   jsr newPageAlloc
     bcc +
     lda #aceErrInsufficientMemory
     jmp mmap_err
 +   rts
-
-    multiBlockDest = *
-    lda #64
-    jsr newPageAlloc ;first of multiple blocks
-    bcc +
-    lda #aceErrInsufficientMemory
-    jmp mmap_err
-+   lda allocProcID
-    cmp #255
-    bne +
-    lda zw+1
-    lsr
-    lsr
-    lsr
-    lsr
-    lsr
-    lsr             ;zw+1 / 64
-    sta mmap_tmp
-    lda mp+2
-    sec
-    sbc mmap_tmp
-    sta mp+2
-+   rts
-
 
 mmapInternalRam = *
     ;store (zp), since kernNew may modify it!
