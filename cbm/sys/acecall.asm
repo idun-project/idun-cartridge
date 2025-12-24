@@ -1034,7 +1034,6 @@ kernDirOpen = *
    sta devtable,x
    lda #0
    sta eoftable,x
-   lda #0
    sta satable,x
    stx openFcb
    ldx openDevice
@@ -1054,8 +1053,6 @@ kernDirOpen = *
    sta stringBuffer+1
    lda #0
    sta stringBuffer+2
-   ldx #2
-   jsr dirOpenSetName
    jsr openGotName
    bcc +
    rts
@@ -1068,55 +1065,6 @@ kernDirOpen = *
    jsr kernelClrchn
    lda openFcb
    clc
-   rts
-
-   dirOpenSetName = *
-   ldy openDevice
-   lda configBuf+3,y
-   bmi dirNameDate
-   ldy openNameScan
-   lda (zp),y
-   bne +
-   rts
-+  ldx #1
-
-   dirNameNormal = *
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  dex
-   +ldaSCII ":"
-   cmp stringBuffer,x
-   beq +
-   inx
-   sta stringBuffer,x
-+  inx
-   +ldaSCII "*"
-   sta stringBuffer,x
-   inx
-   lda #0
-   sta stringBuffer,x
-   rts
-
-   dirNameDate = *
-   +ldaSCII "="
-   sta stringBuffer+1
-   +ldaSCII "t"
-   sta stringBuffer+2
-   ldx #3
-   ldy openNameScan
-   jsr dirNameNormal
-   +ldaSCII "="
-   sta stringBuffer,x
-   inx
-   +ldaSCII "l"
-   sta stringBuffer,x
-   inx
-   lda #0
-   sta stringBuffer,x
    rts
 
 ;*** aceDirClose( ... ) : ...
