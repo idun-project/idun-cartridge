@@ -109,7 +109,7 @@ kernMemtag = *
 mmap_tag !byte 0
 mmap_tmp !byte 0
 
-kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename : .CS=error)
+kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename) : .CS=error
     stx sys_area_alloc
     jsr kernHashTag
     pha
@@ -153,9 +153,19 @@ kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename : .CS=error)
     beq +
     lda aceProcessID
 +   ldx #CMD_MMAP
-    jmp kernMapperCommand
+    jsr kernMapperCommand
+    bcc +
+    rts
++   lda multiBlkStart
+    cmp #$ff
+    beq +
+    jsr claimProcEram
++   clc
+    rts
 
 mmapEramDest = *
+    lda #$ff
+    sta multiBlkStart
     lda zw+1
     cmp #64
     bcc +
@@ -166,6 +176,7 @@ mmapEramDest = *
     sta mp+1
     lda aceEramCur
     sta mp+2
+    sta multiBlkStart
     clc
     rts
 +   jsr newPageAlloc
@@ -173,6 +184,7 @@ mmapEramDest = *
     lda #aceErrInsufficientMemory
     jmp mmap_err
 +   rts
+multiBlkStart !byte $ff
 
 mmapInternalRam = *
     ;store (zp), since kernNew may modify it!

@@ -665,6 +665,7 @@ allocBAM = *   ;(.X=block)
    jsr sePage
    lda allocProcID
    sta edat,x
+   reduceFreeBlks = *
    sec
    lda aceFreeMemory+1
    sbc #$40
@@ -882,6 +883,7 @@ reclaimProcMemory = *
 reclaimProcEram = *     ;(.X=alloc start block)
    lda aceEramBanks
    beq ++
+   inx
 -  cpx aceEramCur
    beq +
    jsr reclaimEramBlock
@@ -900,6 +902,20 @@ reclaimProcEram = *     ;(.X=alloc start block)
    bcc +
    inc aceFreeMemory+2
 +  rts
+claimProcEram = *
+   lda #$ff
+   jsr seBank
+   lda #1
+   jsr sePage
+   ldx aceEramCur
+-  lda aceProcessID
+   cmp edat,x
+   beq +
+   rts
++  inc aceEramCur
+   inx
+   jsr reduceFreeBlks
+   jmp -
 
 rpBank  !byte 0,0
 rpEnd   !byte 0
