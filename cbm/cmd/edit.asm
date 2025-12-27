@@ -3082,38 +3082,6 @@ sloshStatCount = *
 +  adc #$41-10
    rts
 
-CmdDebug = *
-   lda #$00
-   sta $d030
-   lda $d011
-   ora #$10
-   sta $d011
-   ldx #0
-   lda #0
--  sta $f800,x
-   inx
-   bne -
-   jsr MvLineToMp
-   jsr FetchLine
-   ldx #headLength-1
--  lda headBuffer,x
-   sta $f800,x
-   dex
-   bpl -
-   ldx #0
--  lda line,x
-   sta $f800+headLength,x
-   inx
-   cpx headLineLen
-   bcc -
-   ldx #3
--  lda mp,x
-   sta $f900,x
-   dex
-   bpl -
-   clc
-   rts
-
 FindIndent = *  ;( [mp]=lineInPara ) : .A=indentCount
    lda #0
    rts

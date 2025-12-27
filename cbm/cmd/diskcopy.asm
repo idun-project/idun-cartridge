@@ -1,12 +1,16 @@
-;'diskcopy' cmd: copy native disks <-> disk images
+;'diskcopy' cmd: copy disk images <-> floppy drives
 ;
-;Copyright© 2023 Brian Holdsworth
+;Copyright© 2025 Brian Holdsworth
 ; This is free software, released under the MIT License.
 ;
-; Source and destination devices can include a native
-; IEC disk device (1541/1571) and/or a virtual device
-; with a compatible disk image mounted (usually d:).
+; This tool works for 1541/71 floppy deives and D64/71
+; disk image files. One commandline argument must be given,
+; and is either the source floppy drive or the source disk
+; image file. The tool prompts for entry of the destination
+; disk image filename or floppy drive, respectively.
 ;
+; If the destination is an unformatted floppy, then it will
+; be formatted before the copy.
 ;@see copyUsageErrorMsg
 
 !source "sys/acehead.asm"
@@ -40,35 +44,33 @@ chrQuote         = $22
 formatDestFlag   !byte 0
 
 curSectorPtr     = 2 ;(2)
-copyArg          = 4 ;(2)
-lastArg          = 6 ;(2)
-baseArg          = 8 ;(1)
-writeDevice      = 9 ;(1)
-writeIecAddr     = 10;(1)
-readDevice       = 11;(1)
-readIecAddr      = 12;(1)
-destMaxTracks    = 13;(1)
-srcTracks        = 14;(1)
-currentTrack     = 15;(4)
-blocksInTrack    = 19;(1)
-sectorCount      = 20;(4)
+driveTracks      = 4 ;(1)
+srcDrive         = 5 ;(1)
+ptrImage         = 6 ;(2)
+temp             = 8 ;(2)
+driveLetter      = 10;(1)
+driveIec         = 11;(1)
+destMaxTracks    = 12;(1)
+srcTracks        = 13;(1)
+currentTrack     = 14;(4)
+blocksInTrack    = 18;(1)
+sectorCount      = 19;(4)
 abortFlag        = 24;(1)
 
 blocksPerTrack !byte 21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,19,19,19,19,19,19,19,18,18,18,18,18,18,17,17,17,17,17
 !byte 21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,19,19,19,19,19,19,19,18,18,18,18,18,18,17,17,17,17,17
 
 diraccName !pet "#0"
+itag !pet "dimage"
 
 copyUsageErrorMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "usage: diskcopy [/f] <src:> <dest:>",chrCR
+!pet "Usage: diskcopy <source>",chrCR
+!pet "Tool prompts for destination.",chrCR
 !pet "Ex. make floppy from disk image",chrCR
-!pet "    mount /d: myimage.d71",chrCR
-!pet "    diskcopy d: a:",chrCR
+!pet "    diskcopy myimage.d71",chrCR
 !pet "Ex. make disk image from floppy",chrCR
-!pet "    mount /w /d: newimage.d64",chrCR
-!pet "    diskcopy a: d:",chrCR
-!pet "Option /f formats destination device",chrCR,0
+!pet "    diskcopy a:",chrCR,0
 
 ;===diskcopy===
 main = *
@@ -82,110 +84,105 @@ main = *
    sta sectorCount+1
    sta sectorCount+2
    sta sectorCount+3
-   sta readIecAddr
-   sta writeIecAddr
+   sta driveIec
    sta abortFlag
+   sta srcDrive
    lda #70
    sta destMaxTracks
    sta srcTracks
-   ;** check for at least two arguments
-   lda aceArgc+1
-   bne +
+   ; check for one argument
    lda aceArgc
    cmp #2
-   bcs +
    beq +
    jmp copyUsageError
-   ;** check for first argument option
+   ; check source type
 +  lda #1
-   sta baseArg
    ldy #0
    jsr getarg
-   ldy #0
-   lda (zp),y
-   cmp #"/"
-   bne ++
-   iny
-   lda (zp),y
-   +cmpASCII "f"
-   beq +
-   jmp copyUsageError
-+  lda #$ff
-   sta formatDestFlag
-   inc baseArg
-   ;** check destination device
-++ jsr getLastArg
    jsr aceDirIsdir
-   cpx #0
+   cpx #TRUE
    bne +
-   jmp copyUsageError   ;dest is not a disk
-+  jsr aceMiscDeviceInfo
-   cpx #1
-   bne ++
-   sta writeIecAddr
-   tax
+   ; source is a floppy drive
+   sta driveLetter
+   sta srcDrive
+   jsr aceMiscDeviceInfo
+   sta driveIec
+   jmp copyFromFloppy
+   ; source is a disk image; try to load
++  lda #<itag
+   ldy #>itag
+   ldx #0
+   jsr mmap
+   bcc +
+   jmp srcOpenErrorMsg
++  jmp copyToFloppy
+
+   copyFromFloppy = *
    jsr initIec
    bne +
    jmp initDestError
 +  bcs +
+   ; copy from a 1541
    lda #35
-   sta destMaxTracks
-+  ldx writeIecAddr
-   jsr checkFormatIec
-   bne +++
-   lda #$ff
-   sta formatDestFlag
-   jmp +++
-++ cpx #7
-   bne copyUsageError   ;dest not native or virtual drive
-   lda syswork+1
-   lsr
-   lsr
-   ora #$40
-   sta writeDevice
-   tax
-   jsr checkFormatVirt
-   beq openDestError
-   bcs +++
-   lda #35
-   sta destMaxTracks
-   ;** check source device
-+++lda baseArg
-   ldy #0
-   jsr getarg
-   jsr aceDirIsdir
-   cpx #0
-   beq copyUsageError   ;src is not a disk
-   jsr aceMiscDeviceInfo
-   cpx #1
+   sta srcTracks
+   jmp allocImage
++  ldx driveIec
+   jsr checkFormatIec   ;1571- But is it a double-sided floppy?
    bne +
-   sta readIecAddr
-   tax
-   jsr blockOpenIec
-   bcs openSrcError
-   ldx readIecAddr
-   jsr checkFormatIec
-   beq openSrcError
-   bcs ++
+   jmp srcOpenErrorMsg  ;Whoops! It's not even formatted!
++  bcs allocImage
    lda #35
-   sta srcTracks
+   sta srcTracks        ;Single-sidded floppy
+   allocImage = *
+   lda srcTracks
+   cmp #70
+   beq +
+   lda #<683            ;D64 image size in blocks
+   ldy #>683
    jmp ++
-+  cpx #7
-   bne copyUsageError  ;src not native or virtual drive
-   lda syswork+1
-   lsr
-   lsr
-   ora #$40
-   sta readDevice
-   tax
++  lda #<1366           ;D71 image size in blocks
+   ldy #>1366
+++ sta zw
+   sty zw+1
+   lda #0
+   ldy #0
+   jsr new
+   jsr askDestImage
+   jmp diskCopy
+
+   copyToFloppy = *
    jsr checkFormatVirt
    beq openSrcError
-   bcs ++
+   bcs +
    lda #35
    sta srcTracks
-++ lda destMaxTracks
+   ; scan for acceptable floppy drive destination
++  +ldaSCII "a"
+   sta driveLetter
+-  jsr checkDrive
+   bcc +
+   inc driveLetter
+   lda driveLetter
+   +cmpASCII "["
+   beq initDestError
+   jmp -
++  lda driveTracks
    cmp srcTracks
-   bmi initDestError   ;cannot copy double-sided format to single-sided destination
+   bcc -
+   ; found a drive that supports the right num. of tracks
+   jsr blockOpenIec
+   bcs destOpenErrorMsg
+   jsr checkFormatIec
+   bne +
+   ; disk needs formatting
+-  lda #$ff
+   sta formatDestFlag
+   jmp diskCopy
++  bcc +
+   jmp diskCopy         ;disk formatted both sides
++  lda srcTracks
+   cmp #70
+   beq -
    jmp diskCopy
    copyUsageError = *
    lda #<copyUsageErrorMsg
@@ -206,8 +203,8 @@ main = *
    ldy #>srcOpenErrorMsg
    jmp -
 destCompatErrorMsg !pet "Error: Incompatible destination device",chrCR,0
-destOpenErrorMsg !pet "Error: Destination device not writable",chrCR,0
-srcOpenErrorMsg !pet "Error: Source device not readable",chrCR,0
+destOpenErrorMsg !pet "Error: Destination not writable",chrCR,0
+srcOpenErrorMsg !pet "Error: Source not readable",chrCR,0
 
    diskCopy = *
    ;progress display cols for 40-col mode
@@ -220,19 +217,14 @@ srcOpenErrorMsg !pet "Error: Source device not readable",chrCR,0
    sta cmdBuffer,x
    bne -
    ;format the destination?
-   lda writeIecAddr
-   beq ++
-   jsr askFormatDest
-   bne ++
-   bcc +
-   jmp blockCloseIec
-+  ;do format
-   ldx writeIecAddr
+   lda formatDestFlag
+   bpl +
+   ;do format
    jsr formatIec
-   bcc ++
+   bcc +
    jmp exit
    ;print #tracks to copy
-++ lda srcTracks
++  lda srcTracks
    sta currentTrack
    ldx #currentTrack
    jsr Utoa
@@ -246,13 +238,6 @@ srcOpenErrorMsg !pet "Error: Source device not readable",chrCR,0
    ldy #>srcdstMsg
    jsr puts
    diskCopyStart = *
-   lda readIecAddr
-   beq +
-   jmp ++
-   ;diskcopy virtual->native
-+  ldx writeIecAddr
-   jsr blockOpenIec
-   bcs exit
    lda #1
    sta currentTrack
    jsr aceConGetpos
@@ -260,6 +245,9 @@ srcOpenErrorMsg !pet "Error: Source device not readable",chrCR,0
    sbc #3
    sta _node+1
    sta _node4+1
+   lda srcDrive
+   bne +
+   ;diskcopy virtual->native
    jsr showProgress
 -  lda srcTracks
    cmp currentTrack
@@ -275,14 +263,7 @@ srcOpenErrorMsg !pet "Error: Source device not readable",chrCR,0
    inc currentTrack
    jmp -
    ;diskcopy native->virtual
-++ lda #1
-   sta currentTrack
-   jsr aceConGetpos
-   sec
-   sbc #3
-   sta _node+1
-   sta _node4+1
-   jsr showProgress
++  jsr showProgress
 -  lda srcTracks
    cmp currentTrack
    bmi diskCopyEnd
@@ -300,9 +281,16 @@ srcOpenErrorMsg !pet "Error: Source device not readable",chrCR,0
    jsr toolUserLayoutEnd
    jsr checkDiskStatus
    jsr blockCloseIec
+   lda #chrCR
+   jsr putchar
    lda #<cmdBuffer
    ldy #>cmdBuffer
-   jmp puts
+   jsr puts
+   lda srcDrive
+   beq +
+   ; TODO: save disk image to file
+   nop
++  rts
 exit = *
    jsr toolUserLayoutEnd
    sta errorMsg1+7
@@ -319,6 +307,27 @@ errorMsg1 !pet "Error: ",0,chrCR,0
 srcdstMsg      !pet "Copying "
 srcdstMsg1     !pet "xx tracks."
 srcdstMsgLns   !byte chrCR,chrCR,chrCR,chrCR,chrCR,0
+
+askDestImage = *        ;() : destImageFile, .X=filename length
+-  lda #<destAskMsg
+   ldy #>destAskMsg
+   jsr puts
+   lda #0
+   sta temp
+-  jsr getchar
+   cmp #chrCR
+   beq +
+   ldx temp
+   sta destImageFile,x
+   inc temp
+   jsr putchar
+   jmp -
++  ldx temp
+   lda #0
+   sta destImageFile,x
+   rts
+destAskMsg !pet "Name new disk image: ",0
+destImageFile !fill 64,0
 
 progressSetColumns = *
    cmp #80
@@ -536,11 +545,17 @@ initIec = *  ;(.X=IEC device) : .ZS=error .CS=70trk, .CC=35 trk
    txa
    pha
    jsr kernelClAll
-   ;send U9 to reset drive
    pla
    tax
    jsr cmdchOpen
    bcs ++
+   ;send I(nitialize) to make device ready
+   +ldaSCII "i"
+   sta cmdBuffer
+   ldx #1
+   jsr cmdchSend
+   bcs ++
+   ;send U9 to reset drive
    +ldaSCII "u"
    sta cmdBuffer
    +ldaSCII "9"
@@ -575,7 +590,34 @@ initIec = *  ;(.X=IEC device) : .ZS=error .CS=70trk, .CC=35 trk
 ++ lda #0
    rts
 
-checkFormatIec = *    ;(.X=IEC device) : .ZS=no format, .CS=70trk, .CC=35trk
+checkDrive = * ;(.A=drive letter) : driveIec, driveTracks, .CC=1541/71
+   ;check if the device is the right type
+   sta drivePrefix
+   lda #<drivePrefix
+   ldy #>drivePrefix
+   sta zp
+   sty zp+1
+   jsr aceMiscDeviceInfo
+   cpx #1
+   beq +
+   sec
+   rts
+   ;check type of drive and set num. tracks
++  sta driveIec
+   tax
+   jsr initIec
+   bne +
+   sec
+   rts
++  lda #35
+   bcc +
+   lda #70
++  sta driveTracks
+   clc
+   rts
+drivePrefix !pet "a:",0
+
+checkFormatIec = *    ;(driveIec) : .ZS=no format, .CS=70trk, .CC=35trk
    lda #18
    sta currentTrack
    lda #0
@@ -604,41 +646,69 @@ checkFormatIec = *    ;(.X=IEC device) : .ZS=no format, .CS=70trk, .CC=35trk
 ++ lda #0
    rts
 
-checkFormatVirt = *    ;(.X=IEC device) : .ZS=no format, .CS=70trk, .CC=35trk
-   +ldaSCII "r"
-   jsr blockOpenVirt
-   bcc +
-   lda #0
-   rts
-+  tax
-   stx readVirtFcb
-   lda #<trackBuffer
-   ldy #>trackBuffer
-   sta zp+0
-   sty zp+1
-   lda #1
-   jsr aceDirectRead
-   lda readVirtFcb
-   jsr close
-   ldy #2
-   lda (zp),y
+checkFormatVirt = *    ;(.mp=eram dimage) : .ZS=no format, .CS=70trk, .CC=35trk
+   ; we need the address of track 18, sector 0
+   lda #<357
+   ldy #>357
+   ldx #ptrImage
+   jsr Block2Eram
+   ; now we can access the BAM
+   lda ptrImage+1
+   sta $deff
+-  bit $defe
+   bvc -
+   lda ptrImage
+   sta $defe
+-  bit $defe
+   bvc -
+   ; Check byte 2 for DOS version
+   lda $df02
    cmp #$41
-   bne ++
-   iny
-   lda (zp),y
+   bne +
+   ; Check byte 3 for double-sided
+   lda $df03
    ora #1
    asl
    rts
-++ lda #0
++  lda #0
    rts
 
-formatDevice !byte 0
-formatIec = *    ;(.X=IEC device)
-   stx formatDevice
-   jsr cmdchOpen
-   bcc +
-   rts
-+  ldx #0
+Block2Eram = *         ;( .A=blkLo, .Y=blkHi, .X=#ptr : [ptr] to TS in ERAM )
+   pha
+   lda mp+1
+   sta $00,x
+   lda mp+2
+   sta $01,x
+-  dey
+   bmi +
+   clc
+   adc #4
+   sta $01,x
+   jmp -
++  pla
+   tay
+-  cpy #0
+   beq +
+   dey
+   inc $00,x
+   lda $00,x
+   cmp #64
+   bne -
+   inc $01,x
+   lda #0
+   sta $00,x
+   jmp -
++  rts
+
+formatIec = *    ;(driveIec)
+   lda driveIec
+   clc
+   adc #$30
+   sta formatMsgX
+   lda #<formatMsg
+   ldy #>formatMsg
+   jsr puts
+   ldx #0
 -  lda cmdBFormat,x
    sta cmdBuffer,x
    inx
@@ -647,51 +717,10 @@ formatIec = *    ;(.X=IEC device)
    jsr cmdchSend
    bcc +
    rts
-+ jmp cmdchClose
-cmdBFormat   !pet "n0:blank,2d",chrCR
-
-formatDevName !byte 0,0
-askFormatDest = *  ;(.A=IEC addr) : .CS=quit, .EQ=yes, .NE=no
-   clc
-   adc #$30
-   sta formatDevName+0
-   lda formatDestFlag
-   bmi +
-   lda #0
-   rts
-   formatAskCont = *
-+  lda #<formatAskMsg
-   ldy #>formatAskMsg
-   jsr puts
-   lda #<formatDevName
-   ldy #>formatDevName
-   jsr puts
-   lda #<formatAskMsg2
-   ldy #>formatAskMsg2
-   jsr puts
-   jsr getchar
-   cmp #chrCR
-   beq formatAskCont
-   pha
--  jsr getchar
-   cmp #chrCR
-   bne -
-   pla
-   +cmpASCII "q"
-   bne +
--  sec
-   rts
-+  +cmpASCII "Q"
-   beq -
-   +cmpASCII "y"
-   beq +
-   +cmpASCII "Y"
-+  clc
-   rts
-   formatAskMsg = *
-   !pet "Format disk in drive #",0
-   formatAskMsg2 = *
-   !pet " (y/n/q)? ",0
++  jmp checkDiskStatus
+formatMsg  !pet "Formatting Floppy Device #"
+formatMsgX !pet $38,chrCR,0
+cmdBFormat !pet "n0:blank,2d",chrCR
 
 checkstop = *
    lda abortFlag
@@ -708,9 +737,7 @@ checkstop = *
 copyToDestStatus = *
    rts
 
-openIecDevice !byte 0
-blockOpenIec = * ;( .X=IEC device) : .CS=error
-   stx openIecDevice
+blockOpenIec = * ;( driveIec ) : .CS=error
    clc
    ;open data channel
    lda #2
@@ -719,29 +746,20 @@ blockOpenIec = * ;( .X=IEC device) : .CS=error
    jsr kernelSetnam
    ldy #diraccChan
    lda #datalf
-   ldx openIecDevice
+   ldx driveIec
    jsr kernelSetlfs
    jsr kernelOpen
    bcc +
    sta errno
    rts
    ;open command channel (#15)
-+  ldx openIecDevice
++  ldx driveIec
    jsr cmdchOpen
    bcc +
    sta errno
 +  rts
 
-blockOpenVirt = *  ;(.X=dev, .A=mode) : .CS=error .A=Fcb
-   stx cmdVPrefix
-   ldx #<cmdVPrefix
-   ldy #>cmdVPrefix
-   stx zp+0
-   sty zp+1
-   jmp open
-cmdVPrefix !pet "d:#"
 cmdVCurrTrkSec  !byte $31,$38,$20,$30,$20,$00
-
 trackReadIec = *  ;(currentTrack, trackBuffer) : .CS=error
    jsr updateReading
    lda currentTrack
@@ -794,24 +812,37 @@ trackReadIec = *  ;(currentTrack, trackBuffer) : .CS=error
    rts
 cmdBReadPrefix   !pet "u1:",diraccChan+$30,$20,$30,$20
 
-readVirtFcb !byte 0
+mpNext = *       ;(mp) : mp
+   ; advance to next sector in Eram
+   inc mp+1
+   lda mp+1
+   cmp #64
+   bne +
+   inc mp+2
+   lda #0
+   sta mp+1
++  rts
+
+mpGet = *         ;([mp], [curSectorPtr])
+   lda curSectorPtr+0
+   ldy curSectorPtr+1
+   sta zp+0
+   sty zp+1
+   lda #0
+   ldy #1
+   jmp aceMemFetch
+
+mpPut = *         ;([mp], [curSectorPtr])
+   lda curSectorPtr+0
+   ldy curSectorPtr+1
+   sta zp+0
+   sty zp+1
+   lda #0
+   ldy #1
+   jmp aceMemStash
+
 trackReadVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    jsr updateReading
-   lda #2
-   ldx #currentTrack
-   jsr Utoa
-   ldy #0
-   lda (zp),y
-   sta cmdVCurrTrkSec+0
-   iny
-   lda (zp),y
-   sta cmdVCurrTrkSec+1
-   +ldaSCII "b"
-   ldx readDevice
-   jsr blockOpenVirt
-   bcc +
-   rts
-+  sta readVirtFcb
    ldx currentTrack
    dex
    lda blocksPerTrack,x
@@ -824,19 +855,13 @@ trackReadVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    sta sectorCount
 -  jsr updateProgress
    jsr checkstop
-   lda curSectorPtr+0
-   ldy curSectorPtr+1
-   sta zp+0
-   sty zp+1
-   ldx readVirtFcb
-   lda #1
-   jsr aceDirectRead
+   jsr mpNext
+   jsr mpGet
    inc curSectorPtr+1
    inc sectorCount
    dec blocksInTrack
    bne -
-   lda readVirtFcb
-   jmp close
+   rts
 
 trackWriteIec = *  ;(currentTrack, trackBuffer) : .CS=error
    jsr updateWriting
@@ -939,24 +964,8 @@ cmdBJobPrefix     !pet "m-w",0,0,1
 cmdBJob           !byte 1,chrCR
 cmdBPollJob       !pet "m-r",0,0,chrCR
 
-writeVirtFcb !byte 0
 trackWriteVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    jsr updateWriting
-   lda #2
-   ldx #currentTrack
-   jsr Utoa
-   ldy #0
-   lda (zp),y
-   sta cmdVCurrTrkSec+0
-   iny
-   lda (zp),y
-   sta cmdVCurrTrkSec+1
-   +ldaSCII "w"
-   ldx writeDevice
-   jsr blockOpenVirt
-   bcc +
-   rts
-+  sta writeVirtFcb
    ldx currentTrack
    dex
    lda blocksPerTrack,x
@@ -969,19 +978,13 @@ trackWriteVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    sta sectorCount
 -  jsr updateProgress
    jsr checkstop
-   lda curSectorPtr+0
-   ldy curSectorPtr+1
-   sta zp+0
-   sty zp+1
-   ldx writeVirtFcb
-   lda #1
-   jsr aceDirectWrite
+   jsr mpNext
+   jsr mpPut
    inc curSectorPtr+1
    inc sectorCount
    dec blocksInTrack
    bne -
-   lda writeVirtFcb
-   jmp close
+   rts
 
 cmdchJobSend = *
    ldx #0
@@ -1017,6 +1020,7 @@ cmdchOpen = *  ;( .X=IEC device )
 +  rts
 
 cmdchClose = *
+   sec
    lda #cmdlf
    jsr kernelClose
    bcc +
@@ -1091,6 +1095,7 @@ checkDiskStatus = *     ;() : .CS/errno=error, .A=code, cmdBuffer=message
 +  cmp #20
    bcc +
    sta errno
+   clc
 +  rts
 checkDiskStatusCode !byte 0
 
