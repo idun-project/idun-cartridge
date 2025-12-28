@@ -686,11 +686,13 @@ reserveTPA = *
 
 eramDetect = *
    ;detect ERAM presence
-!if useFastClock {
+!if useC128 {
    ldy $d030
    sty $44
    ldy #0
    sty $d030
+} else {
+   sty turboOff
 }
    ldy #1
    sty $defe
@@ -698,9 +700,11 @@ eramDetect = *
    beq eramDetectFail
    bit $defe
    bvc -
-!if useFastClock {
+!if useC128 {
    ldy $44
    sty $d030
+} else {
+   sty turboOn
 }
    lda $defe
    cmp #65
@@ -713,9 +717,11 @@ eramDetect = *
    sta hasEram
    rts
 eramDetectFail:
-!if useFastClock {
+!if useC128 {
    ldy $44
    sty $d030
+} else {
+   sty turboOn
 }
    lda #$00
    sta hasEram

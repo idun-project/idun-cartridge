@@ -35,6 +35,7 @@
     basicWarmStart = $a002
     PATCH_ROM_JUMP = $f730   ;for patched ROMs
     jump_offset    = $0b
+    turboOff       = $d07a
 }
 TXTBUF = $200
 TOK_RUN = $8a
@@ -969,6 +970,11 @@ CopyRAMR = *
     ;** RAM_START area relocated, then
     ;** overwritten with the config blob
 LoadConfig = *
+    ; From here on, make sure the C64U Turbo is Off.
+    ; It gets turned on by the Idun Kernel, if loaded.
+!if useC64 {
+    sta turboOff
+}
     ; TALK channel #9
     lda #9  ;I:
     clc

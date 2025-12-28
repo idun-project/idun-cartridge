@@ -21,7 +21,7 @@ aceTagsStart      = aceStatB+94  ;(1)
 aceCharSetPage    = aceStatB+95  ;(1)
 aceVic40Page      = aceStatB+96  ;(1)
 aceTpaLimit       = aceStatB+97  ;(1)
-aceSuperCpuFlag   = aceStatB+98  ;(1)   ;SuperCPU/normal flag
+aceTurboCpuFlag   = aceStatB+98  ;(1)   ;C64U/normal flag
 aceSoft80Allocated= aceStatB+99  ;(1)   ;$ff=yes,$00=no
 aceCurDirName     = aceStatB+101 ;(3)   ;name of current directory
 ;===end of aceStatB ($f00 - $f90 used; max $faf)

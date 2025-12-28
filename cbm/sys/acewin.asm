@@ -142,14 +142,14 @@ winActivate = *  ;( .A=driverCode, .X=columns, .Y=rows ) : .CS=err
    sta winTemp+0
    bit winTemp+0
    bpl +
-!if useFastClock {
+!if useC128 {
    jsr winClockFast
 }
    tya
    jsr vdcActivate
    jmp winActvCont
 +  nop
-!if useFastClock {
+!if useC128 {
    jsr winClockSlow
 }
    bit winTemp+0
@@ -183,26 +183,26 @@ winActivate = *  ;( .A=driverCode, .X=columns, .Y=rows ) : .CS=err
    jsr conScrChangeCallback  ;con colors, mouse bounds
    jmp kernWinSize
 
+!if useC128 {
 winClockFast = *
-   !if useFastClock {
    lda vic+$11
    and #%01101111
    sta vic+$11
    lda #1
    sta vic+$30
-   }
    rts
+}
 
+!if useC128 {
 winClockSlow = *
-   !if useFastClock {
    lda #0
    sta vic+$30
    lda vic+$11
    and #%01111111
    ora #%00010000
    sta vic+$11
-   }
    rts
+}
 
 kernWinMax = *  ;( )
    lda #0
@@ -682,35 +682,12 @@ winChrsetPalette = *  ;( sw+4=flags, .X=startChar, sw+5=len, (sw+6)=dataAddr )
    jmp winChrsetExit
 
 kernWinOption = *
-   php
-   cpx #6
-   beq +++
-   plp
    bit winDriver
    bpl +
    jmp vdcWinOption
 +  bvc +
    jmp vicWinOption
 +  jmp seWinOption
-   ;** cpu-speed option (units: MHz)
-+++plp
-   bcc ++
-   cmp #2
-   bcs +
-   jsr winClockSlow
-   jmp ++
-+  jsr winClockFast
-++ nop
-!if useFastClock {
-   lda vic+$30
-} else {
-   lda #$00
-}
-   and #$01
-   clc
-   adc #1
-   clc
-   rts
 
 winIrqCursor = *
    bit winDriver

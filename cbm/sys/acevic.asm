@@ -177,12 +177,7 @@ vicExtAttr  !byte 0
 vicFillByte !byte 0
 
 vicWinPut = *
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrAll
-   sta scpuHwOff
-+  sta vicPutWhich
+   sta vicPutWhich
    sty vicFillByte
    stx vicPutLen
    ldx #$00
@@ -264,23 +259,11 @@ vicWinPut = *
    lda syswork+1
    sbc vicColorOff
    sta syswork+1
-   ;xx fall through
-
 vicMirrorAll = *
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrAll
-   sta scpuHwOff
-+  rts
+   rts
 
 vicMirrorOff = *
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrOff
-   sta scpuHwOff
-+  clc
+   clc
    rts
 
 vicWinGet = *
@@ -290,13 +273,8 @@ vicWinGet = *
 vicWinCopyRowSave !byte 0,0
 
 vicWinCopyRow = *
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrAll
-   sta scpuHwOff
-+  bit winScrollMask
-   bvc ++
+   bit winScrollMask
+   bvc +
    clc
    lda winScrollDest+1
    sta vicWinCopyRowSave+0
@@ -308,14 +286,11 @@ vicWinCopyRow = *
    adc vicColorOff
    sta winScrollSource+1
    jsr vicWinCopyDo
-   bit aceSuperCpuFlag
-   bpl +
-   jsr vicMirrorAll
-+  lda vicWinCopyRowSave+0
+   lda vicWinCopyRowSave+0
    sta winScrollDest+1
    lda vicWinCopyRowSave+1
    sta winScrollSource+1
-++ bit winScrollMask
++  bit winScrollMask
    bpl +
 
    vicWinCopyDo = *
@@ -471,9 +446,7 @@ vicIrqCursor = *
    vicIrqCursorEnter = *
    dec vicCursorCountdown
    bne -
-   lda scpuMrMode
    pha
-   jsr vicMirrorAll
    lda vicCursorMaxcount
    sta vicCursorCountdown
    lda vicCursorState
@@ -521,12 +494,7 @@ vicIrqNonRvsCharCursor = *
 
    vicIrqMirrorOff = *
    pla
-   bit aceSuperCpuFlag
-   bpl +
-   sta scpuHwOn
-   sta scpuMrMode
-   sta scpuHwOff
-+  clc
+   clc
    rts
 
 vicSetColorAddr = *  ;( (sw+0)=addr ) : (sw+0)=colorAddr

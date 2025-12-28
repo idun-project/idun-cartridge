@@ -1231,23 +1231,25 @@ keyscanInit = *
    sta ignoreKeys
    ldx #$00
    ldy #8
+!if useC128 {
    lda $d030
    and #$02
    bne +
    ldx #$ff
    ldy #11
+}
 +  stx extKeyboardFlag
    sty scanrows
    stx extCapsFlag
-!if useC64 {
-   bit extCapsFlag
-   bpl +
-   bit aceSuperCpuFlag
-   bpl +
-   lda #$00
-   sta extCapsFlag  ;SCPU-64 can't read the CAPS key
-+  nop
-}
+; !if useC64 {
+;    bit extCapsFlag
+;    bpl +
+;    bit aceSuperCpuFlag
+;    bpl +
+;    lda #$00
+;    sta extCapsFlag  ;SCPU-64 can't read the CAPS key
+; +  nop
+; }
    rts
 
 ;the idea for the keyscan routine comes from Marko Makela

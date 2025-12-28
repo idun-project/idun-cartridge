@@ -41,7 +41,6 @@
    useVic  = 1
    useSoft80 = 0  ;;can't use on C128
    useExtKeyboard = 1
-   useFastClock = 1
 } else {
    useC64  = 1
    useC128 = 0 ;no
@@ -49,7 +48,6 @@
    useVic  = 1
    useSoft80 = 1
    useExtKeyboard = 0
-   useFastClock = 0 ;don't use--crashes on C64
 }
 
 ;*** Start of kernel code
@@ -116,11 +114,8 @@ st    = $90
 true  = $ff
 false = $00
 chrQuote = $22
-scpuHwOn  = $d07e
-scpuHwOff = $d07f
-scpuMrMode = $d0b4
-scpuMrAll = $d077 ;mirror all
-scpuMrOff = $d076 ;mirror only BASIC screen
+turboOff = $d07a
+turboOn  = $d07b
 
 fcbCount = 16
 lftable   =$fb0
@@ -195,13 +190,10 @@ entryPoint = *
    and #$80
    bne +
    ldx #$ff
-+  stx aceSuperCpuFlag
-   bit aceSuperCpuFlag
++  stx aceTurboCpuFlag
+   bit aceTurboCpuFlag
    bpl +
-   sta scpuHwOn
-   sta $d07b ;select 20 MHz
-   sta scpuMrAll
-   sta scpuHwOff
+   sta turboOn ;select 20 MHz
 +  sei
    jsr aceBootstrap
    jsr initMemory
@@ -215,11 +207,9 @@ entryPoint = *
    bcc +
    jmp configErrMainExit
 +  jsr aceStartup
-   bit aceSuperCpuFlag
+   bit aceTurboCpuFlag
    bpl +
-   sta scpuHwOn
-   sta scpuMrOff
-   sta scpuHwOff
+   sta turboOn
 +  sei
    jsr winStartup
    jsr conInit
@@ -445,7 +435,7 @@ aceBootstrap = *
    ldy #>nmiContinue
    sta nmiRedirect+0   ;redundant on C128
    sty nmiRedirect+1
-   lda aceSuperCpuFlag
+   lda aceTurboCpuFlag
    pha
    ;clear aceStatB area
    ldx #0
@@ -455,7 +445,7 @@ aceBootstrap = *
    cpx #(lftable-aceStatB)
    bne -
    pla
-   sta aceSuperCpuFlag
+   sta aceTurboCpuFlag
    lda #3   ; C: is default device
    asl
    asl
@@ -495,8 +485,11 @@ aceConfig = *
    lda #128
 } else {
    lda #64
+   bit aceTurboCpuFlag
+   bpl +
+   ora #32
 }
-   sta 9
++  sta 9
    lda #<charset4bit
    ldy #>charset4bit
    sta 10

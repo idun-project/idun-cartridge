@@ -869,8 +869,6 @@ seIrqCursor = *
    seIrqCursorEnter = *
    dec seCursorCountdown
    bne -
-   lda scpuMrMode
-   pha
    lda seCursorMaxCntdn
    sta seCursorCountdown
    lda seCursorAddr+0
@@ -899,7 +897,6 @@ seIrqCursor = *
    lda seCursorState
    eor #$ff
    sta seCursorState
-   pla
    clc
    rts
 

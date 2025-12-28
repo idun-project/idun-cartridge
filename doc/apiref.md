@@ -691,8 +691,7 @@ NAME   :  aceWinOption
 PURPOSE:  set/get character window/screen options
 ARGS   :  .X   = option number to get/set
                  (1=screen color, 2=border color, 3=cursor style,
-                  4=cursor-blink speed, 5=screen rvs, 6=cpu speed,
-                  7=alter palette)
+                  4=cursor-blink speed, 5=screen rvs, 7=alter palette)
           .CS  = set option (.CC=get)
           .A   = value
           .Y   = extra value if needed

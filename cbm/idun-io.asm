@@ -32,10 +32,14 @@
 rom_sig !pet "CBM"
 nmiMmap = *             ;33 cycles (in kernal)
   ; Exrom access needs 1MHz
+!if useC128 {
   bit winDriver         ;4
   bpl +                 ;2
   lda #$00              ;2
   sta $d030             ;4
+} else {
+  sta turboOff
+}
 + lda #bkExtrom         ;2
   sta bkSelect          ;4
 !if useC64 {
@@ -62,27 +66,42 @@ nmiMmap = *             ;33 cycles (in kernal)
   ;
   ;soft-switch disable ROM
   sta romlOff           ;4
-  ; Restore 2MHz
+  ; Restore 2MHz/turbo
+!if useC128 {
   bit winDriver         ;4
   bpl +                 ;2
   lda #$01              ;2
   sta $d030             ;4
+} else {
+  sta turboOn
+}
 + jmp nmiExit
   nmiOther = *
   ;soft-switch disable ROM
   sta romlOff           ;4
   ; Restore 2MHz
+!if useC128 {
   bit winDriver         ;4
   bpl +                 ;2
-  jsr winClockFast      ;28
+  lda #$01              ;2
+  sta $d030             ;4
+} else {
+  sta turboOn
+}
 + jmp nmiContinue       ;48
 }
 
 ; .A=char
 ; return .CS=error
 pidChOut = *
+!if useC64 {
+  sta turboOff
+}
   sta idDataport
   clc
+!if useC64 {
+  sta turboOn
+}
   rts
 
 ; (writePtr[.X]), .X=length, max. of 0/256
@@ -91,6 +110,9 @@ kernModemPut = *
   sta writePtr+0
   sty writePtr+1
 pidPutbuf = *
+!if useC64 {
+  sta turboOff
+}
   stx lengthBuf
   ldy #0
 - lda (writePtr),y
@@ -99,19 +121,31 @@ pidPutbuf = *
   cpy lengthBuf
   bne -
   clc
+!if useC64 {
+  sta turboOn
+}
   rts
 
 pidChIn = *
+!if useC64 {
+  sta turboOff
+}
   ; preserve X, Y
   lda idRxBufLen
   bne +
   sec
+!if useC64 {
+  sta turboOn
+}
   rts
   ; Add 2 cycle delay before accessing IO1 again.
 + nop
   lda idDataport
   sta recvByte
   clc
+!if useC64 {
+  sta turboOn
+}
   rts
 
 ;*** pidCharAvail : .A=avail
@@ -125,6 +159,9 @@ kernModemGet = *
   sta readPtr+0
   sty readPtr+1
 pidGetbuf = *
+!if useC64 {
+  sta turboOff
+}
   stx lengthBuf
   ldy #0
   ; wait for data available
@@ -141,8 +178,14 @@ pidGetbuf = *
   beq --
   jmp -
 + clc
+!if useC64 {
+  sta turboOn
+}
   rts
 pidReadseq = *
+!if useC64 {
+  sta turboOff
+}
   stx lengthBuf
   ldy #0
   ; wait for data available
@@ -154,6 +197,9 @@ pidReadseq = *
   cmp #$fa    ;EOF?
   bne +
   sec
+!if useC64 {
+  sta turboOn
+}
   rts
 + sta (readPtr),y
   iny
@@ -163,6 +209,9 @@ pidReadseq = *
   beq --
   jmp -
 + clc
+!if useC64 {
+  sta turboOn
+}
   rts
 pidBankload = *
   stx lengthBuf
@@ -187,11 +236,17 @@ pidBankload = *
   rts
 
 pidFlushbuf = *
+!if useC64 {
+  sta turboOff
+}
 - lda idRxBufLen
   nop
   beq +
   lda idDataport
   jmp -
+!if useC64 {
++ sta turboOn
+}
 + rts
 
 

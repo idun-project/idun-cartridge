@@ -168,34 +168,42 @@ comCopyFromRam0 = *
 comCodeEnd = *
 
 seBank = *
-!if useFastClock {
+!if useC128 {
    ldy $d030
    sty cpuspd
    ldy #0
    sty $d030
+} else {
+   sta turboOff
 }
    sta $deff
 -  bit $defe
    bvc -
-!if useFastClock {
+!if useC128 {
    ldy cpuspd
    sty $d030
+} else {
+   sta turboOn
 }
    rts
 
 sePage = *
-!if useFastClock {
+!if useC128 {
    ldy $d030
    sty cpuspd
    ldy #0
    sty $d030
+} else {
+   sta turboOff
 }
    sta $defe
 -  bit $defe
    bvc -
-!if useFastClock {
+!if useC128 {
    ldy cpuspd
    sty $d030
+} else {
+   sta turboOn
 }
    rts
 
