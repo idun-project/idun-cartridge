@@ -155,9 +155,10 @@ kernelRestor = $ff8a
 
 ;*** entrypoint()
 entryPoint = *
-   lda #0
-   pha
-   plp
+   ;Inhibit interrupts first thing! This because
+   ;the C128's BASIC IRQ handler will conspire to
+   ;overwrite this code!
+   sei
    ;remove intf vectors overridden by booter
    jsr kernelRestor
    ;remove wedge setup by booter
@@ -194,8 +195,7 @@ entryPoint = *
    bit aceTurboCpuFlag
    bpl +
    sta turboOn ;select 20 MHz
-+  sei
-   jsr aceBootstrap
++  jsr aceBootstrap
    jsr initMemory
    ; IDUN: Init syswork vars to 0 to prevent weird side-effects
    ldy #15
@@ -210,8 +210,7 @@ entryPoint = *
    bit aceTurboCpuFlag
    bpl +
    sta turboOn
-+  sei
-   jsr winStartup
++  jsr winStartup
    jsr conInit
    lda #$01
    sta vic+$1a     ;enable VIC raster IRQ
