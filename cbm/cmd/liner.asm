@@ -19,6 +19,7 @@ next    = $0a ;(2)
 color   = $0c ;(1)
 limX    = $0d ;(1)
 limY    = $0e ;(1)
+MHz     = $0f ;(1)
 
 Pts !byte 0,0,0,0
     !byte 0,0,0,0
@@ -72,6 +73,14 @@ main = *
     lda #<doNothing
     ldy #>doNothing
     jsr aceIrqHook
+    ; Slow down fast C64U
+    clc
+    jsr aceTurboCtl
+    sta MHz
+    lda #3
+    sec
+    jsr aceTurboCtl
+
     lda #$10
     sta color
     ;** step num pixels
@@ -303,6 +312,9 @@ checkStop = *
 exit = *
     jsr aceGrExit
     jsr toolWinRestore
+    lda MHz
+    sec
+    jsr aceTurboCtl
     lda #1
     ldx #0
     jmp aceProcExit

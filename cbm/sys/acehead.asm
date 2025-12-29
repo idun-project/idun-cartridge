@@ -143,7 +143,8 @@ new              = aceCallB+219 ;( (.AY)=data, .X=$ff?, zw=#bytes : (mp), .CS=er
 memtag           = aceCallB+222 ;( (.AY)=tag, (mp) : .CS=error )
 mmap             = aceCallB+225 ;( (.AY)=tag, (zp)=fname, .X=$ff? : .CS=error)
                                 ;set .X=$ff to mmap to system area
-aceReserved2     = aceCallB+228
+; IDUN: New API for C64 Ultimate Turbo
+aceTurboCtl      = aceCallB+228 ;( .A=index, .CS=set : .A=index, .ZS=error )
 ; IDUN: Add function to get key system type values
 aceMiscSysType   = aceCallB+231 ;( : .A=model, .X=int. banks, .Y=eram banks)
 ; IDUN: Add function to inject keystrokes; support user-defined macro keys

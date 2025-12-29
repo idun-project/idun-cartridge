@@ -194,7 +194,10 @@ entryPoint = *
 +  stx aceTurboCpuFlag
    bit aceTurboCpuFlag
    bpl +
-   sta turboOn ;select 20 MHz
+   lda #15            ;maximum MHz
+   sec
+   jsr kernTurboCtl   ;revving
+   sta turboOn        ;ZOOOOM!
 +  jsr aceBootstrap
    jsr initMemory
    ; IDUN: Init syswork vars to 0 to prevent weird side-effects
@@ -207,10 +210,7 @@ entryPoint = *
    bcc +
    jmp configErrMainExit
 +  jsr aceStartup
-   bit aceTurboCpuFlag
-   bpl +
-   sta turboOn
-+  jsr winStartup
+   jsr winStartup
    jsr conInit
    lda #$01
    sta vic+$1a     ;enable VIC raster IRQ
@@ -375,7 +375,7 @@ jmp kernModemPut
 jmp kernNew
 jmp kernMemtag
 jmp kernMmap
-jmp notImp
+jmp kernTurboCtl
 jmp kernMiscSysType
 jmp kernMiscRobokey
 jmp kernMountImage

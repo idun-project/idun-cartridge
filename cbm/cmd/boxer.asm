@@ -20,6 +20,7 @@ color   = $0c ;(1)
 limX    = $0d ;(2)
 limY    = $0f ;(1)
 zptmp   = $10 ;(2)
+MHz     = $12 ;(1)
 
 Pts !byte 0,0,0,0
     !byte 0,0,0,0
@@ -73,6 +74,14 @@ main = *
     lda #<doNothing
     ldy #>doNothing
     jsr aceIrqHook
+    ; Slow down fast C64U
+    clc
+    jsr aceTurboCtl
+    sta MHz
+    lda #1
+    sec
+    jsr aceTurboCtl
+
     lda #$10
     sta color
     ;** step num pixels
@@ -133,29 +142,6 @@ main = *
 ++  rts
 
 mainloop = *
-    ;TESTING
-;     lda #<300
-;     ldy #>300
-;     sta X1
-;     sty X1+1
-;     lda #<50
-;     ldy #>50
-;     sta Y1
-;     sty Y1+1
-;     lda #<50
-;     ldy #>50
-;     sta X2
-;     sty X2+1
-;     lda #<150
-;     ldy #>150
-;     sta Y2
-;     sty Y2+1
-;     sec
-;     jsr xRectangle
-; -   jsr aceConStopkey
-;     bcc -
-;     jmp exit
-
     ;erase last
     lda last+0
     ldy last+1
@@ -358,6 +344,9 @@ checkStop = *
 exit = *
     jsr aceGrExit
     jsr toolWinRestore
+    lda MHz
+    sec
+    jsr aceTurboCtl
     lda #1
     ldx #0
     jmp aceProcExit

@@ -1854,6 +1854,27 @@ kernMountImage = *
 kernCopyHost = *
    jmp pidCopyLocal   
 
+;*** aceTurboCtl ( .A=index, .CS=set) : .A=index, .ZS=none
+; The turbo index is a value from 0-15 that maps to a MHz
+; speed for the C64U. Bit 7 may also be set in the index to
+; disable VIC-II bad line cycle stealing, but this is usually
+; not recommended! 
+; If you only want to read the current index, then call with
+; .CC.
+; If the turbo ability appears unavailable or disabled, then
+; .Z flag is set in return.
+kernTurboCtl = *
+   bcs +
+-  lda $d031
+   cmp #$ff
+   rts
++  bit aceTurboCpuFlag
+   bmi +
+   lda #0
+   rts
++  sta $d031
+   jmp -
+
 ;====== support functions ======
 
 ;*** getDevice( zp=filenameZ ) : .A=device, .Y=scanPos

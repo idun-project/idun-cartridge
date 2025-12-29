@@ -1450,6 +1450,17 @@ ALTERS :  <nothing>
 
 Does a poke into the system I/O-address space.  This is a pretty ugly call, but you should use this rather than poking into the space directly because application programs aren't supposed to directly peek into there at all.
 
+```
+NAME   :  aceTurboCtl
+PURPOSE:  control the turbo boost of the C64 Ultimate
+ARGS   :  .A   = index value for speed (0 to 15)
+          .CS  = write new index
+RETURNS:  .A   = index read/written
+          .ZS  = no turbo mode enabled
+ALTERS :  .A
+```
+
+The turbo index is a value from 0-15 that maps to a MHz speed for the C64U. Bit 7 may also be set in the index to disable VIC-II bad line cycle stealing, but this is usually not recommended! If you only want to read the current index, then call with carry clear. If the turbo ability appears unavailable or disabled, like if you are actually running on an original C64, then Z-flag is set in return.
 
 #### 12. IOCTL CALLS
 
