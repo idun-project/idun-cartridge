@@ -91,7 +91,7 @@ ${green}liner${white} is a screensaver that draws animated lines using the hi-re
 linux!
 run Linux CLI command
 The ${green}linux${white} command provides a convenient way to open a terminal window and launch a paricular command. Any output will be shown in the terminal window and will continue until the linux program exits. Then, you can press any key to return to the idun shell.
-load
+load!
 load/run native program
 Normal Commodore programs not designed to run from the shell can be started using the ${green}load${white} command. This will load the program into memory, probably overwriting the idun kernel, and then jump to the start. One limitation is that any virtual disks or images you mounted won't be available to the native program after it starts execution. If the program needs to access virtual disks, then consider installing the Idun Kernal ROM patch.
 lua!
@@ -130,6 +130,9 @@ ${bold}Usage:${normal} rename <old> <new> ... -- This command will rename one (o
 resident!
 keep a tool RAM-resident
 The ${green}resident${white} command pre-loads a tool into dynamic memory, allowing it to be started faster when used repeatedly. The default 'z:autoexec.bat' file uses this to pre-load the ${green}tty${white} command.
+run$
+load/run native program
+Native Commodore programs not designed to run from the Idun shell can be started using the ${green}run${white} command. This will load the program into memory, probably overwriting the idun kernel, and then jump to the start. If the program needs to access virtual disks, then consider installing the Idun Kernal ROM patch.
 show$
 smart image display
 There are several supported image file formats that can be displayed from the shell. The ${green}show${white} command determines which program to run automatically, based on the file extension in the argument(s). If multiple filenames are specified (including wildcards), then each file will be shown and pressing any key will load the next. But, all the file arguments must have the same extension. e.g. `show *.koa` to show all the Koala images in the current directory.

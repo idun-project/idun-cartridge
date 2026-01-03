@@ -927,36 +927,8 @@ dirFile = *
 ;===drives===
 devDrive !pet "a:",0
 drives = *
-   lda #0
-   ldy #0
-   jsr getarg
-   lda zp
-   ora zp+1
-   beq DrivesShowAll
-   ldy #0
-   lda (zp),y
-   sta devDrive
-   lda #<devDrive
-   ldy #>devDrive
-   sta zp
-   sty zp+1
-   ;fall-through
-   DrivesShowDrv = *
-   lda #$80
-   jsr aceDirStat
-   bcc +
-   rts
-+  ldx #stdout
-   jsr zpputs
-   lda #"="
-   jsr putchar
-   lda #<aceSharedBuf
-   ldy #>aceSharedBuf
-   jsr puts
    lda #chrCR
-   jmp putchar
-
-   DrivesShowAll = *
+   jsr putchar
    lda #$40
    sta devDrive
 -  inc devDrive
@@ -976,6 +948,40 @@ drives = *
    cmp #$5a
    bne -
    rts
+
+   DrivesShowDrv = *
+   lda #$80
+   jsr aceDirStat
+   bcc +
+   rts
++  ldy #$ff
+   ldx #$ff
+-  iny
+   inx
+   lda (zp),y
+   sta driveBuffer,x
+   bne -
+   lda #"="
+   sta driveBuffer,x
+   ldy #$ff
+-  iny
+   inx
+   lda aceSharedBuf,y
+   sta driveBuffer,x
+   bne -
+   ; append CR
+   lda #chrCR
+   sta driveBuffer,x
+   inx
+   txa
+   ldx #<driveBuffer
+   ldy #>driveBuffer
+   stx zp
+   sty zp+1
+   ldy #0
+   ldx #stdout
+   jmp write
+driveBuffer !fill 82,0
 
 ;===mount/assign===
 devType = $02
