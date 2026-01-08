@@ -298,6 +298,9 @@ kernWinCls = *
    sty syswork+1
    lda winRows
    sta winFillCount
+   bne winClsInside
+   clc
+   rts
    winClsInside = *
    lda winCols
    sta syswork+5
