@@ -1380,48 +1380,32 @@ escCursorPos = *  ;ESC [ row ; col H    //   ESC [ row ; col f
 -  lda escParmData,x
    bne +
    lda #1
-+  sec
-   sbc #1
-   cmp toolWinScroll+0,x
++  cmp toolWinScroll+0,x
    bcc +
    lda toolWinScroll+0,x
-   sbc #1
 +  sta escParmData,x
    dex
    bpl -
    ;** determine if location is inside of current scroll window
-   sec
-   lda toolWinScroll+2
-   sbc toolWinScroll+2
-   sta work+0         ;start col of scroll window in full term window
    lda escParmData+0
-   cmp work+0
+   cmp toolWinScroll+2
    bcc +
-   clc
-   lda work+0
-   adc toolWinScroll+0
-   cmp escParmData+0
-   beq +
-   bcs ++
+   cmp toolWinScroll+0
+   beq ++
+   bcc ++
    ;** if not within window, make window full-screen--approximation of vt100
-+  lda toolWinScroll+2
++  lda #1
    ldx toolWinScroll+3
-   sta toolWinScroll+2
-   stx toolWinScroll+3
    sta syswork+0
    stx syswork+1
    lda toolWinScroll+0
    ldx toolWinScroll+1
-   sta toolWinScroll+0
-   stx toolWinScroll+1
    jsr aceWinSet
-   lda #0
-   sta work+0
    ;** if within window, move cursor
-++ sec
+++ dec escParmData+0
    lda escParmData+0
-   sbc work+0
    ldx escParmData+1
+   dex
    jsr aceConPos
    jmp escFinish
 
@@ -1459,13 +1443,11 @@ escCursorLeft = *  ;ESC [ count D
    jmp escCursorRep
 
 escCursorSave = *  ;ESC 7
-   sec
-   lda toolWinScroll+2
-   sbc toolWinScroll+2
-   sta cursorSavePos+0
    jsr aceConGetpos
-   sec ;sic
-   adc cursorSavePos+0
+   sec
+   sbc toolWinScroll+2
+   clc
+   adc #1
    sta cursorSavePos+0
    inx
    stx cursorSavePos+1
@@ -1532,29 +1514,21 @@ escKeypadNorm = *  ;ESC >
 
 escScrollRegion = *  ;ESC [ top bottom r
    lda escParmData+0
-   beq +
-   sec
-   sbc #1
-   cmp toolWinScroll+0
-   bcc +
+   bne +
+   lda #1               ; top==0 => row 1
++  cmp toolWinScroll+0
+   bcc +                ; top < toolWinScroll+0?
    lda toolWinScroll+0
-   sbc #1
-+  clc
-   adc toolWinScroll+2
-   sta syswork+0
++  sta syswork+0
    ldx toolWinScroll+3
    stx syswork+1
    lda escParmData+1
    bne +
-   lda toolWinScroll+0
-+  cmp toolWinScroll+0
-   beq +
-   bcc +
-   lda toolWinScroll+0
-+  clc
-   adc toolWinScroll+2
-   sec
+   lda toolWinScroll+0  ; bottom==0 => row toolWinScroll+0
++  sec
    sbc syswork+0
+   clc
+   adc #1
    ldx toolWinScroll+1
    jsr aceWinSet
    jsr aceWinSize
