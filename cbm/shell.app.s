@@ -477,6 +477,7 @@ dirShow = *
 dirLsShort = *
    ldx toolWinScroll+1
    stx dirChCols
+   dex
    txa
    ldx #0
 -  inx
@@ -927,8 +928,6 @@ dirFile = *
 ;===drives===
 devDrive !pet "a:",0
 drives = *
-   lda #chrCR
-   jsr putchar
    lda #$40
    sta devDrive
 -  inc devDrive
