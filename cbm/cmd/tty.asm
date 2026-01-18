@@ -44,11 +44,15 @@ emulateMode   = 30  ;(1)  ;0=literal,1=glasstty,2=vt100
 escChar       = 31  ;(1)  ;current char in esc sequence
 charColor     = 32  ;(1)  ;color of characters
 cursorSaveColor = 33 ;(1) ;saved color of characters
-work          = 48 ;(16) ;lowest-level temporary work area
+work          = 48  ;(16) ;lowest-level temporary work area
 
-escParmData:  !fill 24,0     ;accept up to 24 parameters for ESC sequences
+scrRows !byte 0         ;rows,cols,top,left for full screen
+scrCols !byte 0
+scrStartRow !byte 0
+scrStartCol !byte 0
+
+escParmData !fill 24,0  ;accept up to 24 parameters for ESC sequences
 readbufLenMax = 256     ;maximum size in bytes
-readbufLen:   !word readbufLenMax
 
 ;===main===
 
@@ -195,6 +199,11 @@ modemOpen = *
 modemFilenameErr: !pet "Cannot open device or process",13,0
 
 getTermsz = *
+   ldx #3
+-  lda toolWinScroll,x
+   sta scrRows,x
+   dex
+   bpl -
    ;check for 40 cols
    lda toolWinScroll+1
    cmp #40
@@ -1380,44 +1389,103 @@ escCursorPos = *  ;ESC [ row ; col H    //   ESC [ row ; col f
 -  lda escParmData,x
    bne +
    lda #1
-+  cmp toolWinScroll+0,x
++  sec
+   sbc #1
+   cmp scrRows,x
    bcc +
-   lda toolWinScroll+0,x
+   lda scrRows,x
+   sbc #1
 +  sta escParmData,x
    dex
    bpl -
-   ;** determine if location is inside of current scroll window
+   sec
+   lda toolWinScroll+2
+   sbc scrStartRow
+   sta work+0         ;start row of scroll window in full term window
+   sec
    lda escParmData+0
-   cmp toolWinScroll+2
-   bcc +
-   cmp toolWinScroll+0
-   beq ++
-   bcc ++
-   ;** if not within window, make window full-screen--approximation of vt100
-+  lda #1
-   ldx toolWinScroll+3
-   sta syswork+0
-   stx syswork+1
-   lda toolWinScroll+0
-   ldx toolWinScroll+1
-   jsr aceWinSet
-   ;** if within window, move cursor
-++ dec escParmData+0
-   lda escParmData+0
-   ldx escParmData+1
-   dex
+   sbc work+0
+   bpl +
+   lda #0
++  ldx escParmData+1
    jsr aceConPos
    jmp escFinish
 
-escCursorUpScroll = *
-escCursorUp = *   ;ESC [ count A   //   ESC M
-   lda #$91
+escCursorUpScroll = *   ;ESC M
+   jsr aceConGetpos
+   cmp toolWinScroll+2
+   bcs +
+   jmp escScrollViewDown
++  jmp escCursorUp
+
+escCursorDownScroll = * ;ESC D
+   jsr aceConGetpos
+   cmp scrRows
+   bcc +
+   jmp escScrollViewUp
++  jmp escCursorDown
+
+escCursorCntr = *
+   lda escParmData+0
+   bne +
+   inc escParmData+0
++  sec
+   lda toolWinScroll+2
+   sbc scrStartRow
+   sta work+0
+   jsr aceConGetpos
+   sec ;sic
+   adc work+0
+   sta work+0
+   inx
+   rts
+
+escCursorUp = *   ;ESC [ count A
+   jsr escCursorCntr
+   sec
+   sbc escParmData+0
+   sta escParmData+0
+   stx escParmData+1
+   jmp escCursorPos
+
+escCursorDown = *  ;ESC [ count B
+   jsr escCursorCntr
+   clc
+   adc escParmData+0
+   sta escParmData+0
+   stx escParmData+1
+   jmp escCursorPos
+
+escCursorRight = * ;ESC [ count C
+   jsr escCursorCntr
+   pha
+   txa
+   clc
+   adc escParmData+0
+   sta escParmData+1
+   pla
+   sta escParmData+0
+   jmp escCursorPos
+
+escCursorLeft = *  ;ESC [ count D
+   jsr escCursorCntr
+   pha
+   txa
+   sec
+   sbc escParmData+0
+   sta escParmData+1
+   pla
+   sta escParmData+0
+   jmp escCursorPos
+
+escBlankspace = *  ;ESC [ count b
+   lda #$20
    escCursorRep = *
    sta escCursorChar
    lda escParmData+0
    bne .escCursorBra
    inc escParmData+0
-.escCursorBra
+.escCursorBra:
    lda escCursorChar
    jsr aceConPutctrl
    dec escParmData+0
@@ -1425,29 +1493,14 @@ escCursorUp = *   ;ESC [ count A   //   ESC M
    jmp escFinish
 escCursorChar: !byte 0
 
-escCursorDownScroll
-escCursorDown = *  ;ESC [ count B  //   ESC D
-   lda #$11
-   jmp escCursorRep
-
-escBlankspace = *   ;ESC [ count b
-   lda #$20
-   jmp escCursorRep
-   
-escCursorRight = *  ;ESC [ count C
-   lda #$1d
-   jmp escCursorRep
-
-escCursorLeft = *  ;ESC [ count D
-   lda #$9d
-   jmp escCursorRep
-
 escCursorSave = *  ;ESC 7
-   jsr aceConGetpos
    sec
-   sbc toolWinScroll+2
-   clc
-   adc #1
+   lda toolWinScroll+2
+   sbc scrStartRow
+   sta cursorSavePos+0
+   jsr aceConGetpos
+   sec ;sic
+   adc cursorSavePos+0
    sta cursorSavePos+0
    inx
    stx cursorSavePos+1
@@ -1514,22 +1567,30 @@ escKeypadNorm = *  ;ESC >
 
 escScrollRegion = *  ;ESC [ top bottom r
    lda escParmData+0
-   bne +
-   lda #1               ; top==0 => row 1
-+  cmp toolWinScroll+0
-   bcc +                ; top < toolWinScroll+0?
-   lda toolWinScroll+0
-+  sta syswork+0
-   ldx toolWinScroll+3
+   beq +
+   sec
+   sbc #1
+   cmp scrRows
+   bcc +
+   lda scrRows
+   sbc #1
++  clc
+   adc scrStartRow
+   sta syswork+0
+   ldx scrStartCol
    stx syswork+1
    lda escParmData+1
    bne +
-   lda toolWinScroll+0  ; bottom==0 => row toolWinScroll+0
-+  sec
+   lda scrRows
++  cmp scrRows
+   beq +
+   bcc +
+   lda scrRows
++  clc
+   adc scrStartRow
+   sec
    sbc syswork+0
-   clc
-   adc #1
-   ldx toolWinScroll+1
+   ldx scrCols
    jsr aceWinSet
    jsr aceWinSize
    sta toolWinScroll+0
@@ -1740,7 +1801,7 @@ escDeviceStatus = *  ;ESC type n
    sta work+3
    sec
    lda toolWinScroll+2
-   sbc toolWinScroll+2
+   sbc scrStartRow
    sta work+0
    jsr aceConGetpos
    sec ;sic
