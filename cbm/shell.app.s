@@ -153,6 +153,10 @@ Startup = *
 
    ; re-start tty normal (no neofetch hdr)
    Tty = *
+   ; Clear the working directory so we don't
+   ; try to reuse it.
+   lda #0
+   sta aceSharedBuf
    lda #<tty_tool
    ldy #>tty_tool
    sta zp
@@ -184,10 +188,6 @@ Startup = *
    sty zp+1
    lda #$00
    jsr aceDirChange
-   ; Clear the working directory so we don't
-   ; try to reuse it.
-   lda #0
-   sta aceSharedBuf
    ; Setup redirect?
 +  lda #$ff
    sta shellRedirectStdout
@@ -966,10 +966,11 @@ drives = *
 -  iny
    inx
    lda aceSharedBuf,y
+   beq +
    sta driveBuffer,x
-   bne -
+   jmp -
    ; append CR
-   lda #chrCR
++  lda #chrCR
    sta driveBuffer,x
    inx
    txa

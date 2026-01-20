@@ -913,6 +913,7 @@ kernDirStat = *
    lda #"r"
    sta openMode
    sty openNameScan
+   jsr pidFlushbuf
    jsr pidCommandSend
    lda #<dstatRespHandler
    ldy #>dstatRespHandler
