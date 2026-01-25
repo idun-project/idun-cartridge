@@ -114,7 +114,7 @@ main = *
    ldx #0
    jsr mmap
    bcc +
-   jmp srcOpenErrorMsg
+   jmp openSrcError
 +  jmp copyToFloppy
 
    copyFromFloppy = *
@@ -129,7 +129,7 @@ main = *
 +  ldx driveIec
    jsr checkFormatIec   ;1571- But is it a double-sided floppy?
    bne +
-   jmp srcOpenErrorMsg  ;Whoops! It's not even formatted!
+   jmp openSrcError     ;Whoops! It's not even formatted!
 +  bcs allocImage
    lda #35
    sta srcTracks        ;Single-sidded floppy
@@ -857,8 +857,8 @@ trackReadVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    sta sectorCount
 -  jsr updateProgress
    jsr checkstop
-   jsr mpNext
    jsr mpGet
+   jsr mpNext
    inc curSectorPtr+1
    inc sectorCount
    dec blocksInTrack
@@ -980,8 +980,8 @@ trackWriteVirtual = *  ;(currentTrack, trackBuffer) : .CS=error
    sta sectorCount
 -  jsr updateProgress
    jsr checkstop
-   jsr mpNext
    jsr mpPut
+   jsr mpNext
    inc curSectorPtr+1
    inc sectorCount
    dec blocksInTrack
