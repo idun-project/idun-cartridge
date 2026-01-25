@@ -445,8 +445,11 @@ aceBootstrap = *
    bne -
    pla
    sta aceTurboCpuFlag
-   lda #3   ; C: is default device
-   asl
+   lda $9c  ; default device. Should it be C:?
+   cmp #26
+   bne +
+   lda #3
++  asl
    asl
    sta aceCurrentDevice
    lda #0

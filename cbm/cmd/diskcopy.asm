@@ -37,7 +37,7 @@ kernelChrout   = $ffd2
 ;kernelCloseAll = $ff4a
 kernelClAll    = $ffe7
 
-cmdlf            = 66
+cmdlf            = 15
 datalf           = 76
 diraccChan       = 2
 chrQuote         = $22
@@ -550,17 +550,19 @@ initIec = *  ;(.X=IEC device) : .ZS=error .CS=70trk, .CC=35 trk
    jsr cmdchOpen
    bcs ++
    ;send I(nitialize) to make device ready
-   +ldaSCII "i"
-   sta cmdBuffer
-   ldx #1
-   jsr cmdchSend
-   bcs ++
+   ; +ldaSCII "i"
+   ; sta cmdBuffer
+   ; ldx #1
+   ; jsr cmdchSend
+   ; bcs ++
    ;send U9 to reset drive
    +ldaSCII "u"
    sta cmdBuffer
    +ldaSCII "9"
    sta cmdBuffer+1
-   ldx #2
+   lda #chrCR
+   sta cmdBuffer+2
+   ldx #3
    jsr cmdchSend
    bcs ++
    jsr checkDiskStatus
