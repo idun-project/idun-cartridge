@@ -15,6 +15,7 @@ jmp main
 !byte 64,0 ;*stack,reserved
 
 ; Constants
+WIN_DRIVER_VDC = %10001000
 chrQuote = 34
 ;needs room for 16 char dirname, trailing
 ;asterisk, and null termination (18 chars.)
@@ -248,9 +249,10 @@ clearScr = *
   jmp aceWinCls
 	
 main = *
-   jsr loadChrset
-   lda toolWinRegion+1
-   cmp #80
+   lda #FALSE
+   jsr toolStatEnable
+   jsr aceMiscSysType
+   cmp #WIN_DRIVER_VDC
    bne +
    ;setup for 80 columns
    lda #4
@@ -259,8 +261,13 @@ main = *
    ;setup for 40 columns
 +  lda #2
    sta maxColumns
+   lda #0
+   ldx #40
+   jsr aceWinScreen                ;40-col screen
+++ ;custom character set
+   jsr loadChrset
    ;setup zero page vars
-++ lda #0
+   lda #0
    sta currColumn
    sta currDevice
    sta saveDevice
@@ -335,6 +342,9 @@ exit = *
    ldy #0
    jsr toolStatMenu
    jsr unloadChrset
+   jsr toolWinRestore
+   lda #TRUE
+   jsr toolStatEnable
    jmp clearScr
 fail = *
    jsr exit
