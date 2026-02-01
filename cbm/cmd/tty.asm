@@ -1868,7 +1868,8 @@ escSoftReset = *  ;ESC [ ! p
    jmp escFinish
 
 escHardReset = *  ;ESC c
-   jsr HotQ
+   lda #%11000000
+   sta aceSignalProc
    jmp escFinish
 
 ;******** standard library ********

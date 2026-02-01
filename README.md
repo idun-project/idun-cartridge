@@ -24,7 +24,7 @@ You can also fit a Model A RPi, but the headers must be relocated to the opposit
 
 ### Support the project
 
-The best way to support the project is to [buy a hardware kit](https://www.tindie.com/products/idun-cartridge-c128/idun-cartridge-c128-kit/) from the online store. The kit comes with everything needed to assemble the idun-cartridge, except for the Raspberry Pi, which you will need to obtain yourself. Only basic soldering skills are needed, since the PCB is strictly through-hole components.
+The best way to support the project is to [buy a hardware kit](https://www.tindie.com/products/29946/) from the online store. The kit comes with everything needed to assemble the idun-cartridge, except for the Raspberry Pi, which you will need to obtain yourself. Only basic soldering skills are needed, since the PCB is strictly through-hole components.
 
 ### Quick start
 

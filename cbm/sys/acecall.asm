@@ -253,7 +253,7 @@ openDiskStatus = *  ;( .A=device ) : errno=.A=errcode, .CS=errflag
    bne +
    clc
    rts
-+  sta checkStat        ;temp. store device here!
++  sta diskStatusDev ;temp. store device here!
    jsr cmdchOpen
    bcc +
    cmp #aceErrFileOpen
@@ -261,11 +261,12 @@ openDiskStatus = *  ;( .A=device ) : errno=.A=errcode, .CS=errflag
 +  jsr checkDiskStatus
    php
    pha
-   ldx checkStat
+   ldx diskStatusDev
    jsr cmdchClose
    pla
    plp
 ++ rts
+diskStatusDev !byte 0
 
 cmdchOpen = *  ;( .A=device )
    ; pha
@@ -1048,12 +1049,15 @@ kernDirOpen = *
    jmp pidDirOpen
 +  lda #true
    sta checkStat
+   txa
+   jsr openDiskStatus
    +ldaSCII "$"
    sta stringBuffer+0
    +ldaSCII "0"
    sta stringBuffer+1
    lda #0
    sta stringBuffer+2
+   ldx #2
    jsr openGotName
    bcc +
    rts
@@ -1929,7 +1933,7 @@ getLfAndFcb = * ;() : .X=fcb, .A=lf
    openLfSearch = *
 +  inc newlf
    lda newlf
-   and #$1f
+   and #$1e    ;Lfn=30/31 reserved for block load & commands
    sec
    sbc #1
    ldy #fcbCount-1

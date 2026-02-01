@@ -169,6 +169,8 @@ Startup = *
    waitTty = *
    lda aceSignalProc
    bpl +
+   cmp #TRUE
+   bne Tty
    rts             ;Killed
 +  cmp #64
    bcc Tty
@@ -221,8 +223,10 @@ Startup = *
    ; otherwise, call local sub-routine.
    lda cmdPtr
    bne +
-   ; First arg is cmd name
+   ; Make sure aceSignalProc is cleared
    lda #0
+   sta aceSignalProc
+   ; First arg is cmd name
    ldy #0
    jsr getarg
    ; Release joystick capture for extern cmds
@@ -233,7 +237,7 @@ Startup = *
    ldy #0
    jsr aceProcExec
    jsr closeRedirect
-   jmp Tty
+   jmp waitTty
 +  lda argCnt
    ldy #0
    jsr aceProcExecSub
@@ -461,8 +465,8 @@ dirError = *
 dirShow = *
    bit dirCheckFi
    bpl +
-   lda #<dirName
-   ldy #>dirName
+   lda dirName+0
+   ldy dirName+1
    jsr aceDirIsdir
    cpy #0
    bne +
@@ -518,7 +522,7 @@ dirCommon = *
    jsr aceDirRead
    bcs dirExit
    ;Name of disk/directory can be zero-length
-   ;beq dirExit
+   beq dirExit
    jsr aceConStopkey
    bcc +
    jmp dirStopped
@@ -1068,7 +1072,7 @@ assign = *
    lda #chrCR
    jmp putchar
 
-;This is a plaeholder, since using exec causes an
+;This is a placeholder, since using exec causes an
 ;external command tool to be executed.
 exec = *
    rts
