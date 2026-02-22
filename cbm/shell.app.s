@@ -219,9 +219,16 @@ Startup = *
    ldy argPtr+1
    sta zw
    sty zw+1
+   ; Get rid of any lingering terminal output
+   jsr aceTtyAvail
+   beq +
+   tax
+   lda #<aceSharedBuf
+   ldy #>aceSharedBuf
+   jsr aceTtyGet   
    ; if cmdPtr==0, load external process
    ; otherwise, call local sub-routine.
-   lda cmdPtr
++  lda cmdPtr
    bne +
    ; Make sure aceSignalProc is cleared
    lda #0

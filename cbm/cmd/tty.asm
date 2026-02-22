@@ -298,7 +298,8 @@ termLoop = *
    lda #<readbuf
    ldy #>readbuf
    jsr aceTtyGet
-   bcs +
+   bit aceSignalProc
+   bvs termExit
    jsr cursorOff
    jsr PrintReceivedData
    jsr cursorOn

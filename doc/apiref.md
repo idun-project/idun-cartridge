@@ -817,7 +817,7 @@ $c1-$da   SH-A to SH-Z   SH-A to SH-Z   Regular uppercase letters
 $db       SH-+           SH-+           Left curly brace ({)
 $dc       SH-\ (Pound)   SH-\ (Pound)   Vertical bar (|)
 $dd       SH-- (Minus)   SH-- (Minus)   Right curly brace (})
-$de       SH-Uparrow     SH-Uparrow     Tilda (~)
+$de       SH-Uparrow     SH-Uparrow     Tilde (~)
 $df       SH-Backarrow   SH-Backarrow   House character (DEL on most systems)
 $e0-$ff   CT-@ to CT-_   CT-@ to CT-_   Control keys
 
