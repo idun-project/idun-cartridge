@@ -6,7 +6,7 @@ This innovative cartridge integrates a Raspberry Pi to provide a fast hardware i
 
 What does it do? It's easier to show in a demo, and there are many demo videos on [YouTube](https://www.youtube.com/@idunproject).
 
-There's also a [Discord Server](https://discord.gg/bddGUpfP) for the project. This is for idun-project discussion, new user advice, beta testing new features, and general retro-computing banter with a  Commodore bias.
+There's also a [Discord Server](https://discord.gg/qUGaUCaBEU) for the project. This is for idun-project discussion, new user advice, beta testing new features, and general retro-computing banter with a  Commodore bias.
 
 ### Hardware
 
