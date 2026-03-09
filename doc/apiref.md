@@ -1405,16 +1405,6 @@ ALTERS :  .A, .X, .Y
 When this returns, the full message has been processed. It will invoke the callback as many times as needed to process all the data.
 
 ```
-NAME   :  aceViceEmuCheck
-PURPOSE:  determine if we are running in the vice emulator
-ARGS   :  <none>
-RETURNS:  .ZS = emulator detected
-ALTERS :  .A
-```
-
-The memory-mapper functionality works in the emulator, but relies on this API to know whether real NMI interrupts are possible. In the emulator, these are simulated.
-
-```
 NAME   :  aceMiscUtoa
 PURPOSE:  convert unsigned 32-bit number to a decimal PETSCII string
 ARGS   :  .A   = minimum length for return string

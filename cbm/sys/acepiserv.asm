@@ -146,37 +146,17 @@ pisvcPutJoystick = *
   ldx #10
   jmp pidPutbuf
 
-;*** (keycode, shiftValue)
-pisvcPutKeyboard = *
-  lda keycode
-  cmp #nullKey
-  beq +
-  cmp prevKeycode
-  beq keyboardRepeat
-  lda configBuf+$c8
-  sta delayCountdown
-  ; LISTEN channel K:
-- lda #11
+;*** (.A = code, .X = modifier)
+kernKvmCommand = *
+  pha
+  ; Channel K:
+  lda #11
   jsr pisvcCommonListen
   ; Send 2-byte message
-  lda keycode
-  sta prevKeycode
+  pla
   jsr pidChOut
-  lda shiftValue
-  jsr pidChOut
-+ rts
-keyboardRepeat = *
-  lda delayCountdown
-  beq +
-  dec delayCountdown
-  beq ++
-  rts
-+ dec repeatCountdown
-  beq ++
-  rts
-++lda configBuf+$c9
-  sta repeatCountdown
-  jmp -
+  txa
+  jmp pidChOut
 
 ;*** ( (zp)=msg, .X=0..2 param spec.
 ;      .A=byte param, zw=word param

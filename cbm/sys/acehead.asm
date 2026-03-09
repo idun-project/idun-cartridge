@@ -39,7 +39,7 @@ aceMouseLimitX   = aceStatB+46         ;(2)
 aceMouseLimitY   = aceStatB+48         ;(2)
 aceMouseScaleX   = aceStatB+50         ;(1)
 aceMouseScaleY   = aceStatB+51         ;(2)
-joykeyCapture    = aceStatB+53         ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
+kvmCapture       = aceStatB+53         ;(1) $80=capture keyb, $40=capture mouse, $c0=capture both
 aceSignalProc    = aceStatB+54         ;(1) send signal (i.e. Interrupt/Kill) to current process
 ;free public kernel vars from +55 through +63
 ;private kernel vars from +64 through +103
@@ -173,10 +173,8 @@ aceWinGrChrPut  = aceCallB+258
 ; IDUN: Read/write by Track/Sector to Virtual Floppy devices
 aceDirectRead   = aceCallB+261 ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len, .CS=error
 aceDirectWrite  = aceCallB+264 ;( .X=fd, (zp)=buf, .A=# sector) : .CS=error
-; IDUN: Detect when running in emulator.
-; Custom version of Vice Emulator can connect
-; to Idun services over the network.
-aceViceEmuCheck = aceCallB+267 ;() : .ZS=emulator detected
+; IDUN: Control internal KVM switching
+aceKvmCommand   = aceCallB+267
 ; IDUN: Use search path to determine full filename
 aceSearchPath   = aceCallB+270 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
                                ;                                .CS=end of path

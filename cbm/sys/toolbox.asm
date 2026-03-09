@@ -134,7 +134,7 @@ ToolwinInit = *
    sec
    jsr aceConOption ;reset attributes
    lda #0
-   sta joykeyCapture
+   sta kvmCapture
    ; Enable Hotkey checking in acecon
    lda #<toolKeysHandler
    ldy #>toolKeysHandler
@@ -234,7 +234,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$9c-$9f
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a0-$a3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a4-$a7
-   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdNotImp   ;$a8-$ab
+   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdKvmAct   ;$a8-$ab
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$ac-$af
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b0-$b3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
@@ -479,6 +479,36 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
    rts
 +  jmp CmdMode4
 
+;=== Hotkey handler for the internal KVM activation
+
+CmdKvmAct = *
+   ; check if kvm already activated
+   lda kvmCapture
+   bmi +
+   ; activate internal kvm
+   ldx #2      ;CMD_SYS_KVMSWITCH
+   jsr aceMapperCommand
+   ; show kvm enabled in status bar
+   lda kvmCapture
+   ora #$c0
+   sta kvmCapture
++  lda #TRUE
+   jsr toolStatEnable
+   ; forward each keystroke to service
+-  lda aceSignalProc    ;until signal
+   bne +
+   jsr aceConGetkey
+   cmp #$ab             ;until CmdK
+   beq +
+   jsr aceKvmCommand
+   jmp -
+   ; deactivate kvm if CmdK or signal
++  ldx #2      ;CMD_SYS_KVMSWITCH
+   jsr aceMapperCommand
+   lda #0
+   sta kvmCapture
+   rts
+
 ;=== Status Line (Top Bar) routines ===
 
 toolStatTitle = *    ;(.AY=title)
@@ -624,7 +654,7 @@ updateStatPutKb = *
    rts
 
 updateStatPutCap = *
-   bit joykeyCapture
+   bit kvmCapture
    bpl +
    ; keyb icon=$fb $fc $fd
    lda #$fb
@@ -639,7 +669,7 @@ updateStatPutCap = *
    sta _labelCapture+1
    sta _labelCapture+2
    sta _labelCapture+3
-   bit joykeyCapture
+   bit kvmCapture
    bvc +
    ; joys icon=$f9 $fa
    lda #$f9

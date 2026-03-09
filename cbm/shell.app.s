@@ -229,10 +229,6 @@ Startup = *
    ; First arg is cmd name
    ldy #0
    jsr getarg
-   ; Release joystick capture for extern cmds
-   lda joykeyCapture
-   and #$7f
-   sta joykeyCapture
    lda argCnt
    ldy #0
    jsr aceProcExec

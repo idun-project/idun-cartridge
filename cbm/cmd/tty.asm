@@ -100,16 +100,8 @@ mainInit = *
    jsr aceWinSize
    stx screenWidth
    jsr userkeyInit
-   ;Check keyboard capture
-   lda #HotkeyCmdK
-   jsr toolKeysRemove
-   lda joykeyCapture
-   bpl +
-   ;If keyboard captured, continue forwarding keys
-   jsr KeyboardForward
-   jmp ++
-+  jsr modemOpen
-++ ldx #0
+   jsr modemOpen
+   ldx #0
    jsr RestoreVersion
    lda toolWinPalette+0
    sta charColor
@@ -608,20 +600,7 @@ HotKeyInit = *
    inc consKeyPtr
    lda consKeyPtr
    jmp -
-   ; If run from shell.app, enable CmdK for keyboard switching
-   ; otherwise, disable the default CmdK behavior.
-+  ldx #4
--  lda $cd0,x
-   cmp isShellApp,x
-   beq +
    rts
-+  dex
-   bpl -
-   lda #HotkeyCmdK
-   ldx #<HotK
-   ldy #>HotK
-   jmp toolKeysSet
-isShellApp !pet "shell"
 
 HotkeyRevert = *
    lda #0
@@ -633,37 +612,6 @@ HotkeyRevert = *
    inc consKeyPtr
    jmp -
 +  rts
-
-HotK = *
-   ; Toggle keyboard capture
-   lda joykeyCapture
-   eor #$80
-   and #$80
-   sta joykeyCapture
-   lda #TRUE
-   jsr toolStatEnable
-   lda joykeyCapture
-   bmi +
-   rts
-   ; We have to pause the terminal
-+  jsr modemClose
-   ; Print warning message
-   lda #<keyswMsg
-   ldy #>keyswMsg
-   jsr puts
-   ; This will forward keys until it returns
-   KeyboardForward = *
-   jsr aceConGetkey
-   ; Process any active signals
-   lda aceSignalProc
-   beq +
-   jsr cursorOff
-   jsr HotkeyRevert
-   jmp die
-+  jsr HotK    ;Toggle capture OFF
-   jmp modemOpen
-keyswMsg !pet 13,10,"Keyboard connected to RaspPi!"
-!pet 13,10,"Press Com+k to switch back.",13,10,0
 
 HotI = *
    lda #<helpMsg

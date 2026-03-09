@@ -388,7 +388,7 @@ jmp kernMapperProcmsg
 jmp kernWinGrChrPut
 jmp kernDirectRead
 jmp kernDirectWrite
-jmp kernViceEmuCheck
+jmp kernKvmCommand
 jmp kernSearchPath
 
 notImp = *
