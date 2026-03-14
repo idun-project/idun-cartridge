@@ -574,11 +574,11 @@ writelen: !byte 0,0
 consoleKeys = *
    !byte HotkeyCmdI,HotkeyCmdQ,HotkeyCmdX,HotkeyCmdZ,HotkeyCmdBackarrow
    !byte HotkeyRight,HotkeyLeft,HotkeyDown,HotkeyUp,HotkeyClr,HotkeyHome
-   !byte HotkeyDel,HotkeyStop,0
+   !byte HotkeyDel,HotkeyStop,HotkeyCmdK,0
 consoleKeyHandlers = *
    !word HotI,HotQ,HotX,HotZ,HotCoBackarrow
    !word HotRight,HotLeft,HotDown,HotUp,HotClr,HotHome
-   !word HotDel,HotStop
+   !word HotDel,HotStop,HotK
 
 consKeyPtr !byte 0
 consKeyTmp !byte 0
@@ -612,6 +612,15 @@ HotkeyRevert = *
    inc consKeyPtr
    jmp -
 +  rts
+
+HotK = *
+   ; We have to pause the terminal
+   jsr modemClose
+   ; This will forward keys until it returns
+   jsr toolKvmHandler
+   jsr modemOpen
+   clc
+   rts
 
 HotI = *
    lda #<helpMsg
@@ -1007,7 +1016,11 @@ txStop:      !byte $03  ;CTRL+C
 defEmulate:  !byte 2    ;vt100
 
 userkeyInit = *
-   jsr aceConKeyAvail
+   ; Check if internal Kvm needs handling
+   lda kvmCapture
+   beq +
+   jsr toolKvmHandler
++  jsr aceConKeyAvail
    cpy #$00
    bne +
    lda #$1b

@@ -27,6 +27,7 @@ toolTmoJifs	= toolCallB + 54	      ;(.AY=callback, .X=jifs)
 toolTmoSecs	= toolCallB + 57	      ;(.AY=callback, .X=seconds)
 toolTmoCancel 	= toolCallB + 60
 toolSyscall    = toolCallB + 63     ;( (zp)=system cmd, .AY=args)
+toolKvmHandler = toolCallB + 66
 }
 
 ;=== Tool zero-page and ui vars
@@ -40,7 +41,7 @@ uiClientRts      = $76         ;(2)    AddrL, AddrH
 uiGadgetFlags    = $78         ;(1)    f|s|x|x|x|pen
 
 ;=== Tool Data Structs ===
-toolWinB		= toolCallB + 66
+toolWinB		= toolCallB + 69
 toolWinRegion     = toolWinB+0  ;(4)
 toolWinScroll 	= toolWinB+4  ;(4)
 toolWinPalette    = toolWinB+8  ;(8)

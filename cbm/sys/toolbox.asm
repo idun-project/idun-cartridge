@@ -51,6 +51,7 @@ jmp toolTmoJifs
 jmp toolTmoSecs
 jmp toolTmoCancel
 jmp toolSyscall
+jmp toolKvmHandler
 
 ;=== Tool API Data Structs ===
 ;=== (16) toolWin settings
@@ -133,7 +134,7 @@ ToolwinInit = *
    lda #$00
    sec
    jsr aceConOption ;reset attributes
-   lda #0
+   lda #FALSE
    sta kvmCapture
    ; Enable Hotkey checking in acecon
    lda #<toolKeysHandler
@@ -481,6 +482,7 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
 
 ;=== Hotkey handler for the internal KVM activation
 
+toolKvmHandler = *
 CmdKvmAct = *
    ; check if kvm already activated
    lda kvmCapture
@@ -489,24 +491,22 @@ CmdKvmAct = *
    ldx #2      ;CMD_SYS_KVMSWITCH
    jsr aceMapperCommand
    ; show kvm enabled in status bar
-   lda kvmCapture
-   ora #$c0
+   lda #$c0
    sta kvmCapture
 +  lda #TRUE
    jsr toolStatEnable
    ; forward each keystroke to service
 -  lda aceSignalProc    ;until signal
-   bne +
+   bne ++
    jsr aceConGetkey
    cmp #$ab             ;until CmdK
    beq +
    jsr aceKvmCommand
    jmp -
-   ; deactivate kvm if CmdK or signal
-+  ldx #2      ;CMD_SYS_KVMSWITCH
-   jsr aceMapperCommand
-   lda #0
++  jsr aceKvmCommand
+   lda #FALSE
    sta kvmCapture
+++ clc
    rts
 
 ;=== Status Line (Top Bar) routines ===

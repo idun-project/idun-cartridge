@@ -4,6 +4,7 @@
 ; This application provides a custom tty that runs cpem -
 ; the CP/M emulator for Idun that runs under Linux.
 !source "sys/toolbox.asm"
+!source "sys/toolhead.asm"
 
 jmp Init
 
@@ -82,6 +83,8 @@ Startup = *
    jsr aceWinMax
    jsr aceWinSize
    jsr cls
+   ; Disable internal Kvm
+   jsr kvmOff
    ; start cpem
    jsr aceMiscSysType
    bpl +
@@ -130,7 +133,14 @@ Startup = *
    ; After zload finishes, return CPem
    jmp Startup
 
+   kvmOff = *
+   lda #HotkeyCmdK
+   ldx #<normalExit
+   ldy #>normalExit
+   jmp toolKeysSet
+
    normalExit = *
+   clc
    rts
 
 reTagName = $02
