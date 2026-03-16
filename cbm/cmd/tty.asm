@@ -45,6 +45,7 @@ escChar       = 31  ;(1)  ;current char in esc sequence
 charColor     = 32  ;(1)  ;color of characters
 cursorSaveColor = 33 ;(1) ;saved color of characters
 work          = 48  ;(16) ;lowest-level temporary work area
+ssp           = 64  ;(1)  ;saved SP
 
 scrRows !byte 0         ;rows,cols,top,left for full screen
 scrCols !byte 0
@@ -78,6 +79,8 @@ tpaMsg = *
 
 mainInit = *
    ;** initialize variables
+   tsx
+   stx ssp
    lda #$00
    sta escState
    lda #FALSE
@@ -618,7 +621,11 @@ HotK = *
    jsr modemClose
    ; This will forward keys until it returns
    jsr toolKvmHandler
-   jsr modemOpen
+   bit aceSignalProc
+   bvc +
+   ldx ssp
+   rts
++  jsr modemOpen
    clc
    rts
 
