@@ -484,30 +484,33 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
 
 toolKvmHandler = *
 CmdKvmAct = *
-   ; check if kvm already activated
-   lda kvmCapture
-   bmi +
    ; activate internal kvm
    ldx #2      ;CMD_SYS_KVMSWITCH
    jsr aceMapperCommand
    ; show kvm enabled in status bar
    lda #$c0
    sta kvmCapture
-+  lda #TRUE
+   lda #TRUE
    jsr toolStatEnable
    ; forward each keystroke to service
 -  lda aceSignalProc    ;until signal
    bne ++
+   jsr aceConKeyAvail
+   bcs -
    jsr aceConGetkey
    cmp #$ab             ;until CmdK
    beq +
    jsr aceKvmCommand
    jmp -
-+  jsr aceKvmCommand
-   lda #FALSE
++  lda #FALSE
    sta kvmCapture
-++ clc
+++ jsr kvmDisarm
+   clc
    rts
+kvmDisarm = *
+   lda #$ab
+   ldx #2
+   jmp aceKvmCommand
 
 ;=== Status Line (Top Bar) routines ===
 

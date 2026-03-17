@@ -157,7 +157,6 @@ Startup = *
    ; try to reuse it.
    lda #0
    sta aceSharedBuf
-   jsr kvmArm      ;rearm internal Kvm
    lda #<tty_tool
    ldy #>tty_tool
    sta zp
@@ -177,7 +176,6 @@ Startup = *
    bcc Tty
    and #$3f
    sta cmdPtr
-   jsr kvmDisarm   ;disarm internal Kvm
    ; Shell exec signalled -> run command
    ; The args are already present in hi-mem
    ; w/ argPtr pointing to the args block and
@@ -241,21 +239,6 @@ Startup = *
    jsr aceProcExecSub
    jsr closeRedirect
    jmp Tty
-
-kvmArm = *
-   lda kvmCapture
-   beq +
-   ldx #2      ;CMD_SYS_KVMSWITCH
-   jsr aceMapperCommand
-+  rts
-
-kvmDisarm = *
-   lda kvmCapture
-   beq +
-   lda #$ab
-   ldx #2
-   jsr aceKvmCommand
-+  rts
 
 setupRedirect = *
    lda #<UtoaNumber

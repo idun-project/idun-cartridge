@@ -624,6 +624,7 @@ HotK = *
    bit aceSignalProc
    bvc +
    ldx ssp
+   txs
    rts
 +  jsr modemOpen
    clc
@@ -1027,6 +1028,11 @@ userkeyInit = *
    lda kvmCapture
    beq +
    jsr toolKvmHandler
+   bit aceSignalProc
+   bvc +
+   ldx ssp
+   txs
+   rts
 +  jsr aceConKeyAvail
    cpy #$00
    bne +
