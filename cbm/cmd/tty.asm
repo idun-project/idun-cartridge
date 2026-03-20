@@ -626,7 +626,8 @@ HotK = *
    ldx ssp
    txs
    rts
-+  jsr modemOpen
++  jsr ActNewline
+   jsr modemOpen
    clc
    rts
 

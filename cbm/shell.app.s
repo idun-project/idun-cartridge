@@ -259,6 +259,10 @@ setupRedirect = *
    tay
    ldx #1
    jsr aceFileFdswap
+   ; Advance to next line, since term will be restarted w/o
+   ; any generated output.
+   lda #chrCR
+   jsr aceConPutctrl
 +  rts
 
 closeRedirect = *
