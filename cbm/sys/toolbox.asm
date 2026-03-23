@@ -484,6 +484,8 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
 
 toolKvmHandler = *
 CmdKvmAct = *
+   ldx #0
+   stx tbwork+4         ;to keep tabs on mouse buttons
    ; activate internal kvm
    ldx #2      ;CMD_SYS_KVMSWITCH
    jsr aceMapperCommand
@@ -492,25 +494,72 @@ CmdKvmAct = *
    sta kvmCapture
    lda #TRUE
    jsr toolStatEnable
-   ; forward each keystroke to service
+   ; forward keystrokes and mouse to service
 -  lda aceSignalProc    ;until signal
    bne ++
    jsr aceConKeyAvail
-   bcs -
-   jsr aceConGetkey
-   cmp #$ab             ;until CmdK
-   beq +
-   jsr aceKvmCommand
-   jmp -
-+  lda #FALSE
+   bcc kvmKeys
+   jsr aceConMouse
+   cmp tbwork+4         ;check buttons
+   bne kvmMouse
+   jsr kvmCheckMouse
+   beq -                ;no movement
+   lda tbwork+4
+   jmp kvmMouse
+CmdKvmEnd = *
+   lda #FALSE
    sta kvmCapture
 ++ jsr kvmDisarm
    clc
    rts
+kvmKeys = *
+   jsr aceConGetkey
+   cmp #$ab             ;until CmdK
+   beq CmdKvmEnd
+   ldy #0
+   jsr aceKvmCommand
+   jmp -
+kvmMouse = *
+   sta tbwork+4
+   ldy #$80
+   jsr aceKvmCommand
+   jmp -
 kvmDisarm = *
    lda #$ab
    ldx #2
+   ldy #0
    jmp aceKvmCommand
+kvmCheckMouse = *
+   lda syswork
+   pha
+   eor tbwork
+   sta eqtmp
+   pla
+   sta tbwork
+   lda syswork+1
+   pha
+   eor tbwork+1
+   ora eqtmp
+   sta eqtmp
+   pla
+   sta tbwork+1
+   lda syswork+2
+   pha
+   eor tbwork+2
+   ora eqtmp
+   sta eqtmp
+   pla
+   sta tbwork+2
+   lda syswork+3
+   pha
+   eor tbwork+3
+   ora eqtmp
+   sta eqtmp
+   pla
+   sta tbwork+3
+   lda eqtmp
+   rts
+eqtmp !byte 0
 
 ;=== Status Line (Top Bar) routines ===
 

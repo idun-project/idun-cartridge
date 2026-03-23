@@ -146,17 +146,34 @@ pisvcPutJoystick = *
   ldx #10
   jmp pidPutbuf
 
-;*** (.A = code, .X = modifier)
+;*** (.A=code/buttons, .X=key modifier, .Y=$80 mouse, sw+0..3 mouse X/Y)
 kernKvmCommand = *
   pha
   ; Channel K:
-  lda #11
-  jsr pisvcCommonListen
-  ; Send 2-byte message
+  lda #$2b
+  jsr pidChOut
+  ; Keyboard or Mouse
+  cpy #$80
+  beq kvmMouseCmd
+  lda #$7f        ;SECOND=$7f indicates key event
+  jsr pidChOut
+  ; Send 2-byte keyboard message
   pla
   jsr pidChOut
   txa
   jmp pidChOut
+  kvmMouseCmd = *
+  lda #$7e
+  jsr pidChOut    ;SECOND=$7e indicates mouse event
+  ; Send 5-byte mouse message
+  pla
+  jsr pidChOut
+  ldx #3
+- lda syswork,x
+  jsr pidChOut
+  dex
+  bpl -
+  rts
 
 ;*** ( (zp)=msg, .X=0..2 param spec.
 ;      .A=byte param, zw=word param
