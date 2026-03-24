@@ -530,36 +530,11 @@ kvmDisarm = *
    ldy #0
    jmp aceKvmCommand
 kvmCheckMouse = *
-   lda syswork
-   pha
-   eor tbwork
-   sta eqtmp
-   pla
-   sta tbwork
-   lda syswork+1
-   pha
-   eor tbwork+1
-   ora eqtmp
-   sta eqtmp
-   pla
-   sta tbwork+1
-   lda syswork+2
-   pha
-   eor tbwork+2
-   ora eqtmp
-   sta eqtmp
-   pla
-   sta tbwork+2
-   lda syswork+3
-   pha
-   eor tbwork+3
-   ora eqtmp
-   sta eqtmp
-   pla
-   sta tbwork+3
-   lda eqtmp
+   lda syswork+4
+   beq +
    rts
-eqtmp !byte 0
++  lda syswork+5
+   rts
 
 ;=== Status Line (Top Bar) routines ===
 

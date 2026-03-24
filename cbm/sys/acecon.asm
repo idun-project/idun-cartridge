@@ -2283,9 +2283,11 @@ conMouseNewValue !byte 0
 conMouseOldValue !byte 0
 conMouseX        !byte 0,0
 conMouseY        !byte 0,0
+conMouseDX       !byte 0
+conMouseDY       !byte 0
 conMouseButtons  !byte 0
 
-kernConMouse = *  ;( ) : .A=buttons:l/r:128/64,(sw+0)=pX,(sw+2)=pY,sw+4=cX,sw+5=cY
+kernConMouse = *  ;( ) : .A=buttons:l/r:128/64,(sw+0)=pX,(sw+2)=pY,sw+4=dX,sw+5=dY
    php
    sei
    jsr conMouseBounds
@@ -2297,7 +2299,17 @@ kernConMouse = *  ;( ) : .A=buttons:l/r:128/64,(sw+0)=pX,(sw+2)=pY,sw+4=cX,sw+5=
    ldy conMouseY+1
    sta syswork+2
    sty syswork+3
-   lda conMouseButtons
+   lda conMouseDX
+   sta syswork+4
+   beq +
+   lda #0
+   sta conMouseDX
++  lda conMouseDY
+   sta syswork+5
+   beq +
+   lda #0
+   sta conMouseDY
++  lda conMouseButtons
    plp
    clc
    rts
@@ -2307,6 +2319,7 @@ conMouseIrq = *
    ldy conMouseOpotx
    jsr conMouseMoveCheck
    sty conMouseOpotx
+   sta conMouseDX
    clc
    adc conMouseX+0
    sta conMouseX+0
@@ -2317,6 +2330,7 @@ conMouseIrq = *
    ldy conMouseOpoty
    jsr conMouseMoveCheck
    sty conMouseOpoty
+   sta conMouseDY
    sec
    eor #$ff
    adc conMouseY+0
