@@ -22,42 +22,60 @@ pisvcCommonListen = *
   lda #$7F
   jmp pidChOut
 
-settingRegister !byte 0
-;*** (.X=Register, .AY=Value)
-kernMapperSetreg = *
-  stx settingRegister
-  pha
-  tya
-  pha
+;*** (.X=Register, zw=Value)
+kernMapset = *
   ; LISTEN channel @:
   lda #0
   jsr pisvcCommonListen
   ; Send 3-byte message
-  lda settingRegister
+  txa
   jsr pidChOut
-  pla
-  tay
-  pla
+  lda zw+0
   jsr pidChOut
-  tya
+  lda zw+1
   jmp pidChOut
 ;*** (.X=Command, .A=Param)
-kernMapperCommand = *
-  pha
-  txa
+kernMapsys = *
   pha
   ; LISTEN channel @:
   lda #0
   jsr pisvcCommonListen
   ; Send 2-byte message
-  pla
+  txa
   jsr pidChOut
   pla
   jmp pidChOut
-  
+;*** (.X=Command, zw=ParamSize, zp=Params)
+kernMapusr = *
+  jsr kernMapset  ;send preamble and ParamSize
+  ;send the Params
+  lda zw+0
+  ora zw+1
+  bne usrSendParams
+  rts               ; end if zw==0
+  usrSendParams = *
+  lda zp+0
+  ldy zp+1
+  sta writePtr+0
+  sty writePtr+1
+- ldx #0
+  cpx zw+1
+  bmi usrSendPage
+  beq usrSendLast
+  jmp +
+  usrSendPage = *
+  jsr pidPutbuf
+  dec zw+1
+  inc writePtr+1
+  jmp -
+  usrSendLast = *
+  ldx zw+0
+  beq +
+  jsr pidPutbuf
++ rts
 
 ;*** (.AY=proc callback)
-kernMapperProcmsg = *
+kernMapsts = *
   sta .mapper_proc_addr+0
   sty .mapper_proc_addr+1
   lda #<aceSharedBuf
@@ -146,7 +164,7 @@ pisvcPutJoystick = *
   ldx #10
   jmp pidPutbuf
 
-;*** (.A=code/buttons, .X=key modifier, .Y=$80 mouse, sw+4 mouse DX/DY)
+;*** (.A=code/buttons, .X=modifier/mouse dX, .Y=$80(for key)/mouse dY
 kernKvmCommand = *
   pha
   ; Channel K:
@@ -154,7 +172,7 @@ kernKvmCommand = *
   jsr pidChOut
   ; Keyboard or Mouse
   cpy #$80
-  beq kvmMouseCmd
+  bne kvmMouseCmd
   lda #$7f        ;SECOND=$7f indicates key event
   jsr pidChOut
   ; Send 2-byte keyboard message
@@ -168,9 +186,9 @@ kernKvmCommand = *
   ; Send 3-byte mouse message
   pla
   jsr pidChOut
-  lda syswork+4
+  txa
   jsr pidChOut
-  lda syswork+5
+  tya
   jsr pidChOut
   rts
 

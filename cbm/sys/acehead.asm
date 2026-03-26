@@ -164,15 +164,15 @@ aceRestartApplReset     = $81
 aceRestartExitBasic     = $82
 aceRestartLoadPrg       = $83
 aceRestart       = aceCallB+246 ;(.A=flag,.X=device,(zp)=appname) : no RTS!
-; IDUN: Communicate with the RPi Memory Mapper process
-aceMapperSetreg = aceCallB+249  ;(.X=Register, .AY=Value)
-aceMapperCommand = aceCallB+252 ;(.X=Command, .A=Param)
-aceMapperProcmsg  = aceCallB+255 ;(.AY=proc callback)
+; IDUN: Communicate with the RPi Memory Mapper system calls
+aceMapset        = aceCallB+249     ;(.X=Register, zw=Value)
+aceMapsys        = aceCallB+252     ;(.X=Command, .A=Param)
+aceMapsts        = aceCallB+255     ;(.AY=status callback)
 ; IDUN: Put characters from graphical set
 aceWinGrChrPut  = aceCallB+258
-; IDUN: Read/write by Track/Sector to Virtual Floppy devices
-aceDirectRead   = aceCallB+261 ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len, .CS=error
-aceDirectWrite  = aceCallB+264 ;( .X=fd, (zp)=buf, .A=# sector) : .CS=error
+; IDUN: Communicate with the RPi Memory Mapper user calls
+aceMapusr       = aceCallB+261      ;(.X=Command, zw=ParamSize, zp=Params)
+aceReserved2    = aceCallB+264
 ; IDUN: Control internal KVM switching
 aceKvmCommand   = aceCallB+267
 ; IDUN: Use search path to determine full filename
@@ -185,6 +185,19 @@ aceID3 = 16
 aceMemNull     = $00
 aceMemInternal = $01
 aceMemERAM     = $02
+
+;Memory Mapper command constants
+aceMap_SYS_LOAD_BINARY  = $00
+aceMap_SYS_REBOOT       = $01
+aceMap_SYS_KVM_SWITCH   = $02
+aceMap_SYS_ALLOCATE     = $f9
+aceMap_SYS_GCOLLECT     = $fa
+aceMap_SYS_MMAP         = $fb
+aceMap_SYS_STREAM_CHAN  = $ff
+aceMap_SET_MACHINE      = $f2
+aceMap_SET_DEVICE       = $f4
+aceMap_SET_DESTINATION  = $f5
+aceMap_SET_SOURCE       = $f6
 
 aceErrStopped = 0
 aceErrTooManyFiles = 1

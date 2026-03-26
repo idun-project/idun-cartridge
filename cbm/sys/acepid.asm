@@ -306,35 +306,6 @@ pidCloseall = *
 readlentemp = *
   !byte 0,0
 
-kernDirectRead = * ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len
-  stx readFcb
-  sta readMaxLen+1
-  lda #0
-  sta readMaxLen+0
-  lda zp+0
-  ldy zp+1
-  sta readPtr+0
-  sty readPtr+1
-  jsr pidRead
-  ;ignore EOF marker
-  pha
-- jsr pidChIn   ;read $fa
-  bcs -
-- jsr pidChIn   ;read $00
-  bcs -
-  pla
-  rts  
-
-kernDirectWrite = * ;( .X=fd, (zp)=buf, .A=# sector)
-  sta writeLength+1
-  lda #0
-  sta writeLength+0
-  lda zp+0
-  ldy zp+1
-  sta writePtr+0
-  sty writePtr+1
-  jmp pidWrite
-
 ;*** (readFcb, readPtr[readMaxLen]) : readPtr[zw], .AY=zw,
 ;                                               : .CS=error, .ZS=eof, errno
 pidRead = *

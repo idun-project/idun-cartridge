@@ -2,7 +2,7 @@ m8_launch_handler = *
     lda #<.launcher
     ldy #>.launcher
     ;never returns!
-    jmp aceMapperProcmsg
+    jmp aceMapsts
 
 .error = *
     inc $d020       ;what else?
@@ -81,8 +81,8 @@ load_typ !byte 0
     lsr
     lsr
     sta $9c
-    ldx #255            ;CMD_STREAM_CHANNEL
-    jsr aceMapperCommand
+    ldx #aceMap_SYS_STREAM_CHAN
+    jsr aceMapsys
     jsr toolUserLayoutEnd
     ldx load_typ
     lda #aceRestartLoadPrg

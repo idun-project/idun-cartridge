@@ -147,19 +147,23 @@ mmap_file = *
    ;set destination to 7f/0
    lda #0
    ldy #$7f
-   ldx #$f5                ;SET_DESTINATION=$7f/0
-   jsr aceMapperSetreg
+   sta zw
+   sty zw+1
+   ldx #aceMap_SET_DESTINATION   ;DESTINATION=$7f/0
+   jsr aceMapset
    ;set device
    lda syswork+1
    lsr
    lsr
    ldy #0
-   ldx #$f4                ;SET_DEVICE
-   jsr aceMapperSetreg
+   sta zw
+   sty zw+1
+   ldx #aceMap_SET_DEVICE        ;DEVICE
+   jsr aceMapset
    ;send Mmap command
-   ldx #$fb                ;CMD_MMAP
+   ldx #aceMap_SYS_MMAP
    lda aceStatB+75
-   jsr aceMapperCommand
+   jsr aceMapsys
    ;wait for mmap to be completed
    lda #255
    jsr setBlk
@@ -237,7 +241,7 @@ gcollect = *
    jsr pidChOut
    lda #$7F                ;SECOND #31
    jsr pidChOut
-   lda #$fa                ;CMD_GCOLLECT
+   lda #aceMap_SYS_GCOLLECT
    jsr pidChOut
    lda aceStatB+75
    jsr pidChOut            ;process id

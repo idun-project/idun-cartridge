@@ -382,12 +382,12 @@ jmp kernMountImage
 jmp kernMiscDeviceInfo
 jmp kernCopyHost
 jmp kernRestart
-jmp kernMapperSetreg
-jmp kernMapperCommand
-jmp kernMapperProcmsg
+jmp kernMapset
+jmp kernMapsys
+jmp kernMapsts
 jmp kernWinGrChrPut
-jmp kernDirectRead
-jmp kernDirectWrite
+jmp kernMapusr
+jmp notImp
 jmp kernKvmCommand
 jmp kernSearchPath
 
@@ -966,11 +966,11 @@ kernRestart = *
    sta romjmp+1
 loadPrgCont:
    jsr kernShutdownSystem
-   ;Use aceMapperCommand to load via NMI
-   ldx #0      ;CMD_SYS_LOADER
+   ;Use aceMapsys to load via NMI
+   ldx #aceMap_SYS_LOAD_BINARY
    setparam = *
    lda #1      ;parameter=1 (iec) or 2 (mmap)
-   jsr kernMapperCommand
+   jsr kernMapsys
 -  nop         ;wait for NMI
    jmp -
    romjmp = *

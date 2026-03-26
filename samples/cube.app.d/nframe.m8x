@@ -9,7 +9,7 @@ m8_nframe_handler = *
     ;process new frame data
 +   lda #<nframe_callback
     ldy #>nframe_callback
-    jsr aceMapperProcmsg
+    jsr aceMapsts
     ;swap buffers
     jsr swap
     lda #0

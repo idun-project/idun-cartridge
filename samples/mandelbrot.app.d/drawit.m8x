@@ -4,7 +4,7 @@ m8_drawit_handler = *
    sta .copyPageCtr
    lda #<.copyVdcPage
    ldy #>.copyVdcPage
-   jsr aceMapperProcmsg
+   jsr aceMapsts
    lda #0
    jsr __m8_mailbox_reset
    jmp xPtrEnable

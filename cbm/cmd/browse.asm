@@ -854,8 +854,8 @@ doLoadFile = *
    lda syswork+1
    lsr
    lsr
-   ldx #255            ;CMD_STREAM_CHANNEL
-   jsr aceMapperCommand
+   ldx #aceMap_SYS_STREAM_CHAN
+   jsr aceMapsys
    jmp loaderRestart
    ;close Iec device only. Pid device stays open
    ;for use by the MemMapper.

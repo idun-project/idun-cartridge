@@ -10,7 +10,7 @@ info_header_offs:
 	bpl -
     lda #<.copyInfo
     ldy #>.copyInfo
-    jsr aceMapperProcmsg
+    jsr aceMapsts
     lda #0
     jmp __m8_mailbox_reset
 .info_txt !byte $89,$8E,$86,$8F

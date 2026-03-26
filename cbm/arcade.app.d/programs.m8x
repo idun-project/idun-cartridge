@@ -19,7 +19,7 @@ m8_programs_handler = *
     jmp -
 +   lda #<.copyProgs
     ldy #>.copyProgs
-    jsr aceMapperProcmsg
+    jsr aceMapsts
     lda #0
     jsr __m8_mailbox_reset
     jsr select_ui_programs

@@ -489,7 +489,7 @@ sidData = *
 ;also temporary space for the long'ish instructions
 playerUsageErrorMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "usage: sidplay <sidfile> [sid2..sidN]",chrCR
+!pet "usage: sidplay <sidfile> <sidfile2>...",chrCR
 !pet "<cursor> for next/prev tune, <space> for",chrCR
 !pet "next sid, <stop> to quit",chrCR,0
 
