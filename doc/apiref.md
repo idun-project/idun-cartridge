@@ -923,7 +923,8 @@ NAME   :  aceConMouse
 PURPOSE:  read the buttons and position of the mouse
 ARGS   :  <nothing>
 RETURNS:  .A   = mouse-button status: $80=left, $40=right, $20=middle
-          .Y   = mouse-present flag: $80=yes
+          .X   = delta-X position
+          .Y   = delta-Y position
          (sw+0)= mouse X position
          (sw+2)= mouse Y position
 ALTERS :  .A, .X, .Y
@@ -1383,8 +1384,8 @@ ALTERS :  <yep>
 This is the only kernel API call which does not return, since it will restart the computer running something else. The flag passed in .A is any one of the defined restart flags: aceRestartWarmReset, aceRestartExitBasic, aceRestartApplReset, or aceRestartLoadPrg. The difference between exiting to BASIC vs. a warm reset is simply whether you get to BASIC with or without a software reset of the CPU. The other two options are used to load an alternative application over top of the idun-shell (aceRestartApplReset) or to load a native C128 application and start it (aceRestartLoadPrg). In this final case, it is critical to set the .X value to "1" if the program is being loaded from a floppy disk device. Otherwise, it is assumed to be loaded via the idun-cartridge using a virtual drive.
 
 ```
-NAME   :  aceMapperCommand
-PURPOSE:  cause memory-mapper to execute pre-defined command
+NAME   :  aceMapsys
+PURPOSE:  cause memory-mapper to execute pre-defined system command
 ARGS   :  .X   = command id
           .A   = command parameter
 RETURNS:  <none>
@@ -1395,14 +1396,28 @@ A lot of the functionality of the idun-cartridge is implemented by running arbit
 
 
 ```
-NAME   :  aceMapperProcmsg
-PURPOSE:  receive arbitrary message from memory-mapper
+NAME   :  aceMapsts
+PURPOSE:  receive status message from memory-mapper
 ARGS   :  (.AY) = pointer to callback that processes the message
 RETURNS:  <none>
 ALTERS :  .A, .X, .Y
 ```
 
 When this returns, the full message has been processed. It will invoke the callback as many times as needed to process all the data.
+
+```
+NAME   :  aceKvmCommand
+PURPOSE:  pass input event to the internal Kvm handler
+ARGS   :  .A   = key code or mouse buttons state
+          .X   = key modifier bits as returned by aceConGetkey
+                 -or- mouse deltaX
+          .Y   = $80 indicates this is key event
+                 -or- mouse deltaY
+RETURNS:  <none>
+ALTERS :  .A, .X, .Y
+```
+
+This routine is used to pass key and mouse events to Linux via the internal KVM functionality, which is built into the Toolbox. It is probably not useful outside of that context, since it is very tightly integrated with the rest of the internal Kvm functionality.
 
 ```
 NAME   :  aceMiscUtoa

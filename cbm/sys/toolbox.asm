@@ -487,8 +487,8 @@ CmdKvmAct = *
    ldx #0
    stx tbwork+4         ;to keep tabs on mouse buttons
    ; activate internal kvm
-   ldx #2      ;CMD_SYS_KVMSWITCH
-   jsr aceMapperCommand
+   ldx #aceMap_SYS_KVM_SWITCH
+   jsr aceMapsys
    ; show kvm enabled in status bar
    lda #$c0
    sta kvmCapture
@@ -516,24 +516,23 @@ kvmKeys = *
    jsr aceConGetkey
    cmp #$ab             ;until CmdK
    beq CmdKvmEnd
-   ldy #0
+   ldy #$80
    jsr aceKvmCommand
    jmp -
 kvmMouse = *
    sta tbwork+4
-   ldy #$80
    jsr aceKvmCommand
    jmp -
 kvmDisarm = *
    lda #$ab
    ldx #2
-   ldy #0
+   ldy #$80
    jmp aceKvmCommand
 kvmCheckMouse = *
-   lda syswork+4
+   cpx #0
    beq +
    rts
-+  lda syswork+5
++  cpy #0
    rts
 
 ;=== Status Line (Top Bar) routines ===
