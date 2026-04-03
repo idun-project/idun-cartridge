@@ -91,6 +91,10 @@ kernMapsts = *
   bcs -
   sta @zs+1
   sta zz+1
+  ;check for ERROR
+  and @zs
+  cmp #$ff
+  beq .mapstsError
   ;READ rest of message
 - lda zz+1
   cmp #0
@@ -117,6 +121,7 @@ kernMapsts = *
   jsr .mapper_proc_callback
 + lda @zs
   ldy @zs+1
+  clc
   rts
   .mapperUntalk  = *
   lda #$5F
@@ -124,6 +129,12 @@ kernMapsts = *
   .mapper_proc_callback = *
   .mapper_proc_addr = *+1
   jmp $1234
+  .mapstsError = *
+- jsr pidChIn
+  bcs -
+  sta errno
+  sec
+  rts
 @zs !byte 0,0
 
 ;*** (.AY = configBuf[256])

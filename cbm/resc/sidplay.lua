@@ -1,11 +1,24 @@
 -- Important variables used
 local sidhdr = ""			-- header bytes of sid
 local sidprg  				-- relocated program of sid
-local useMock = false   -- Mock IO for testing
-local handler = require("idun-handler")
+local sidplay = {}
 
 local function ends_with(str, ending)
    return ending == "" or str:sub(-#ending) == ending
+end
+
+local function pet2asc(str)
+    return (str:gsub('.', function (c)
+        local b = string.byte(c)
+        if b >= 97 and b <= 122 then
+            b = b - 0x20
+        elseif b >= 65 and b <= 90 then
+            b = b + 0x20
+        elseif b >= 193 and b <= 218 then
+            b = b - 0x80
+        end
+        return string.pack("B", b)
+    end))
 end
 
 local function relocSid(fname)
@@ -30,7 +43,7 @@ local function relocSid(fname)
 	-- Run `sidreloc` command
 	local retval = os.execute(RELOCCMD..fname.." "..TMPFNAME)
 	if retval then
-		local sid = io.open(TMPFNAME, "rb")
+		local sid = assert(io.open(TMPFNAME, "rb"))
 		local data = sid:read("*all")
 		sid:close()
 		-- Check PSID version and load addr
@@ -54,26 +67,20 @@ local function relocSid(fname)
 	end
 end
 
-function handler.handleRequest(req)
+sidplay.load = function(packed)
+	local sidfile = string.unpack('s2', packed)
+	sidfile = pet2asc(sidfile)
 	-- Open and relocate sid file on first request
-	if string.len(sidhdr) == 0 then
-	  local res = relocSid(arg[1])
-     io.write(string.format("relocSid on %s returns %d\n", arg[1], res))
-	  if res > 0 then
-	     return nil, res
-	  end
+	local res = relocSid(sidfile)
+	io.write(string.format("relocSid on %s returns %d\n", sidfile, res))
+	if res > 0 then
+		m8.err(res)
 	end
-
-	-- Allowed requests: "H"=get sid header, "P"=get sid program
-	if req == "H" then
-		return sidhdr
-	elseif req == "P" then
-		-- Prepend with the size
-		local resp = string.pack("<H", #sidprg)
-		return resp .. sidprg
-	else
-		return nil, 3  	-- Bad request
-	end
+	m8.ret(sidhdr)
 end
 
-handler.run(useMock)
+sidplay.getsid = function()
+	m8.ret(sidprg)
+end
+
+return sidplay
