@@ -287,16 +287,17 @@ playPrev = *
 
 procSidHdr = *    ;(: rsid=error code)
    ;copy full message to sidData
-   tay
-   dey
+   tax
    lda #<sidData
    sta sidPtr
    lda #>sidData
    sta sidPtr+1
+   ldy #0
 -  lda aceSharedBuf,y
    sta (sidPtr),y
+   iny
    dex
-   bpl -
+   bne -
    ;check first 4 bytes "PSID"
    lda sidData+0
    cmp #"P"
@@ -334,19 +335,21 @@ procSidHdr = *    ;(: rsid=error code)
    rts
 
 procSidProg = *
-   tay
+   tax
    ;check upper memory bound
    lda sidPtr+1
    cmp #$bf
    bcc +
    rts    ;too big
    ;copy full message to sidData
-+  dey
++  ldy #0
 -  lda aceSharedBuf,y
    sta (sidPtr),y
+   iny
    dex
-   bpl -
+   bne -
    inc sidPtr+1
+   rts
 
 ;******** standard library ********
 eputs = *
