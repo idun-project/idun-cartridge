@@ -1,3 +1,4 @@
+local util = require('idun-util')
 -- Important variables used
 local sidhdr = ""			-- header bytes of sid
 local sidprg  				-- relocated program of sid
@@ -5,20 +6,6 @@ local sidplay = {}
 
 local function ends_with(str, ending)
    return ending == "" or str:sub(-#ending) == ending
-end
-
-local function pet2asc(str)
-    return (str:gsub('.', function (c)
-        local b = string.byte(c)
-        if b >= 97 and b <= 122 then
-            b = b - 0x20
-        elseif b >= 65 and b <= 90 then
-            b = b + 0x20
-        elseif b >= 193 and b <= 218 then
-            b = b - 0x80
-        end
-        return string.pack("B", b)
-    end))
 end
 
 local function relocSid(fname)
@@ -69,7 +56,7 @@ end
 
 sidplay.load = function(packed)
 	local sidfile = string.unpack('s2', packed)
-	sidfile = pet2asc(sidfile)
+	sidfile = util.pet2asc(sidfile)
 	-- Open and relocate sid file on first request
 	local res = relocSid(sidfile)
 	io.write(string.format("relocSid on %s returns %d\n", sidfile, res))
