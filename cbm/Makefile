@@ -52,7 +52,8 @@ build/go64\
 build/browse\
 build/zload\
 build/showkoa\
-build/boxer
+build/boxer\
+build/turbo
 
 TEST=\
 build/eram
