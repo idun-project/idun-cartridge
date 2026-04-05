@@ -186,19 +186,14 @@ entryPoint = *
    jsr kernelChrout
    lda #14
    jsr kernelChrout
+   sta turboOn        ;revving
    ldx #$00
    lda $d0bc
-   and #$80
+   and #$80           ;turbo enabled?
    bne +
    ldx #$ff
 +  stx aceTurboCpuFlag
-   bit aceTurboCpuFlag
-   bpl +
-   lda #15            ;maximum MHz
-   sec
-   jsr kernTurboCtl   ;revving
-   sta turboOn        ;ZOOOOM!
-+  jsr aceBootstrap
+   jsr aceBootstrap
    jsr initMemory
    ; IDUN: Init syswork vars to 0 to prevent weird side-effects
    ldy #15

@@ -14,7 +14,9 @@ jmp main
 ; Constants
 FALSE     = 0x00
 TRUE      = 0xff
-TURBO_BIT = $d030
+turboOff  = $d07a
+turboOn   = $d07b
+
 MHz !byte 1,2,3,4,6,8,10,12,14,16,20,24,32,40,48,64
 
 ; Usage and args
@@ -41,6 +43,10 @@ main = *
    sta utoa+1
    sta utoa+2
    sta utoa+3
+   ; TODO: Find a way to support some persistent turbo settings!
+   ; Right now, the C64U doesn't seem to support that. So, we
+   ; just ignore any args and display the current speed.
+   sta aceArgc
 -  inc argnum
    lda argnum
    cmp aceArgc
@@ -74,20 +80,18 @@ doUsageMsg = *
    jmp die
 
 doTurboOn = *
-   lda #1
-   sta TURBO_BIT
+   sta turboOn
    rts
 
 doTurboOff = *
-   lda #0
-   sta TURBO_BIT
+   sta turboOff
    rts
 
 doTurboMax = *
+   jsr doTurboOn
    lda #15
    sec
-   jsr aceTurboCtl
-   jmp doTurboOn
+   jmp aceTurboCtl
 
 ;******** standard library ********
 putchar = *
