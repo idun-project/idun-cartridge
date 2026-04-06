@@ -58,9 +58,14 @@ main = *
    beq turboNone
    jmp displayMhz
    turboNone = *
+   jsr aceMiscSysType
+   bmi +                   ;C128?
    lda #<turboNotAvailable
    ldy #>turboNotAvailable
    jmp puts
++  lda $d030
+   and #$01
+   ;fall-through
    displayMhz = *
    tax
    lda MHz,x
@@ -71,7 +76,7 @@ main = *
    ldy #>displayUnits
    jmp puts
 displayUnits !pet " MHz",chrCR,0
-turboNotAvailable !pet "Who needs more than 2MHz?",chrCR,0
+turboNotAvailable !pet "Who needs more than 1 MHz?",chrCR,0
 
 doUsageMsg = *
    lda #<ldUsage
