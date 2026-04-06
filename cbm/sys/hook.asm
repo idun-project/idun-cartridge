@@ -778,6 +778,7 @@ Go = *
     ldx #$00
     ldy #$12
     lda #0
+    sei
 !if useC128 {
     jsr kernelLoad
 } else {
@@ -805,12 +806,8 @@ ILoader = *
     jmp (kernalLoader)
 +   pla
     sta kVerify
-    jsr FnIsdir
-    bne +
     ldx #hookLoad
     jmp romcall
-+   ldx #hookLoad
-    jmp romcall   
 ISaver = *
     lda kLastDevice
     cmp MyDevice
