@@ -7,15 +7,28 @@ m8_nframe_handler = *
     bne +
     jsr vdcMemStart
     ;process new frame data
-+   lda #<nframe_callback
++   jsr mmstat
+-   lda zw+1
+    beq +
+    ldx #0
+    lda #<nframe_callback
     ldy #>nframe_callback
-    jsr aceMapsts
+    jsr mmrecv
+    dec zw+1
+    jmp -
++   ldx zw
+    lda #<nframe_callback
+    ldy #>nframe_callback
+    jsr mmrecv
     ;swap buffers
     jsr swap
     lda #0
     jmp __m8_mailbox_reset
 nframe_callback = *
-    sta cbDataSz
+    stx cbDataSz
+    lda #<mailboxB
+    ldy #>mailboxB
+    jsr aceTtyGet
     lda scrPage
     bne +
     ;copy to VDC character memory

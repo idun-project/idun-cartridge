@@ -73,69 +73,64 @@ kernMapusr = *
   beq +
   jsr pidPutbuf
 + rts
-
-;*** (.AY=proc callback)
-kernMapsts = *
-  sta .mapper_proc_addr+0
-  sty .mapper_proc_addr+1
-  lda #<aceSharedBuf
-  ldy #>aceSharedBuf
+;*** ;() : zw=message size, .CS=error,errno
+kernMmstat = *
   ldx #0
-  jsr pisvcCommonGet
+  jsr pisvcCommonTalk
   ;fetch size
 - jsr pidChIn
   bcs -
-  sta @zs
-  sta zz
+  sta zw
 - jsr pidChIn
   bcs -
-  sta @zs+1
-  sta zz+1
+  sta zw+1
   ;check for ERROR
-  and @zs
+  and zw
   cmp #$ff
   beq .mapstsError
-  ;READ rest of message
-- lda zz+1
-  cmp #0
-  beq .mapperLastPg
-  ldx #0        ; this means read whole page (256 bytes)
-  jsr pidGetbuf
-  jsr .mapperUntalk
-  lda #0
-  jsr .mapper_proc_callback
-  dec zz+1
-  ; TALK for next page
-  lda #<aceSharedBuf
-  ldy #>aceSharedBuf
-  ldx #0
-  jsr pisvcCommonGet
-  jmp -
-  .mapperLastPg = *
-  lda zz
-  beq +
-  tax
-  jsr pidGetbuf
-  jsr .mapperUntalk
-  lda zz
-  jsr .mapper_proc_callback
-+ lda @zs
-  ldy @zs+1
   clc
-  rts
-  .mapperUntalk  = *
-  lda #$5F
-  jmp pidChOut
-  .mapper_proc_callback = *
-  .mapper_proc_addr = *+1
-  jmp $1234
+  jmp .map_untalk
   .mapstsError = *
 - jsr pidChIn
   bcs -
   sta errno
   sec
-  rts
-@zs !byte 0,0
+  jmp .map_untalk
+;*** ;(.X=bytes, .AY=receive callback)
+kernMrecv = *
+  stx zz
+  sta .mapper_proc_addr+0
+  sty .mapper_proc_addr+1
+  ldx #0
+  jsr pisvcCommonTalk
+  ldx zz
+  .mapper_proc_addr = *+1
+  jsr $1234
+  .map_untalk = *
+  lda #$5F
+  jmp pidChOut
+;*** ;(zw=bytes, .AY=dest. addr)
+kernMload = *
+  sta zp
+  sty zp+1
+  lda zw+1
+- beq +
+  dec zw+1
+  ldx #0
+  lda #<.mapper_load_cb
+  ldy #>.mapper_load_cb
+  jsr kernMrecv
+  inc zp+1
+  lda zw+1
+  jmp -
++ ldx zw
+  lda #<.mapper_load_cb
+  ldy #>.mapper_load_cb
+  jmp kernMrecv
+  .mapper_load_cb = *
+  lda zp
+  ldy zp+1
+  jmp kernModemGet
 
 ;*** (.AY = configBuf[256])
 ; returns configBuf[256]

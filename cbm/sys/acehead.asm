@@ -167,16 +167,17 @@ aceRestart       = aceCallB+246 ;(.A=flag,.X=device,(zp)=appname) : no RTS!
 ; IDUN: Communicate with the RPi Memory Mapper system calls
 aceMapset        = aceCallB+249     ;(.X=Register, zw=Value)
 aceMapsys        = aceCallB+252     ;(.X=Command, .A=Param)
-aceMapsts        = aceCallB+255     ;(.AY=status callback)
+mmstat           = aceCallB+255     ;() : zw=message size, .CS=error,errno
 ; IDUN: Put characters from graphical set
 aceWinGrChrPut  = aceCallB+258
 ; IDUN: Communicate with the RPi Memory Mapper user calls
 aceMapusr       = aceCallB+261      ;(.X=Command, zw=ParamSize, zp=Params)
-aceReserved2    = aceCallB+264
+mmload          = aceCallB+264      ;(zw=bytes, .AY=dest. addr)
+mmrecv          = aceCallB+267      ;(.X=bytes, .AY=receive callback)
 ; IDUN: Control internal KVM switching
-aceKvmCommand   = aceCallB+267
+aceKvmCommand   = aceCallB+270
 ; IDUN: Use search path to determine full filename
-aceSearchPath   = aceCallB+270 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
+aceSearchPath   = aceCallB+273 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
                                ;                                .CS=end of path
 aceID1 = $cb
 aceID2 = $06

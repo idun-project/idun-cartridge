@@ -379,10 +379,11 @@ jmp kernCopyHost
 jmp kernRestart
 jmp kernMapset
 jmp kernMapsys
-jmp kernMapsts
+jmp kernMmstat
 jmp kernWinGrChrPut
 jmp kernMapusr
-jmp notImp
+jmp kernMload
+jmp kernMrecv
 jmp kernKvmCommand
 jmp kernSearchPath
 

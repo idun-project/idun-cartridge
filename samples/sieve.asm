@@ -40,21 +40,25 @@ __m8_viceemu_handler = *
    jmp __m8_mailbox_reset
    
 __m8_writeln_handler = *
+   jsr mmstat
+   ldx zw
    lda #<.writeln_callback
    ldy #>.writeln_callback
-   jsr aceMapsts
+   jsr mmrecv
    lda #0
    jmp __m8_mailbox_reset
    .writeln_callback = *
-   pha
+   stx .writeln_length
    lda #<mailboxB
    ldy #>mailboxB
    sta zp
    sty zp+1
-   pla
+   jsr aceTtyGet
+   lda .writeln_length
    ldy #0
    ldx #stdout
    jmp write
+.writeln_length !byte 0
 
 idunAppInit = *
    lda #0

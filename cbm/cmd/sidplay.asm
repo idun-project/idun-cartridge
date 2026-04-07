@@ -23,11 +23,10 @@ jmp main
 
 ;BE CAREFUL using zp variables with this tool. The loaded SID player
 ;routine can use zp $02-$5f, and Idun uses $70-$ff (leaving only $60-$6f).
-sidPtr      = $60  ;(2)
-subTune     = $62  ;(4)
-numTune     = $66  ;(4)
-argnum      = $6a  ;(1)
-rsid        = $6b  ;(1)
+subTune     = $60  ;(4)
+numTune     = $64  ;(4)
+argnum      = $68  ;(1)
+rsid        = $69  ;(1)
 
 musicIntr !byte 0,0
 sidInfoBuf !fill 35,0
@@ -76,8 +75,8 @@ setSidString = *
 
 main = *
    lda #0
-   ldx #$0b
--  sta sidPtr,x
+   ldx #$09
+-  sta subTune,x
    dex
    bpl -
    ;check for at least one arg
@@ -105,10 +104,12 @@ nextSid = *
    ;load sid
 +  ldx #$22       ;sidplay.load(packed)
    jsr aceMapusr
+   jsr mmstat
+   bcs luaError
    lda #<procSidHdr
    ldy #>procSidHdr
-   jsr aceMapsts
-   bcs luaError
+   ldx zw
+   jsr mmrecv
    lda rsid
    beq +
    jsr playerRSID
@@ -122,14 +123,11 @@ nextSid = *
    sta zw
    sta zw+1
    jsr aceMapusr
+   jsr mmstat
+   bcs luaError
    lda #<sidData
    ldy #>sidData
-   sta sidPtr
-   sty sidPtr+1
-   lda #<procSidProg
-   ldy #>procSidProg
-   jsr aceMapsts
-   bcs luaError
+   jsr mmload
    ;initialize SID player
    lda #2
    jsr statusUpdate
@@ -287,17 +285,9 @@ playPrev = *
 
 procSidHdr = *    ;(: rsid=error code)
    ;copy full message to sidData
-   tax
    lda #<sidData
-   sta sidPtr
-   lda #>sidData
-   sta sidPtr+1
-   ldy #0
--  lda aceSharedBuf,y
-   sta (sidPtr),y
-   iny
-   dex
-   bne -
+   ldy #>sidData
+   jsr aceTtyGet
    ;check first 4 bytes "PSID"
    lda sidData+0
    cmp #"P"
@@ -332,23 +322,6 @@ procSidHdr = *    ;(: rsid=error code)
    jsr setSidInfo
    lda #0 ;no errors
    sta rsid
-   rts
-
-procSidProg = *
-   tax
-   ;check upper memory bound
-   lda sidPtr+1
-   cmp #$bf
-   bcc +
-   rts    ;too big
-   ;copy full message to sidData
-+  ldy #0
--  lda aceSharedBuf,y
-   sta (sidPtr),y
-   iny
-   dex
-   bne -
-   inc sidPtr+1
    rts
 
 ;******** standard library ********
