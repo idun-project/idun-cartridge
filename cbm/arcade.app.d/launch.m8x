@@ -1,14 +1,19 @@
 m8_launch_handler = *
+    jsr mmstat
+    ldx zw
     lda #<.launcher
     ldy #>.launcher
     ;never returns!
-    jmp aceMapsts
+    jmp mmrecv
 
 .error = *
     inc $d020       ;what else?
     jmp .error
 
 .launcher = *
+    lda #<mailboxB
+    ldy #>mailboxB
+    jsr aceTtyGet
     ;respond mailbox
     lda #0
     jsr __m8_mailbox_reset
