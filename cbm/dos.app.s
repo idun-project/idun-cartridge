@@ -1143,16 +1143,16 @@ reset = *
 
 ;===reboot===
 reboot = *
-   ldx #aceMap_SYS_REBOOT
+   ldx #MAP_SYS_REBOOT
    lda #0      ;full cartridge reboot
-   jmp aceMapsys
+   jmp syscall
 
 ;===basic===
 ; Restart cartridge in BASIC mode
 basic = *
    jsr aceMiscSysType
-   ldx #aceMap_SYS_REBOOT
-   jmp aceMapsys
+   ldx #MAP_SYS_REBOOT
+   jmp syscall
 
 ;===load===
 loadFd      = 2
@@ -1182,8 +1182,8 @@ loader = *
    lsr
    lsr
    sta $9c
-   ldx #aceMap_SYS_STREAM_CHAN
-   jsr aceMapsys
+   ldx #MAP_SYS_STREAM_CHAN
+   jsr syscall
    ldx loadDevType
    jmp loaderRestart
    ;close Iec device only. Pid device stays open

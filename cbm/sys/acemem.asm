@@ -898,7 +898,7 @@ reclaimProcEram = *     ;(.X=alloc start block)
    inx
    jmp -
    ;run garbage collector
-+  ldx #aceMap_SYS_GCOLLECT
++  ldx #MAP_SYS_GCOLLECT
    lda aceProcessID
    jsr kernMapsys
 ++ rts

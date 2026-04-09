@@ -92,7 +92,7 @@ main = *
    ldy #0
    jsr getarg
    ldx #$20
-   jsr aceMapusr
+   jsr usrcall
 nextSid = *
    ;get next sid filename
    inc argnum
@@ -103,13 +103,13 @@ nextSid = *
    jmp exit
    ;load sid
 +  ldx #$22       ;sidplay.load(packed)
-   jsr aceMapusr
-   jsr mmstat
+   jsr usrcall
+   jsr mapstat
    bcs luaError
    lda #<procSidHdr
    ldy #>procSidHdr
    ldx zw
-   jsr mmrecv
+   jsr maprecv
    lda rsid
    beq +
    jsr playerRSID
@@ -122,12 +122,12 @@ nextSid = *
    lda #0
    sta zw
    sta zw+1
-   jsr aceMapusr
-   jsr mmstat
+   jsr usrcall
+   jsr mapstat
    bcs luaError
    lda #<sidData
    ldy #>sidData
-   jsr mmload
+   jsr mapload
    ;initialize SID player
    lda #2
    jsr statusUpdate

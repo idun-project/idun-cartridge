@@ -7,19 +7,19 @@ m8_nframe_handler = *
     bne +
     jsr vdcMemStart
     ;process new frame data
-+   jsr mmstat
++   jsr mapstat
 -   lda zw+1
     beq +
     ldx #0
     lda #<nframe_callback
     ldy #>nframe_callback
-    jsr mmrecv
+    jsr maprecv
     dec zw+1
     jmp -
 +   ldx zw
     lda #<nframe_callback
     ldy #>nframe_callback
-    jsr mmrecv
+    jsr maprecv
     ;swap buffers
     jsr swap
     lda #0

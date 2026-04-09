@@ -379,11 +379,11 @@ jmp kernCopyHost
 jmp kernRestart
 jmp kernMapset
 jmp kernMapsys
-jmp kernMmstat
+jmp kernMapstat
 jmp kernWinGrChrPut
 jmp kernMapusr
-jmp kernMload
-jmp kernMrecv
+jmp kernMapload
+jmp kernMaprecv
 jmp kernKvmCommand
 jmp kernSearchPath
 
@@ -963,7 +963,7 @@ kernRestart = *
 loadPrgCont:
    jsr kernShutdownSystem
    ;Use aceMapsys to load via NMI
-   ldx #aceMap_SYS_LOAD_BINARY
+   ldx #MAP_SYS_LOAD_BINARY
    setparam = *
    lda #1      ;parameter=1 (iec) or 2 (mmap)
    jsr kernMapsys

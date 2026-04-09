@@ -40,11 +40,11 @@ __m8_viceemu_handler = *
    jmp __m8_mailbox_reset
    
 __m8_writeln_handler = *
-   jsr mmstat
+   jsr mapstat
    ldx zw
    lda #<.writeln_callback
    ldy #>.writeln_callback
-   jsr mmrecv
+   jsr maprecv
    lda #0
    jmp __m8_mailbox_reset
    .writeln_callback = *

@@ -17,11 +17,11 @@ m8_programs_handler = *
     sta (zp),y
     iny
     jmp -
-+   jsr mmstat
++   jsr mapstat
     ldx zw
     lda #<.copyProgs
     ldy #>.copyProgs
-    jsr mmrecv
+    jsr maprecv
     lda #0
     jsr __m8_mailbox_reset
     jsr select_ui_programs

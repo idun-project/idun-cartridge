@@ -165,15 +165,15 @@ aceRestartExitBasic     = $82
 aceRestartLoadPrg       = $83
 aceRestart       = aceCallB+246 ;(.A=flag,.X=device,(zp)=appname) : no RTS!
 ; IDUN: Communicate with the RPi Memory Mapper system calls
-aceMapset        = aceCallB+249     ;(.X=Register, zw=Value)
-aceMapsys        = aceCallB+252     ;(.X=Command, .A=Param)
-mmstat           = aceCallB+255     ;() : zw=message size, .CS=error,errno
+mapsetr          = aceCallB+249     ;(.X=Register, zw=Value)
+syscall          = aceCallB+252     ;(.X=Command, .A=Param)
+mapstat          = aceCallB+255     ;() : zw=message size, .CS=error,errno
 ; IDUN: Put characters from graphical set
-aceWinGrChrPut  = aceCallB+258
+aceWinGrChrPut   = aceCallB+258
 ; IDUN: Communicate with the RPi Memory Mapper user calls
-aceMapusr       = aceCallB+261      ;(.X=Command, zw=ParamSize, zp=Params)
-mmload          = aceCallB+264      ;(zw=bytes, .AY=dest. addr)
-mmrecv          = aceCallB+267      ;(.X=bytes, .AY=receive callback)
+usrcall          = aceCallB+261      ;(.X=Command, zw=ParamSize, zp=Params)
+mapload          = aceCallB+264      ;(zw=bytes, .AY=dest. addr)
+maprecv          = aceCallB+267      ;(.X=bytes, .AY=receive callback)
 ; IDUN: Control internal KVM switching
 aceKvmCommand   = aceCallB+270
 ; IDUN: Use search path to determine full filename
@@ -188,17 +188,17 @@ aceMemInternal = $01
 aceMemERAM     = $02
 
 ;Memory Mapper command constants
-aceMap_SYS_LOAD_BINARY  = $00
-aceMap_SYS_REBOOT       = $01
-aceMap_SYS_KVM_SWITCH   = $02
-aceMap_SYS_ALLOCATE     = $f9
-aceMap_SYS_GCOLLECT     = $fa
-aceMap_SYS_MMAP         = $fb
-aceMap_SYS_STREAM_CHAN  = $ff
-aceMap_SET_MACHINE      = $f2
-aceMap_SET_DEVICE       = $f4
-aceMap_SET_DESTINATION  = $f5
-aceMap_SET_SOURCE       = $f6
+MAP_SYS_LOAD_BINARY  = $00
+MAP_SYS_REBOOT       = $01
+MAP_SYS_KVM_SWITCH   = $02
+MAP_SYS_ALLOCATE     = $f9
+MAP_SYS_GCOLLECT     = $fa
+MAP_SYS_MMAP         = $fb
+MAP_SYS_STREAM_CHAN  = $ff
+MAP_SET_MACHINE      = $f2
+MAP_SET_DEVICE       = $f4
+MAP_SET_DESTINATION  = $f5
+MAP_SET_SOURCE       = $f6
 
 aceErrStopped = 0
 aceErrTooManyFiles = 1

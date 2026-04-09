@@ -1,10 +1,10 @@
 m8_launch_handler = *
-    jsr mmstat
+    jsr mapstat
     ldx zw
     lda #<.launcher
     ldy #>.launcher
     ;never returns!
-    jmp mmrecv
+    jmp maprecv
 
 .error = *
     inc $d020       ;what else?
@@ -86,8 +86,8 @@ load_typ !byte 0
     lsr
     lsr
     sta $9c
-    ldx #aceMap_SYS_STREAM_CHAN
-    jsr aceMapsys
+    ldx #MAP_SYS_STREAM_CHAN
+    jsr syscall
     jsr toolUserLayoutEnd
     ldx load_typ
     lda #aceRestartLoadPrg

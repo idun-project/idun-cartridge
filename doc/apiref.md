@@ -21,8 +21,9 @@ Revised for Idun beginning in 2023.
       * [8. TIME CALLS](#8-time-calls)
       * [9. TTY ACCESS CALLS](#9-tty-access-calls)
       * [10. NEW MEMORY API FOR ERAM](#10-new-memory-api-for-eram)
-      * [11. MISCELLANEOUS CALLS](#11-miscellaneous-calls)
-      * [12. IOCTL CALLS](#12-ioctl-calls)
+      * [11. CARTRIDGE MAPPER AND LUA CALLS](#11-cartridge-mapper-and-lua-calls)
+      * [12. MISCELLANEOUS CALLS](#12-miscellaneous-calls)
+      * [13. IOCTL CALLS](#13-ioctl-calls)
    * [USER-PROGRAM ORGANIZATION](#user-program-organization)
 
 <!-- Created by https://github.com/ekalinin/github-markdown-toc -->
@@ -1245,7 +1246,7 @@ Sets the current date and time in the system.  (.AY) points to the BCD date stri
 
 #### 9. TTY ACCESS CALLS
 
-Any Idun device that is configured with "type=6" is available as a stream device. A stream can be used directly by this simple API, to send/receive bulk data to/from the endpoint. Thes devices are accessed using the "open" API. __Impotantly__, once such a device has been opened, all I/O via the idun-cartridge will be _only with this streaming device_; so, no I/O with, for example, a virtual drive, can be done until this stream is closed by calling the "close" API on its file descriptor.
+Any Idun device that is configured with "type=6" is available as a stream device. A stream can be used directly by this simple API, to send/receive bulk data to/from the endpoint. These devices are accessed using the "open" API. __Impotantly__, once such a device has been opened, all I/O via the idun-cartridge will be _only with this streaming device_; so, no I/O with, for example, a virtual drive, can be done until this stream is closed by calling the "close" API on its file descriptor.
 
 ```
 NAME   :  aceTtyAvail
@@ -1328,7 +1329,82 @@ ALTERS :  .A, .X, .Y
 This routine allows any allocated block to work as if it was created with `mmap`. The hashtag is assigned to the memory, and then it can be accessed via the File API too.
 
 
-#### 11. MISCELLANEOUS CALLS
+#### 11. CARTRIDGE MAPPER AND LUA CALLS
+
+The cartridge mapper API is used to access the cartridge mapper service, which is defined by the Idun cartridge as the `@:` device. The API allows assembly language programs to control the mapper service by changing various settings and by calling remote procedures that are part of Idun's Lua runtime environment.
+
+```
+NAME   :  mapsetr
+PURPOSE:  set a numeric register value in the cartridge mapper
+ARGS   :  .X   = register id (aceMap_SET_xxx)
+          zw   = register value
+RETURNS:  <none>
+ALTERS :  .A, .X, .Y
+```
+
+The cartridge mapper settings are mostly used by the Idun kernel's memory manager, and are important for the operation of some other routines, notably `mmap`. This public API is currently used by `shell.app` for the purpose of identifying the type of Commodore machine, its memory configuration, and video display that Idun is using. This Commodore system information is then available to Linux programs through the `IDUN_SYS` environment variable.
+
+```
+NAME   :  syscall
+PURPOSE:  cause cartridge mapper to execute pre-defined system command
+ARGS   :  .X   = command id
+          .A   = command parameter
+RETURNS:  <none>
+ALTERS :  .A, .X, .Y
+```
+
+A lot of the functionality of the idun-cartridge is implemented through its embedded Lua interpreter, which includes many built-in commands. This public API can be used to invoke the Lua `sys` module routines using 6502 assembly. The commands id is taken from the MAP_SYS_xxx constants. For a list of available commands, see the `sys` API in [luaref.md](luaref.md).
+
+```
+NAME   :  usrcall
+PURPOSE:  cause cartridge mapper to load and execute user-defined Lua module routines
+ARGS   :  .X   = routine id (0 to load module)
+          zw   = number of parameter bytes
+          (zp) = pointer to parameter byte-array
+RETURNS:  <none>
+ALTERS :  .A, .X, .Y
+```
+
+Using the embedded Lua interpreter, an assembly language program is able to load a fairly standard Lua module, and call those Lua routines that are exported by the module. A module is normally given the same name as the associated tool- for example the `sidplay` program uses a module named `sidplay.lua`. This naming convention makes it trivial to load the module using `usrcall` with "0" as the routine id. Once loaded, the routines can be accessed from assembly using the id, which is an index (starting from "1") of all the module's exported routines, sorted alphabetically. For more details, see the `usr` API in [luaref.md](luaref.md).
+
+```
+NAME   :  mapstat
+PURPOSE:  receive status from cartridge mapper
+ARGS   :  <none>
+RETURNS:  zw, .CS, errno 
+ALTERS :  .A, .X, .Y
+```
+
+This is the routine used in assembly to check for the response from Lua routines. If your program interfaces a Lua "usr" module, or uses `m8` for async communication with a Lua program, then this is the routine you use to wait for the "usr" call return values and errors, or to receive and process those async messages using `maprecv`.
+
+If the response/message is an error, the .CS is returned with the error code in "errno". Otherwise, "zw" will contain the size of the data in the response/message, which can be up to 65535 bytes.
+
+For more details, see the `m8` and `usr` APIs in [luaref.md](luaref.md).
+
+```
+NAME   :  maprecv
+PURPOSE:  receive data from cartridge mapper
+ARGS   :  .X=bytes, .AY=callback
+RETURNS:  <none>
+ALTERS :  .A, .X, .Y
+```
+
+Since the message can be up to 65535 byes, this routine uses a callback to process up to 256 bytes of the message at a time. So, big messages will end up invoking this routine and the associated callback many times. You have to use the value returned in "zw" by `mapstat` in order to call `maprecv` the correct number of times and with the correct .X argument. It is _required_ that all of the response be received through `maprecv` or `mapload`. _Note:_ .X=0 indicates 256 bytes (1 page) should be processed.
+
+Within the callback, you control reading the response directly from the cartridge mapper, normally using `aceTtyGet`. In cases where the incoming bytes can be processed without buffering, you can access data directly via cartridge IO. Doing this requires understanding the low-level hardware IO protocol used by the Idun cartridge and is only recommended if performance is too slow with buffering through `aceTtyGet`.
+
+```
+NAME   :  mapload
+PURPOSE:  receive data from cartridge mapper
+ARGS   :  zw=bytes, .AY=memory buffer
+RETURNS:  <none>
+ALTERS :  .A, .X, .Y
+```
+
+In cases where the response/message simply needs to be loaded into a memory buffer, this routine makes it easier than using `maprecv`. The value in "zw" is usually as returned from `mapstat`, and .AY points to a memory area of sufficient size to store the entire response.
+
+
+#### 12. MISCELLANEOUS CALLS
 
 ```
 NAME   :  aceIrqHook
@@ -1382,28 +1458,6 @@ ALTERS :  <yep>
 ```
 
 This is the only kernel API call which does not return, since it will restart the computer running something else. The flag passed in .A is any one of the defined restart flags: aceRestartWarmReset, aceRestartExitBasic, aceRestartApplReset, or aceRestartLoadPrg. The difference between exiting to BASIC vs. a warm reset is simply whether you get to BASIC with or without a software reset of the CPU. The other two options are used to load an alternative application over top of the idun-shell (aceRestartApplReset) or to load a native C128 application and start it (aceRestartLoadPrg). In this final case, it is critical to set the .X value to "1" if the program is being loaded from a floppy disk device. Otherwise, it is assumed to be loaded via the idun-cartridge using a virtual drive.
-
-```
-NAME   :  aceMapsys
-PURPOSE:  cause memory-mapper to execute pre-defined system command
-ARGS   :  .X   = command id
-          .A   = command parameter
-RETURNS:  <none>
-ALTERS :  .A, .X, .Y
-```
-
-A lot of the functionality of the idun-cartridge is implemented by running arbitrary 6502 code within a non-maskable interrupt (NMI). These two aceMapper APIs allow an Idun application to invoke this process by specifying system or user-defined commands. For a list of available commands, see the `sys` and `usr` APIs of [luaref.md](luaref.md).
-
-
-```
-NAME   :  aceMapsts
-PURPOSE:  receive status message from memory-mapper
-ARGS   :  (.AY) = pointer to callback that processes the message
-RETURNS:  <none>
-ALTERS :  .A, .X, .Y
-```
-
-When this returns, the full message has been processed. It will invoke the callback as many times as needed to process all the data.
 
 ```
 NAME   :  aceKvmCommand
@@ -1467,7 +1521,7 @@ ALTERS :  .A
 
 The turbo index is a value from 0-15 that maps to a MHz speed for the C64U. Bit 7 may also be set in the index to disable VIC-II bad line cycle stealing, but this is usually not recommended! If you only want to read the current index, then call with carry clear. If the turbo ability appears unavailable or disabled, like if you are actually running on an original C64, then Z-flag is set in return.
 
-#### 12. IOCTL CALLS
+#### 13. IOCTL CALLS
 
 Idun virtual floppies can be mounted, or their contents accessed on a sector-by-sector basis, using these APIs.
 

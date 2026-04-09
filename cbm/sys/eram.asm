@@ -24,7 +24,7 @@ initEram = *
     sta aceTagsStart
     jsr initTags
     ;** free all the ERAM
-    ldx #aceMap_SYS_GCOLLECT
+    ldx #MAP_SYS_GCOLLECT
     lda #$ff
     jmp kernMapsys
 
@@ -65,9 +65,9 @@ kernNew = *
     lda mp+1
     sty zw+1
     sta zw
-    ldx #aceMap_SET_SOURCE
+    ldx #MAP_SET_SOURCE
     jsr kernMapset
-    ldx #aceMap_SYS_ALLOCATE
+    ldx #MAP_SYS_ALLOCATE
     lda syswork+2
     jsr kernMapsys
 +   rts
@@ -135,7 +135,7 @@ kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename) : .CS=error
     ldy mp+2
     sta zw
     sty zw+1
-    ldx #aceMap_SET_DESTINATION
+    ldx #MAP_SET_DESTINATION
     jsr kernMapset
     lda openDevice
     lsr
@@ -143,14 +143,14 @@ kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename) : .CS=error
     ldy #0
     sta zw
     sty zw+1
-    ldx #aceMap_SET_DEVICE
+    ldx #MAP_SET_DEVICE
     jsr kernMapset
     ;check system alloc
     lda sys_area_alloc
     cmp #$ff
     beq +
     lda aceProcessID
-+   ldx #aceMap_SYS_MMAP
++   ldx #MAP_SYS_MMAP
     jsr kernMapsys
     bcc +
     rts

@@ -487,8 +487,8 @@ CmdKvmAct = *
    ldx #0
    stx tbwork+4         ;to keep tabs on mouse buttons
    ; activate internal kvm
-   ldx #aceMap_SYS_KVM_SWITCH
-   jsr aceMapsys
+   ldx #MAP_SYS_KVM_SWITCH
+   jsr syscall
    ; show kvm enabled in status bar
    lda #$c0
    sta kvmCapture

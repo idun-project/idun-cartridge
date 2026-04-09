@@ -3,13 +3,13 @@
 m8_drawit_handler = *
    lda #0
    sta .copyPageCtr
-   jsr mmstat
+   jsr mapstat
    lda zw+1
    sta .mmPages
 -  ldx #0
    lda #<.copyVdcPage
    ldy #>.copyVdcPage
-   jsr mmrecv
+   jsr maprecv
    dec .mmPages
    lda .mmPages
    bne -

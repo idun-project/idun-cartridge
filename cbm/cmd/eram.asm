@@ -149,8 +149,8 @@ mmap_file = *
    ldy #$7f
    sta zw
    sty zw+1
-   ldx #aceMap_SET_DESTINATION   ;DESTINATION=$7f/0
-   jsr aceMapset
+   ldx #MAP_SET_DESTINATION   ;DESTINATION=$7f/0
+   jsr mapsetr
    ;set device
    lda syswork+1
    lsr
@@ -158,8 +158,8 @@ mmap_file = *
    ldy #0
    sta zw
    sty zw+1
-   ldx #aceMap_SET_DEVICE        ;DEVICE
-   jsr aceMapset
+   ldx #MAP_SET_DEVICE        ;DEVICE
+   jsr mapsetr
    ;send Mmap command
    ldx #aceMap_SYS_MMAP
    lda aceStatB+75

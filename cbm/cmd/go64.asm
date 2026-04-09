@@ -53,9 +53,9 @@ main = *
 go64 = *
    lda #3
 -  sta IdunDevice
-   ldx #aceMap_SYS_REBOOT
+   ldx #MAP_SYS_REBOOT
    lda #64     ;reboot C64 mode
-   jmp aceMapsys
+   jmp syscall
 go64Disk = *
    lda #30
    jmp -

@@ -136,8 +136,8 @@ Startup = *
    sta zw+1
    pla
    sta zw+0
-   ldx #aceMap_SET_MACHINE
-   jsr aceMapset
+   ldx #MAP_SET_MACHINE
+   jsr mapsetr
    ;fall-through
    ;=== Initial bash tty runs fetch. ===
    NeoTty = *
@@ -348,8 +348,8 @@ load = *
    lda syswork+1
    lsr
    lsr
-   ldx #aceMap_SYS_STREAM_CHAN
-   jsr aceMapsys
+   ldx #MAP_SYS_STREAM_CHAN
+   jsr syscall
    jmp loadCont
    ;close Iec device only. Pid stays open.
    closeIec = *

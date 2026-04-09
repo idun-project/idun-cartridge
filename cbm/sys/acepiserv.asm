@@ -74,7 +74,7 @@ kernMapusr = *
   jsr pidPutbuf
 + rts
 ;*** ;() : zw=message size, .CS=error,errno
-kernMmstat = *
+kernMapstat = *
   ldx #0
   jsr pisvcCommonTalk
   ;fetch size
@@ -97,7 +97,7 @@ kernMmstat = *
   sec
   jmp .map_untalk
 ;*** ;(.X=bytes, .AY=receive callback)
-kernMrecv = *
+kernMaprecv = *
   stx zz
   sta .mapper_proc_addr+0
   sty .mapper_proc_addr+1
@@ -110,7 +110,7 @@ kernMrecv = *
   lda #$5F
   jmp pidChOut
 ;*** ;(zw=bytes, .AY=dest. addr)
-kernMload = *
+kernMapload = *
   sta zp
   sty zp+1
   lda zw+1
@@ -119,14 +119,14 @@ kernMload = *
   ldx #0
   lda #<.mapper_load_cb
   ldy #>.mapper_load_cb
-  jsr kernMrecv
+  jsr kernMaprecv
   inc zp+1
   lda zw+1
   jmp -
 + ldx zw
   lda #<.mapper_load_cb
   ldy #>.mapper_load_cb
-  jmp kernMrecv
+  jmp kernMaprecv
   .mapper_load_cb = *
   lda zp
   ldy zp+1
