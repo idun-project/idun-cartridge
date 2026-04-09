@@ -91,7 +91,7 @@ main = *
    lda #0
    ldy #0
    jsr getarg
-   ldx #$20
+   ldx #0         ;load usr module "sidplay.lua"
    jsr usrcall
 nextSid = *
    ;get next sid filename
@@ -102,7 +102,7 @@ nextSid = *
    bne +
    jmp exit
    ;load sid
-+  ldx #$22       ;sidplay.load(packed)
++  ldx #2         ;sidplay.load(packed)
    jsr usrcall
    jsr mapstat
    bcs luaError
@@ -118,7 +118,7 @@ nextSid = *
 +  lda #0
    jsr statusUpdate
    ;get sid program
-   ldx #$21       ;sidplay.getsid()
+   ldx #1         ;sidplay.getsid()
    lda #0
    sta zw
    sta zw+1

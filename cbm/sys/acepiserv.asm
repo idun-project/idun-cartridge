@@ -47,6 +47,10 @@ kernMapsys = *
   jmp pidChOut
 ;*** (.X=Command, zw=ParamSize, zp=Params)
 kernMapusr = *
+  txa
+  clc
+  adc #$20
+  tax
   jsr kernMapset  ;send preamble and ParamSize
   ;send the Params
   lda zw+0

@@ -5,19 +5,19 @@
 
 Idun provides several methods by which Lua code running on the Raspberry Pi can provide coprocessing functionality to idun tools and applications. First, let's describe the three basic ways of integrating Lua code, from simplest to most complicated:
 
-1. Write a Lua script and execute it in a tty from the idun-shell.
+* Write a Lua script and execute it in a tty from the idun-shell.
 
 This is by far the easiest way to add applications written in Lua. The idun-shell has a `mlua` command that will accept the name of a Lua script and launch it in a terminal. So, a simple text program written in Lua and using the Lua `print()` function would just work. To see this in action, switch to the `idun-base/apps` (usually mapped to `e:`) directory and type `mlua sieve.lua`. The script is a generic thing that spits out prime numbers up to 10000. It only uses `print()` for output.
 
-To do a more interactive program that requires user input, you simply switch the Lua stdio to use the [minisock](#mini-socket) API described below. Now, every character typed or printed is available on both the Lua and C128 side. To see an example of a script that works this way, simply type `help` or press `F1` in the shell. The help system is implemented as a [Lua script](https://github.com/idun-project/idun-cartridge/cbm/resc/help.lua).
+To do a more interactive program that requires user input, you simply switch the Lua stdio to use the [minisock](#mini-socket) API described below. Now, every character typed or printed is available on both the Lua and Commodore side. To see an example of a script that works this way, simply type `help` or press `F1` in the shell. The help system is implemented as a [Lua script](https://github.com/idun-project/idun-cartridge/blob/main/cbm/resc/help.lua).
 
-2. Write an Idun tool that calls a Lua module.
+* Write an Idun tool that calls a Lua module.
 
-It is quite easy to create a tool for Idun in which much of the functionality is contained in a Lua module that runs on the cartridge with full access to its modern Linux environment. For example, the `sidplay` command relies on a helpful [Lua module](https://github.com/idun-project/idun-cartridge/cbm/resc/sidplay.lua) to pre-process the SID files. The Lua functions inside the module can be called from assembly language using the `usrcall` API, including passing parameters into Lua from assembly. Likewise, data can be returned from the Lua function and accessed in assembly using the `maprecv` API. For more information on using this method, refer to [Lua "usr" modules](#lua-usr-modules).
+It is quite easy to create a tool for Idun in which much of the functionality is contained in a Lua module that runs on the cartridge with full access to its modern Linux environment. For example, the `sidplay` command relies on a helpful [Lua module](https://github.com/idun-project/idun-cartridge/blob/main/cbm/resc/sidplay.lua) to pre-process the SID files. The Lua functions inside the module can be called from assembly language using the `usrcall` API, including passing parameters into Lua from assembly. Likewise, data can be returned from the Lua function and accessed in assembly using the `maprecv` API. For more information on using this method, refer to [Lua "usr" modules](#lua-usr-modules).
 
-3. Write a Idun application in a combination of Lua and 6502 assembler.
+* Write a Idun application in a combination of Lua and 6502 assembler.
 
-Finally, Idun supports creating applications in Lua in which the C128 is mainly the front-end for rendering graphics, playing sound, and receiving user inputs. In theory, all of the application logic and data processing can be done in Lua. 
+Finally, Idun supports creating applications in Lua in which the Commodore is mainly the front-end for rendering graphics, playing sound, and receiving user inputs. In theory, all of the application logic and data processing can be done in Lua. 
 
 To communicate, messages are passed asynchronously to the Commodore using a "mailbox" interface, and these messages can be of arbitrary size and content. Likewise, there is an "event" interface that allows asynchronous events, like keyboard or joystick input, to be sent to the Lua program. The two best, though simple, examples of this are e:mandelbrot.app and e:cube.app. These Lua/6502 assembler hybrid apps will even work in the idun-vice emulator.
 
@@ -36,16 +36,14 @@ Minisock can of course be used in a more structured way, such as for passing pre
 
 ### m8 API
 
-The m8 (say "Mate") API is what allows code written in Lua to run on the Raspberry Pi's processor, but call into 8-bit machine code that's running on the 6502 CPU in your Commodore 128. It's akin to "old school" programming on the Commodore using BASIC to call machine language routines, except the high-level script is Lua and runs on a powerful ARM coprocessor. To use m8, just add a line like `local m8 = require("m8api")` to your Lua program.
+The m8 (say "Mate") API is what allows code written in Lua to run on the Raspberry Pi's processor, but call into 8-bit machine code that's running on the 6502 CPU in your Commodore. It's akin to "old school" programming on the Commodore using BASIC to call machine language routines, except the high-level script is Lua and runs on a powerful ARM coprocessor. To use m8, just add a line like `local m8 = require("m8api")` to your Lua program.
 
 #### Low-level m8 functions
 
-All of the functionality in m8 is ultimately based on just two low-level functions:
+All of the functionality in m8 is ultimately based on a couple low-level functions:
 
-```
-1. m8.load({6502_ml_code}, load_addr, [start_addr])
-2. m8.intr({6502_ml_code})
-```
+1. m8.intr({6502_ml_code})
+2. m8.
 
 The `m8.load` function takes some ml code written for the 6502, and quickly loads it into the Commodore at the memory location specified by `load_addr`. An optional `start_addr`, if provided, causes a `jmp` to that address as soon as the code has been loaded. The size of the 6502_code blob that is downloaded to the Commodore is only limited by the RAM available to the 6502.
 
@@ -67,27 +65,30 @@ __UNDER CONSTRUCTION__
 
 ### m8x extensions
 
-m8x ("mate extensions") is the standard way to add application-dependent functionality to Lua apps. These extensions become part of the callable code in the m8 namespace created by the applications. So, it allows new functionality to be invoked on the assembler side. For an example, see: [cube.app.d](https://github.com/idun-project/idun-cartridge/samples/cube.app.d/) and [mandelbrot.app.d](https://github.com/idun-project/idun-cartridge/samples/mandelbrot.app.d/).
+m8x ("mate extensions") is the standard way to add application-dependent functionality to Lua apps. These extensions become part of the callable code in the m8 namespace created by the applications. So, it allows new functionality to be invoked on the assembler side. For an example, see: [cube.app.d](https://github.com/idun-project/idun-cartridge/blob/main/samples/cube.app.d/) and [mandelbrot.app.d](https://github.com/idun-project/idun-cartridge/blob/main/samples/mandelbrot.app.d/).
 
 ### Lua sys module
 
 This module is builtin to the cartridge Lua environment and contains many functions. The functions can be utilized in 3 ways:
+
 1. called from within your Lua programs
 2. passed as "one-shot" commands from Linux programs using a local messaging socket
 3. called from assembly programs using the `syscall` API
 
 These are the available functions with description.
-- sys.loader(load_type) Load a native program on Commodore by invoking an extension ROM file loader and launcher.
-- sys.chdir(dir_name) Set the Idun device/directory
-- sys.shell(cmd, args) Command the shell.app to run an internal command, or launch and Idun or native program.
-- sys.stop() Injects a STOP key event; can be used to terminate running Idun programs that monitor STOP.
-- sys.reboot(mode) Reboot Idun cart with specified mode (C64/C128),
-- sys.kvm_on() Enable the Idun internal KVM; now keyboard and mouse will directly control Linux. Disable with `C=+k`.
+
+- `sys.loader(load_type)` Load a native program on Commodore by invoking an extension ROM file loader and launcher.
+- `sys.chdir(dir_name)` Set the Idun device/directory
+- `sys.shell(cmd, args)` Command the shell.app to run an internal command, or launch and Idun or native program.
+- `sys.stop()` Injects a STOP key event; can be used to terminate running Idun programs that monitor STOP.
+- `sys.reboot(mode)` Reboot Idun cart with specified mode (C64/C128),
+- `sys.kvm_on()` Enable the Idun internal KVM; now keyboard and mouse will directly control Linux. Disable with `C=+k`.
 
 For use from assembly with `syscall`, not all of the functions are available. It is limited to:
-1. sys.loader()
-2. sys.reboot()
-3. sys.kvm_on()
+
+1. `sys.loader()` - with MAP_SYS_LOAD_BINARY command
+2. `sys.reboot()` - with MAP_SYS_REBOOT command
+3. `sys.kvm_on()` - with MAP_SYS_KVM_SWITCH command
 
 ### Lua usr modules
 

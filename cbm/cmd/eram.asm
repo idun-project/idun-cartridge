@@ -161,7 +161,7 @@ mmap_file = *
    ldx #MAP_SET_DEVICE        ;DEVICE
    jsr mapsetr
    ;send Mmap command
-   ldx #aceMap_SYS_MMAP
+   ldx #MAP_SYS_MMAP
    lda aceStatB+75
    jsr aceMapsys
    ;wait for mmap to be completed
@@ -241,7 +241,7 @@ gcollect = *
    jsr pidChOut
    lda #$7F                ;SECOND #31
    jsr pidChOut
-   lda #aceMap_SYS_GCOLLECT
+   lda #MAP_SYS_GCOLLECT
    jsr pidChOut
    lda aceStatB+75
    jsr pidChOut            ;process id

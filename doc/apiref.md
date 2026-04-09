@@ -1336,7 +1336,7 @@ The cartridge mapper API is used to access the cartridge mapper service, which i
 ```
 NAME   :  mapsetr
 PURPOSE:  set a numeric register value in the cartridge mapper
-ARGS   :  .X   = register id (aceMap_SET_xxx)
+ARGS   :  .X   = register id (MAP_SET_xxx)
           zw   = register value
 RETURNS:  <none>
 ALTERS :  .A, .X, .Y
