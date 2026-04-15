@@ -133,13 +133,21 @@ main = *
    jsr restoreModeParams
    lda #TRUE
    jsr toolStatEnable
+   lda #chrCLS
+   jsr putchar
    lda rows
    sta itoa
-   ldx columns
-   cpx #80
-   bne +
+   jsr aceMiscSysType
+   bpl +
    lda #<vdcnm
    ldy #>vdcnm
+   jsr puts
+   jmp ++
++  ldx columns
+   cpx #80
+   bne +
+   lda #<sof80
+   ldy #>sof80
    jsr puts
    jmp ++
 +  lda #<vicnm
@@ -156,6 +164,7 @@ main = *
    jsr puts
    rts
 vdcnm   !pet "VDC 80x",0
+sof80   !pet "VIC-II 80x",0
 vicnm   !pet "VIC-II 40x",0
 mode    !pet " active",chrCR,0
 
@@ -796,6 +805,14 @@ loadChrset = *
    bcc +
    inc syswork+1
 +  lda #%10001010
+   ldx #$00
+   ldy #0
+   jsr aceWinChrset
+   clc
+   lda syswork+1
+   adc #>2048
+   sta syswork+1
+   lda #%10000110
    ldx #$00
    ldy #0
    jmp aceWinChrset
