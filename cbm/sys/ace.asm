@@ -442,7 +442,6 @@ aceBootstrap = *
    pla
    sta aceTurboCpuFlag
    lda $9c  ; default device. Should it be C:?
-   cmp #26
    bne +
    lda #3
 +  asl
