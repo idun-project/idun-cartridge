@@ -1,9 +1,5 @@
 BUILD=build
-ifdef IDUN_SYS_DIR
-	SYSDIR=$(IDUN_SYS_DIR)/sys
-else
-	SYSDIR=$(HOME)/idun-sys/sys
-endif
+SYSDIR=../sys
 ACME=acme --dialect 0.94.12
 
 ACESYS=\
@@ -123,3 +119,11 @@ clean:
 	rm -fr $(BUILD)
 	rm -fr $(SYSDIR)
 	rm -fr resc/boot.prg resc/boot128.prg
+
+install: all
+	for item in $(SYSDIR)/*; do \
+		[ -f "$$item" ] && install -m 644 -o idun -g idun "$$item" /usr/share/idun/sys/; \
+	done
+	for item in $(SYSDIR)/arcade.app.d/*; do \
+		[ -f "$$item" ] && install -m 644 -o idun -g idun "$$item" /usr/share/idun/sys/arcade.app.d/; \
+	done
