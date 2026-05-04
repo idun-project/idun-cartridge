@@ -45,6 +45,7 @@ CmdTable:
    jmp drives        ;5
    jmp mount         ;6
    jmp assign        ;7
+   jmp setdrv        ;8
 
 ;=== Init (one-time) ===
 Init = *
@@ -1073,6 +1074,18 @@ assign = *
    lda #chrCR
    jmp putchar
 
+setdrv = *
+   lda #<setDrvLetter
+   ldy #>setDrvLetter
+   jsr puts
+   lda #0
+   ldy #0
+   jsr getarg
+   ldx #stdout
+   jsr zpputs
+   lda #chrCR
+   jmp putchar
+setDrvLetter !pet "Change directory to ",0
 ;This is a placeholder, since using exec causes an
 ;external command tool to be executed.
 exec = *
