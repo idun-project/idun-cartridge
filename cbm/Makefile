@@ -53,7 +53,8 @@ build/browse\
 build/zload\
 build/showkoa\
 build/boxer\
-build/turbo
+build/turbo\
+build/nmitest
 
 TEST=\
 build/eram
@@ -84,7 +85,7 @@ $(SYSDIR)/idun128 : idunk.asm $(ACESYS)
 	$(ACME) --vicelabels $(BUILD)/idun128.sym -Dcomputer=128 -Dromsize=0 -o $(SYSDIR)/idun128 -f cbm idunk.asm
 
 $(SYSDIR)/idun-64 : idunk.asm $(ACESYS)
-	$(ACME) -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
+	$(ACME) --vicelabels $(BUILD)/idun.sym -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
 
 $(SYSDIR)/boot128 : $(ACESYS) resc/boot128.prg
 	$(ACME) -Dcomputer=128 -o $(SYSDIR)/boot128 -f cbm sys/hook.asm
