@@ -121,9 +121,10 @@ clean:
 	rm -fr resc/boot.prg resc/boot128.prg
 
 install: all
+	mkdir -p /usr/share/idun/sys/arcade.app.d
 	for item in $(SYSDIR)/*; do \
-		[ -f "$$item" ] && install -m 644 -o idun -g idun "$$item" /usr/share/idun/sys/; \
+		[ -f "$$item" ] && install -m 644 -o $(USER) -g $(USER) "$$item" /usr/share/idun/sys/; \
 	done
 	for item in $(SYSDIR)/arcade.app.d/*; do \
-		[ -f "$$item" ] && install -m 644 -o idun -g idun "$$item" /usr/share/idun/sys/arcade.app.d/; \
+		[ -f "$$item" ] && install -m 644 -o $(USER) -g $(USER) "$$item" /usr/share/idun/sys/arcade.app.d/; \
 	done
