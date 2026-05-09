@@ -1,6 +1,6 @@
 #!/bin/bash
 # Additional packages
-sudo pacman -Sy acme bastext idun-zcc tmux terminus-font
+sudo apk add acme bastext idun-zcc tmux font-terminus
 # Setup 'joe' editor for acme
 if [ -f "/usr/share/joe/syntax/acme.jsf" ]; then
     sudo mv /usr/share/joe/syntax/acme.jsf /usr/share/joe/syntax/asm.jsf
