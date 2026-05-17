@@ -98,8 +98,9 @@ kernMapstat = *
 - jsr pidChIn
   bcs -
   sta errno
+  jsr .map_untalk
   sec
-  jmp .map_untalk
+  rts
 ;*** ;(.X=bytes, .AY=receive callback)
 kernMaprecv = *
   stx zz

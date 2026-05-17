@@ -11,16 +11,15 @@ end
 local function relocSid(fname)
 	local RELOCCMD = "sidreloc -s -t 0 -p 71 -z 02-5f --frames 20000 -q "
 	local TMPFNAME = "/tmp/sidreloc.sid"
-	assert(fname, "missing argument: sid file")
 
 	-- Check extension
-	if not ends_with(fname, ".sid") then
+	if (not fname) or (not ends_with(fname, ".sid")) then
 		return 4
 	end
 
 	-- Check type is PSID
 	local psid = io.open(fname, "r")
-	assert(psid,"Failed to open "..fname)
+	if not psid then return 4 end
 	local prefix = psid:read(4)
 	psid:close()
 	if prefix ~= "PSID" then
@@ -30,7 +29,8 @@ local function relocSid(fname)
 	-- Run `sidreloc` command
 	local retval = os.execute(RELOCCMD..fname.." "..TMPFNAME)
 	if retval then
-		local sid = assert(io.open(TMPFNAME, "rb"))
+		local sid = io.open(TMPFNAME, "rb")
+		if not sid then return 2 end
 		local data = sid:read("*all")
 		sid:close()
 		-- Check PSID version and load addr
@@ -62,8 +62,9 @@ sidplay.load = function(packed)
 	io.write(string.format("relocSid on %s returns %d\n", sidfile, res))
 	if res > 0 then
 		m8.err(res)
+	else
+		m8.ret(sidhdr)
 	end
-	m8.ret(sidhdr)
 end
 
 sidplay.getsid = function()
