@@ -914,13 +914,16 @@ kernDirStat = *
    lda #"r"
    sta openMode
    sty openNameScan
-   jsr pidFlushbuf
    jsr pidCommandSend
    lda #<dstatRespHandler
    ldy #>dstatRespHandler
    jmp pidCommandResponse
 dstatRespHandler = *
-   ldx #$00
+   jsr pidFlushbuf
+   ; UNLISTEN
+   lda #$3F
+   jsr pidChOut
+   ; Read response size
 -  jsr pidChIn
    bcs -
    beq +
@@ -954,6 +957,11 @@ kernFileStat = *
    ldy #>fstatRespHandler
    jmp pidCommandResponse
 fstatRespHandler = *
+   jsr pidFlushbuf
+   ; UNLISTEN
+   lda #$3F
+   jsr pidChOut
+   ; Read response
    lda #<aceDirentBuffer
    ldy #>aceDirentBuffer
    ldx #aceDirentLength

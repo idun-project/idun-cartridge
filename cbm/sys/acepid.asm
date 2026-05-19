@@ -198,11 +198,11 @@ pidFdswap = *   ;( .X=Fcb1, .Y=Fcb2 )
 
 ; Send UNLISTEN  and get error code
 pidDoUnlisten = *
+  jsr pidFlushbuf
   ; UNLISTEN
   lda #$3F
   jsr pidChOut
   ; Get errno
-pidContUnlisten = *
 - jsr pidChIn
   bcs -
   sta errno
@@ -256,7 +256,6 @@ pidOpen = *
   jsr pidChOut
   lda #0
   jsr pidChOut
-  jsr pidFlushbuf
   jsr pidDoUnlisten
   bcc +
   rts
@@ -290,7 +289,6 @@ pidClose = *
   jsr pidChOut
   ldx closeFd
   +closeFileinfo
-  jsr pidFlushbuf
   jmp pidDoUnlisten
 pidCloseall = *
   lda #$5f
@@ -798,8 +796,8 @@ pidCommandResponse = *
   sty .pidCmdHandler+2
   jmp +
 pidCommandFinish = *
-  lda #<pidContUnlisten
-  ldy #>pidContUnlisten
+  lda #<pidDoUnlisten
+  ldy #>pidDoUnlisten
   jmp pidCommandResponse
   ; send command prefix
 + lda cmdPrefix
@@ -818,10 +816,8 @@ pidCommandFinish = *
   jsr pidChOut
   lda #0
   jsr pidChOut
-  lda #$3F
-  jsr pidChOut
 .pidCmdHandler:
-  jmp pidContUnlisten
+  jmp pidDoUnlisten
 pidCommandClose = *
 +	lda #CommandLfn
   sta closeFd
