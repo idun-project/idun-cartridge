@@ -40,6 +40,7 @@ build/mode\
 build/keys\
 build/del\
 build/copy\
+build/fstat\
 build/blanker\
 build/joys\
 build/diskcopy\
