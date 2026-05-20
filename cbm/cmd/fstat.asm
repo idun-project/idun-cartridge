@@ -430,6 +430,22 @@ fstatSidBad = *
    rts
 
 fstatSidValid = *
+   ;-- convert ASCII strings to PETSCII in-place before printing
+   lda #<(hdrBuf+22)
+   ldy #>(hdrBuf+22)
+   sta zp
+   sty zp+1
+   jsr sidAsciiToPet
+   lda #<(hdrBuf+54)
+   ldy #>(hdrBuf+54)
+   sta zp
+   sty zp+1
+   jsr sidAsciiToPet
+   lda #<(hdrBuf+86)
+   ldy #>(hdrBuf+86)
+   sta zp
+   sty zp+1
+   jsr sidAsciiToPet
    ;** "  type: PSID v2" (or RSID)
    lda #<sidTypeMsg
    ldy #>sidTypeMsg
@@ -596,6 +612,31 @@ fstatSidFlags = *
    jsr puts
    lda #chrCR
    jsr putchar
+   rts
+
+;--- convert (zp) ASCII string to PETSCII in-place (null-terminated) ---
+sidAsciiToPet = *
+   ldy #0
+sidAPloop = *
+   lda (zp),y
+   beq sidAPdone
+   cmp #$61            ; >= 'a'?
+   bcc sidAPchkUp
+   cmp #$7B            ; > 'z'?
+   bcs sidAPstore
+   and #$DF            ; $61-$7A → $41-$5A (PETSCII lowercase display)
+   bne sidAPstore
+sidAPchkUp = *
+   cmp #$41            ; >= 'A'?
+   bcc sidAPstore
+   cmp #$5B            ; > 'Z'?
+   bcs sidAPstore
+   adc #$80            ; C=0: $41-$5A → $C1-$DA (PETSCII uppercase display)
+sidAPstore = *
+   sta (zp),y
+   iny
+   bne sidAPloop
+sidAPdone = *
    rts
 
 ;--- print null-terminated SID field: (zp)=field, fstatTmp=max chars ---
