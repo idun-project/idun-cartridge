@@ -937,12 +937,8 @@ dstatRespHandler = *
 
 kernFileStat = *
    jsr kernMiscDeviceInfo
-   bcs +
-   lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
-+  lda syswork+1
+   bcc iecFileStat
+   lda syswork+1
    sta openDevice
    lda #"r"
    sta openMode
@@ -966,6 +962,90 @@ fstatRespHandler = *
    ldy aceDirentBytes+1
    rts
 
+;-- iecFileStat: IEC path for aceFileStat
+;   opens filtered dir "$:BASENAME", reads one entry into aceDirentBuffer
+fstatFcb = syswork+3  ; scratch; kernDirRead does not touch syswork+3
+iecFileStat = *
+   +ldaSCII "$"
+   sta stringBuffer+0
+   +ldaSCII ":"
+   sta stringBuffer+1
+   ldy #0
+-  lda (zp),y
+   beq fsIECNotFound
+   iny
+   cmp #<":"
+   bne -
+   ldx #2
+-  lda (zp),y
+   sta stringBuffer,x
+   beq +
+   iny
+   inx
+   bne -
++  lda syswork+1
+   sta openDevice
+   jsr iecDirOpen      ; .A = fcb
+   bcs fsIECRts
+   sta fstatFcb        ; kernDirRead clobbers openFcb=syswork+0 via dirBlocks
+   tax
+   jsr kernDirRead    ; skip disk name header entry
+   ldx fstatFcb
+   jsr kernDirRead    ; read actual file entry
+   php
+   lda fstatFcb
+   jsr kernDirClose
+   plp
+   bcs fsIECRts
+   bne +
+fsIECNotFound = *
+   lda #aceErrFileNotFound
+   sta errno
+fsIECRts = *
+   sec
+   rts
++  clc
+   rts
+
+;-- fcbSetup: allocate FCB; fill lftable/devtable/eoftable/satable/openFcb
+;   ( openDevice=set ) : .X=fcb, .CS=error
+fcbSetup = *
+   jsr getLfAndFcb
+   bcs +
+   sta lftable,x
+   lda openDevice
+   sta devtable,x
+   lda #0
+   sta eoftable,x
+   sta satable,x
+   stx openFcb
++  rts
+
+;-- iecDirOpen: open IEC filtered dir with pre-built name in stringBuffer
+;   ( openDevice=set, .X=name length ) : .A=fd, .CC
+iecDirOpen = *
+   stx openNameLength
+   jsr fcbSetup
+   bcc +
+   rts
++  lda #true
+   sta checkStat
+   lda openDevice
+   jsr openDiskStatus
+   ldx openNameLength
+   jsr openGotName
+   bcc +
+   rts
++  ldx openFcb
+   lda lftable,x
+   tax
+   jsr kernelChkin
+   jsr kernelChrin
+   jsr kernelChrin
+   jsr kernelClrchn
+   lda openFcb
+   clc
+   rts
 
 ;*** aceFileIoctl ( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
 
@@ -1028,49 +1108,16 @@ kernDirOpen = *
    rts
 +  sta openDevice
    sty openNameScan
-   jsr getLfAndFcb
-   bcc +
-   rts
-+  sta lftable,x
-   lda openDevice
-   sta devtable,x
-   lda #0
-   sta eoftable,x
-   sta satable,x
-   stx openFcb
-   ldx openDevice
-   lda configBuf+0,x
-   ; IDUN: Replace with acepid for type #4/7
-   cmp #4
-   bne +
-   jmp pidDirOpen
-+  cmp #7
-   bne +
-   jmp pidDirOpen
-+  lda #true
-   sta checkStat
-   txa
-   jsr openDiskStatus
+   cpx #1               ;IEC device?
+   bne +                ;no: virtual
    +ldaSCII "$"
    sta stringBuffer+0
-   +ldaSCII "0"
-   sta stringBuffer+1
-   lda #0
-   sta stringBuffer+2
-   ldx #2
-   jsr openGotName
+   ldx #1
+   jmp iecDirOpen
++  jsr fcbSetup         ;virtual: allocate FCB then dispatch
    bcc +
    rts
-+  ldx openFcb
-   lda lftable,x
-   tax
-   jsr kernelChkin
-   jsr kernelChrin
-   jsr kernelChrin
-   jsr kernelClrchn
-   lda openFcb
-   clc
-   rts
++  jmp pidDirOpen
 
 ;*** aceDirClose( ... ) : ...
 
