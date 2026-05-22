@@ -979,7 +979,8 @@ ALTERS :  .A, .X
 2=character color, 3=character attributes, 4=fill color, 5=fill attribute,
 6=cursor color, 7=force cursor wrap, 8=shift-keys for scrolling,
 9=mouse scaling, 10=key-repeat delay, 11=key-repeat rate, 12=prescrool override,
-13=screensaver timeout, 14=screensaver tool (zp), 15=default shell (zp)
+13=screensaver timeout, 14=screensaver tool (zp), 15=default shell (zp),
+16=available display drivers
 
 ```
 NAME   :  aceConPutchar
@@ -1418,9 +1419,10 @@ The kernel has its own IRQ handler that triggers every 1/60th second. This API a
 
 ```
 NAME   :  aceMiscSysType
-PURPOSE:  get system model and memory
+PURPOSE:  get system model, display mode, and memory
 ARGS   :  <none>
 RETURNS:  .A   = $80/$40 indicates C128/C64 mode, respectively
+                 lower nybble is active display driver
           .X   = number of internal 64KB RAM banks (1-4)
           .Y   = number of 64KB REU banks (4-255)
           sw+0 = size of VDC memory
