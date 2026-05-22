@@ -6,6 +6,7 @@
 
 !source "sys/acehead.asm"
 !source "sys/toolhead.asm"
+WIN_DRIVER_VDC = %10001000
 
 * = aceToolAddress
 
@@ -28,16 +29,16 @@ doNothing = *
   rts
 
 ScreenSave = *
-   lda toolWinRegion+1
-   cmp #40
-   beq +
+   jsr aceMiscSysType
+   cmp #WIN_DRIVER_VDC
+   bne +
    jmp vdcScreenSave
 +  jmp vicScreenSave
 
 ScreenUnsave = *
-   lda toolWinRegion+1
-   cmp #40
-   beq +
+   jsr aceMiscSysType
+   cmp #WIN_DRIVER_VDC
+   bne +
    jmp vdcScreenUnsave
 +  jmp vicScreenUnsave
 
