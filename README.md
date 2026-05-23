@@ -46,15 +46,15 @@ It is recommended that you power the RPi externally from a USB power supply. The
 
 <img align="right" src="doc/cart_mode_sw2.jpg" />
 
-The idun-cartridge has a single "big red button" with dual use. Press and release immediately to Reset everything, including rebooting your Commodore. Press and hold for at least 3 seconds to shutdown your cartridge, which is necessary before powering down.
+The idun-cartridge has a single "big red button" with dual use. Press and release immediately to Reset everything, including rebooting your Commodore. Press and hold for at least 5 seconds to shutdown your cartridge, which is necessary before powering it down. If you power your cartridge from an external USB power supply, as is recommended, then you will rearely need to perform any shutdown. The cartridge can run for months without requiring any reboot or power-cycle.
 
-As of release v1.2.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (i.e. not switched to the "Mode" position), the idun-cartridge works on the C128 in its native mode. However, when switched to "Mode", a different software stack is selected as specified by the [mode] settings in the configuration file.
+As of release v1.2.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (switch position farther from exp. port), the idun-cartridge works on the C128 in its native mode. However, when switched to "Mode", a different software stack is selected as specified by the [mode] settings in the configuration file.
 
-With the default configuration file, setting the switch to the "Mode" position enables C64 support. This means that the cartridge can be used on a C64 and that it will boot a C128 into its C64 mode. If you are primarily wanting to play C64 games, then you can most easily do so by launching the arcade.app from BASIC using the command `go "arcade"`.
+With the default configuration file, setting the switch to the "Mode" position enables C64 support. This means that the cartridge can be used on a C64 and that it will boot a C128 into its C64 mode. If you are primarily wanting to play C64 games, then you can most easily do so by launching the arcade.app using the command `go "arcade"`.
 
 #### BASIC commands and launching Apps
 
-On initial boot, the cartridge starts BASIC with some utilities for accessing the Idun virtual disks. The screen lets you use the cursor keys to select which virtual drive to use and on which IEC address; the normal default is `C:`, which is the HOME directory, on IEC device 10. Once you hit "RETURN", you will be in Commodore BASIC.
+When you reset the cartridge by pressing the red button, it starts the Linux shell by default. If you hold down the Commodore key on the C64, then it starts a customized BASIC with some utilities for accessing the Idun virtual disks. The screen lets you use the cursor keys to select which virtual drive to use and on which IEC address; the normal default is `C:`, which is the HOME directory, on IEC device 10. Once you hit "RETURN", you will be in Commodore BASIC.
 
 <img align="left" src="doc/cart_startup.jpg" />
 
@@ -64,11 +64,11 @@ The other thing you can do is launch an Idun Application. This is done with the 
 
 #### Networking and Managing Files
 
-It's well worth connecting your cartridge to your LAN. Convenient file management can be done through the web-based idun-filebrowser at `idunpi:8080`; it even includes remote file editing and drag&drop. Linux terminal access is also there using an `ssh` client from any computer. Additionally, you can [stream SID tunes](https://youtu.be/EPf45QN3PJk) and [setup file sharing](https://youtu.be/NZajjJ2tERM) with a Windows computer.
+It's well worth connecting your cartridge to your LAN. Convenient file management can be done through the web-based idun-filebrowser at `http://idunpi.local`; it even includes remote file editing and drag&drop. Using the provided `share` command from Linux, you can also enable the cartridge to serve files to your network using both WebDAV and Windows file sharing. Linux terminal access is also there using an `ssh` client from any computer. Then there are also networked applications that allow you to [stream SID tunes](https://youtu.be/EPf45QN3PJk) or [share huge game libraries](https://youtu.be/NZajjJ2tERM) from a Windows computer.
 
 #### Emulating the Cartridge
 
-You can also run [idun-vice](https://github.com/idun-project/idun-vice) to experiment with the idun-cartridge software WITHOUT any actual cartridge; just running everything off of the Raspberry Pi.
+You can also run [idun-vice](https://github.com/idun-project/idun-vice) to experiment with the idun-cartridge software WITHOUT any actual cartridge; just running everything off of the Raspberry Pi. The emulator is not installed by default, but is easily added with the `apk` packaage management command. It runs Idun software just like on the cartridge and is an excellent way for developers to debug new tools and applications they develop with Idun.
 
 ### Configuration
 
@@ -76,23 +76,26 @@ Configuration options are available in `$HOME/.config/idunrc.toml`. There is doc
 
 1. Because of the "special" VDC hi-res graphic modes used by some of the software (e.g. `showvdc`), it is very important to set the correct amount of VRAM in the configuration file to either 16kB or 64kB, as appropriate. The setting is the second parameter in the `[vdc]` section.
 2. Some monitors are picky about how many rows of text they can display in 80 column mode, and how they look when displaying text in interlaced mode. The default is 27 rows, non-interlaced. You can modify this by changing the first parameter in the `[vdc]` section, and for interlaced text, the section `[vdc_interlace]`. Also take a look at the `mode` command for changing the number of text rows on demand (not to be confused with the mode switch described above).
-3. If you are using the software with only a Raspberry Pi and Vice (no idun-cartridge hardware), then pay careful attention to disable the configuration file from trying to connect with hardware that isn't there. For details, see the [README for idun-vice](https://github.com/idun-project/idun-vice).
+3. If you are using idun-vice to connect to your cartridge from a remote Windows computer, pay attention to enable remote connections by modifying the `io.socket` setting; otherwise, Idun will refuse to talk to remote computers.
 
 ### Building Commodore code
 
 The idun-cartridge software in this repository is self-hosting. All of the assembly code is built with the `acme` cross-assembler and everything you need to build and modify it can be done on the cartridge itself. You can perform each of these steps from the Linux prompt:
 
 1. Clone this repository to your idun home directory: `git clone https://github.com/idun-project/idun-cartridge`
-2. `cd idun-cartridge && ./setup.sh` -installs additional packages such as acme and idun-zcc.
-3. `cd cbm && make` -builds cartridge software and updates the `sys` directory (`z:` device in the idun-shell)
+2. `cd idun-cartridge && ./setup.sh` -installs additional packages such as bastxt and idun-zcc
+3. `cd cbm && make` -builds cartridge software
+4. To make the new cartridge software active, just `sudo make install` from the `cbm` directory.
 
 See the [Makefile](https://github.com/idun-project/idun-cartridge/cbm/Makefile) for details.
 
 ### Patched Commodore Kernal (Optional)
 
-The latest ROM kernal patch can be created easily with idun v1.1.9 and above using the command `lua makerom.lua` from within the Idun Shell. The patched ROM file(s) will be found in your home directory on the cartridge, and most easily copied using the web file browser or a network command like scp.
+The latest ROM kernal patch can be created easily with idun v1.1.9 and above using the command `mlua makerom.lua` from within the Idun Shell. The patched ROM file(s) will be found in your home directory on the cartridge, and most easily copied using the web file browser or a network command like scp. By default, this creates a two 16kB kernal replacement ROMs for the C128 (U32/U35).
+1. To make the 8kB C64 replacement ROM (U4), use `mlua makerom.lua /8`
+2. To make the 32kB C128D replacement ROM (U32), use `mlua makerom.lua /32`
 
-The patches to the C128 kernal (U35) overwrite the kernal's support for RS-232 devices. This code is frequently unused by native software anyway. If you also update the C64 kernal (U32), then you lose both RS-232 and cassette tape support in C64 mode.
+The patches to the C128 kernal overwrite the kernal's support for RS-232 devices. This code is frequently unused by native software anyway. If you also update the C64 kernal (U32), then you lose both RS-232 and cassette tape support in C64 mode.
 
 With the kernal patches in place, things work pretty much the same, except that you can access cartridge functionality easily through standard Commodore ROM kernal routines, rather than loading Idun's own kernel into RAM. So, in theory, native Commodore software that is programmed to use kernal routines for file access can "transparently" access files via the cartridge and at "breakneck speed". Think of it as basically a hard drive for the Commodore without having to go through the Idun software drivers in RAM. So now those drivers can just be overwritten by some program.
 
@@ -104,10 +107,10 @@ The idun-cartridge works with many legacy applications. Single-file loaders in p
 
 #### 6502 Assembly
 
-This repository includes the acme 6502 cross-assembler, which can be used to build both the contents of this repo and your own programs on the idun-cartridge. You should first decide whether to build a Tool or an App.
+Idun includes acme 6502 cross-assembler, which can be used to build both the contents of this repo and your own programs on the idun-cartridge. You should first decide whether to build a Tool or an App.
 
-1. Tools load from the idun-shell using $6D00-$BFFF, have access to the [kernel api](doc/apiref.md) and the [toolbox](doc/toolbox.md), and return the user to the idun-shell on exit. They are typically command-line style programs, but can also take over the screen and run interactively. Many examples can be found in the [cmd](https://github.com/idun-project/idun-cartridge/cbm/cmd/) sub-directory
-2. An App is launched by the kernel at startup using $6000-$BFFF, has access to the kernel API, but not the toolbox _unless_ `sys/toolbox.asm` is explicitly included, and return to BASIC, or not at all. They typically take over the machine and reconfigure the hardware as needed. Examples are `dos.app` (the idun-shell) and `arcade.app` (the arcade game selector).
+1. Tools load from the idun-shell using $6D00-$BFFF, have access to the [kernel api](doc/apiref.md) and the [toolbox](doc/toolbox.md), and return the user to the idun-shell on exit. They are typically command-line style programs with arguments, but can also take over the screen and run interactively. Many examples can be found in the [cmd](https://github.com/idun-project/idun-cartridge/cbm/cmd/) sub-directory
+2. An App is launched by the kernel at startup using $6000-$BFFF, has access to the kernel API, but not the toolbox _unless_ `sys/toolbox.asm` is explicitly included, and return to BASIC, or not at all. They typically take over the machine and reconfigure the hardware as needed. Examples are `shell.app` (the Linux shell) and `arcade.app` (the arcade game selector).
 
 It is certainly possible to use other assemblers besides acme; just requiring that the header files `acehead.asm` and `toolhead.asm` be ported over to your environment.
 
@@ -121,7 +124,7 @@ Begin by reading [luaref.md](doc/luaref.md). There is sample Lua App code in [sa
 
 #### C and Z80 Assembly 
 
-You can create programs that run on the Z80! They launch seamlessly from the idun-shell, and return to it on exit. These are more akin to Apps than Tools, except for their use of the `zload` command and launching from the idun-shell. The programs can be written in a mixture of C and Z80asm code, and can be built directly on the idun-cartridge. For more information, browse to the [idun-zcc](https://github.com/idun-project/idun-zcc) repository.
+You can create programs that run on the Z80! They launch seamlessly from the idun shell, and return to it on exit. These are more akin to Apps than Tools, except for their use of the `zload` command and launching from the idun shell. The programs can be written in both C and Z80asm code, and can be built directly on the idun-cartridge. For more information, browse to the [idun-zcc](https://github.com/idun-project/idun-zcc) repository.
 
 ### Trivia
 
