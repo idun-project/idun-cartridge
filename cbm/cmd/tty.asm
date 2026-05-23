@@ -603,7 +603,7 @@ HotKeyInit = *
    inc consKeyPtr
    lda consKeyPtr
    jmp -
-   rts
++  rts
 
 HotkeyRevert = *
    lda #0
@@ -732,12 +732,6 @@ HotDel = *
    ldx #1
    jmp modemSend
 
-; HotBackarrow = *
-;    lda #<txBackarrow
-;    ldy #>txBackarrow
-;    ldx #1
-;    jmp modemSend
-
 HotStop = *
    lda txStop
    bne +
@@ -789,7 +783,7 @@ composeType:  !byte 0
 composeChars: !byte 0,0
 composeLen:   !byte 0
 composeCode:  !byte 0
-composePrompt:!fill 12,0
+composePrompt:!fill 16,0
 
 Compose = *  ;( .A=0:hex/12:iso8859-1 )
    sta composeType
@@ -1018,7 +1012,6 @@ Buzz = *
 
 ;===user-configurable options===
 
-txBackarrow: !byte $5f  ;underscore
 txHome:      !byte $7f  ;del
 txDel:       !byte $08  ;backspace
 txStop:      !byte $03  ;CTRL+C
@@ -1038,7 +1031,7 @@ userkeyInit = *
    cpy #$00
    bne +
    lda #$1b
-   sta txBackarrow
+   sta petToAscTable+$5f
 +  rts
 
 ;=== escape sequence control ===

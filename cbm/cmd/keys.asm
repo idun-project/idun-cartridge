@@ -107,6 +107,7 @@ keycode = *
 clearScr = *
   lda #$c0
   ldx #$20
+  ldy toolWinPalette+0
   jmp aceWinCls
 
 ; these calls are used to highlight the last input 
