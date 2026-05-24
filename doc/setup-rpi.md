@@ -6,6 +6,11 @@ The idun-cartridge ships with `ssh` and the idun-filebrowser enabled. You should
 
 If your network supports `.local` host names, then your cartridge should appear on the network as host "idunpi" or "idunpi.local". If not, then use the Linux prompt to discover the cartridge ip address (`ip addr`). Then, use `ssh` or browse to `http://idunpi.local:80` for the idun-filebrowser.
 
+### Configure Networking after connecting cartridge to Commodore
+
+1. If you have an Ethernet port on your Pi, or use a USB dongle that provides one, the networking over wired Ethernet should "just work." You can check the status and see your DHCP assigned IP with the command `ip addr`.
+2. If you intend to use WiFi, you can set it up by running `sudo setup-interfaces` from the shell. The interface you want is `wlan0`. It will show a list of access points and prompt you for your WiFi password. _Note_: You sometimes need to do a reboot (`sudo reboot`) after you complete the setup to ensure you are connected.
+
 ### Resize file system / extend root partition
 
 Idun includes a command to expand your filesystem to use the full space on your SD card. It is a two step process that automatically reboots the RasPi.
@@ -13,11 +18,6 @@ Idun includes a command to expand your filesystem to use the full space on your 
 1. Run `sudo resize-fs` from the shell.
 2. Wait for the reboot to complete, which will leave you at the BASIC prompt.
 3. Reset the cartridge. The disk space displayed on the shell screen should reflect the change.
-
-### Configure Networking after connecting cartridge to Commodore
-
-1. If you have an Ethernet port on your Pi, or use a USB dongle that provides one, the networking over wired Ethernet should "just work." You can check the status and see your DHCP assigned IP with the command `ip addr`.
-2. If you intend to use WiFi, you can set it up by running `sudo setup interfaces` from the shell. The interface you want is `wlan0`. It will show a list of access points and prompt you for your WiFi password. _Note_: You sometimes need to do a reboot (`sudo reboot`) after you complete the setup to ensure you are connected.
 
 ### Build open source code (optional)
 
