@@ -36,6 +36,8 @@ You can download the customized Arch Linux OS image and flash it to a microSD ca
 2. [Download Image](https://drive.google.com/file/d/1j5v-0p9-eopSoVMuX6h2P_U8w21OJF-Q/view?usp=drive_link)
 3. Use [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or a similar program to write image to SD card.
 
+If you are going to use idun-cartridge on a C64 Ultimate, then you need to install the Ultimate configuration file before trying to use the cartridge. You can grab the file [here](https://raw.githubusercontent.com/idun-project/idun-defaults/refs/heads/main/Idun_c64u_run_first.cfg) and transfer it to your Ultimate by any available means (i.e. network, USB). Then, *run that config file* from the Ultimate menu and *save the new configuration* to Ultimate's Flash.
+
 Your microSD is now ready to use with your idun-cartridge. To expand the file system or setup networking, follow the additional instructions in [setup-rpi.md](doc/setup-rpi.md).
 
 #### Power
