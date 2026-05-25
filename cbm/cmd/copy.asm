@@ -43,6 +43,7 @@ copyArg          = 16 ;(2)
 lastArg          = 18 ;(2)
 baseArg          = 20 ;(1)
 cpErrno          = 22 ;(4)
+copyFileType     = 26 ;(1)
 
 copyUsageErrorMsg = *
 !pet "usage: copy [/h] <src> <dest> -or-",chrCR
@@ -158,16 +159,34 @@ copyfile = *
    jsr aceMiscDeviceInfo
    lda syswork+1
    sta copyInDevice
-   lda #"P"
+   ;** save virtual flag before aceFileStat clobbers carry
+   lda #0
    bcc +
-   ;source is virtual device
    lda #1
-   sta virtualDevIn
-   jsr aceFileStat
-   sta virtualFileSz
-   sty virtualFileSz+1
++  sta virtualDevIn
+   jsr aceFileStat        ;A=lo filesz (virtual), Y=hi; fills aceDirentType
+   sta virtualFileSz      ;save lo size (only meaningful if virtual)
+   sty virtualFileSz+1   ;save hi size
+   jsr copyDetectType     ;normalizes aceDirentType → copyFileType
+   lda virtualDevIn
+   beq copyFileIEC
+   ;source is virtual device
+   lda copyInName
+   ldy copyInName+1
+   sta zp
+   sty zp+1
    lda #"b"
-+  jsr open
+   jmp copyFileOpen
+copyFileIEC = *
+   lda aceDirentType
+   pha
+   lda copyInName
+   ldy copyInName+1
+   sta zp
+   sty zp+1
+   pla
+copyFileOpen = *
+   jsr open
    bcc +
    lda copyInName
    ldy copyInName+1
@@ -191,7 +210,11 @@ copyfileOutput = *
    beq +
    +ldaSCII "C"   ;open Command channel
    jmp ++
-+  +ldaSCII "W"
++  lda virtualDevOut
+   bne copyOutVirtual
+   jsr copyBuildTypedName  ;IEC dest: decorate name with file type
+copyOutVirtual = *
+   +ldaSCII "W"
 ++ jsr open
    bcc copyWriteOk
    lda errno
@@ -477,13 +500,153 @@ copyFileToDir = *
    inx
    iny
    bne -
-   ;** copy file
-+  lda #<copyNameBuf
+   ;** strip .prg/.usr always; add back when dest is host drive
++  stx scanPos
+   jsr copyStripExt
+   lda copyInName
+   ldy copyInName+1
+   sta zp
+   sty zp+1
+   jsr aceFileStat
+   jsr copyDetectType
+   lda #<copyNameBuf
+   ldy #>copyNameBuf
+   sta zp
+   sty zp+1
+   jsr aceMiscDeviceInfo
+   bcc copyFTDSetOut
+   jsr copyAddExt
+;** copy file
+copyFTDSetOut = *
+   lda #<copyNameBuf
    ldy #>copyNameBuf
    sta copyOutName+0
    sty copyOutName+1
    jsr copyToDirStatus
    jsr copyfile
+   rts
+
+copyStripExt = *
+   ;** strip .prg or .usr from end of copyNameBuf
+   ;   scanPos = null position (string length)
+   lda scanPos
+   cmp #4
+   bcc copyStripRet
+   sec
+   sbc #4
+   tax
+   lda copyNameBuf,x
+   +cmpASCII "."
+   bne copyStripRet
+   inx
+   lda copyNameBuf,x
+   +cmpASCII "p"
+   beq copyStripChkPRG
+   +cmpASCII "u"
+   bne copyStripRet
+   inx
+   lda copyNameBuf,x
+   +cmpASCII "s"
+   bne copyStripRet
+   inx
+   lda copyNameBuf,x
+   +cmpASCII "r"
+   bne copyStripRet
+   jmp copyStripDo
+copyStripChkPRG = *
+   inx
+   lda copyNameBuf,x
+   +cmpASCII "r"
+   bne copyStripRet
+   inx
+   lda copyNameBuf,x
+   +cmpASCII "g"
+   bne copyStripRet
+copyStripDo = *
+   lda scanPos
+   sec
+   sbc #4
+   tax
+   lda #0
+   sta copyNameBuf,x
+   stx scanPos
+copyStripRet = *
+   rts
+
+copyAddExt = *
+   ;** append .prg or .usr to copyNameBuf at scanPos; no-op for SEQ
+   lda copyFileType
+   +cmpASCII "p"
+   beq copyAddPRG
+   +cmpASCII "u"
+   bne copyAddExtRet
+   ldx scanPos
+   lda #$2e
+   sta copyNameBuf,x
+   inx
+   +ldaSCII "u"
+   sta copyNameBuf,x
+   inx
+   +ldaSCII "s"
+   sta copyNameBuf,x
+   inx
+   +ldaSCII "r"
+   sta copyNameBuf,x
+   inx
+   lda #0
+   sta copyNameBuf,x
+   rts
+copyAddPRG = *
+   ldx scanPos
+   lda #$2e
+   sta copyNameBuf,x
+   inx
+   +ldaSCII "p"
+   sta copyNameBuf,x
+   inx
+   +ldaSCII "r"
+   sta copyNameBuf,x
+   inx
+   +ldaSCII "g"
+   sta copyNameBuf,x
+   inx
+   lda #0
+   sta copyNameBuf,x
+copyAddExtRet = *
+   rts
+
+copyDetectType = *
+   ;** normalize aceDirentType[0] → copyFileType ('P','U', or 'S')
+   lda aceDirentType
+   +cmpASCII "p"
+   beq +
+   +cmpASCII "u"
+   beq +
+   +ldaSCII "s"
++  sta copyFileType
+   rts
+
+copyBuildTypedName = *
+   ;** copy (zp)=copyOutName to copyNameBuf, append ,<copyFileType>
+   ;   sets zp = copyNameBuf for subsequent open call
+   ldy #0
+-  lda (zp),y
+   sta copyNameBuf,y
+   beq +
+   iny
+   bne -
++  lda #$2c          ;','
+   sta copyNameBuf,y
+   iny
+   lda copyFileType
+   sta copyNameBuf,y
+   iny
+   lda #0
+   sta copyNameBuf,y
+   lda #<copyNameBuf
+   ldy #>copyNameBuf
+   sta zp
+   sty zp+1
    rts
 
 toChars !pet " -> ",0
