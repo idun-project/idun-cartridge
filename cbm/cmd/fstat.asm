@@ -8,7 +8,10 @@
 ; at a time to count exact bytes and blocks directly.
 ; Extra info for .prg: load address (hex + decimal) + machine hint.
 ; Extra info for .sid: type, version, title, author, released, songs+default,
-;   load/init/play addresses; v2+: clock (PAL/NTSC/both), SID chip (6581/8580/both).
+;   speed (per-song VSync/CIA), load/init/play addresses;
+;   v2+: clock, SID chip, player (built-in/MUS), playsid/basic flag,
+;        startPage, pageLen;
+;   v3+: SID2 chip model, SID2 addr; v4+: SID3 chip model, SID3 addr.
 ;
 ; SID file format references:
 ;   https://gist.github.com/cbmeeks/2b107f0a8d36fc461ebb056e94b2f4d6#file-sid-txt
@@ -551,6 +554,36 @@ fstatSidValid = *
    jsr putchar
    lda #chrCR
    jsr putchar
+   ;** "  speed: 1:VSync 2:CIA ..."
+   lda #<sidSpeedMsg
+   ldy #>sidSpeedMsg
+   jsr puts
+   lda hdrBuf+14        ;songs count hi
+   bne sidSpeedCap32    ;count > 255: cap at 32
+   lda hdrBuf+15        ;songs count lo
+   beq sidSpeedCR       ;0 songs: skip
+   cmp #33
+   bcc sidSpeedGotCount
+sidSpeedCap32 = *
+   lda #32
+sidSpeedGotCount = *
+   sta fstatTmp
+   lda #1
+   sta fstatFieldPtr
+   lda hdrBuf+21        ;speed byte: songs 1-8
+   jsr sidSpeedGroup
+   bcs sidSpeedCR
+   lda hdrBuf+20        ;songs 9-16
+   jsr sidSpeedGroup
+   bcs sidSpeedCR
+   lda hdrBuf+19        ;songs 17-24
+   jsr sidSpeedGroup
+   bcs sidSpeedCR
+   lda hdrBuf+18        ;songs 25-32
+   jsr sidSpeedGroup
+sidSpeedCR = *
+   lda #chrCR
+   jsr putchar
    ;** "  load: $XXXX  init: $XXXX  play: $XXXX"
    lda #<sidAddrMsg
    ldy #>sidAddrMsg
@@ -612,6 +645,165 @@ fstatSidFlags = *
    jsr puts
    lda #chrCR
    jsr putchar
+   ;** "  player: built-in" or "  player: MUS"
+   lda #<sidPlayerMsg
+   ldy #>sidPlayerMsg
+   jsr puts
+   lda hdrBuf+119
+   and #$01             ;bit 0: MUSPlayer flag
+   beq sidPlayerBuiltin
+   lda #<sidMUSStr
+   ldy #>sidMUSStr
+   jmp sidPlayerPrint
+sidPlayerBuiltin = *
+   lda #<sidBuiltinStr
+   ldy #>sidBuiltinStr
+sidPlayerPrint = *
+   jsr puts
+   lda #chrCR
+   jsr putchar
+   ;** "  playsid: yes" (PSID) or "  basic: yes" (RSID) when bit 1 set
+   lda hdrBuf+119
+   and #$02
+   beq sidNoPlaySID
+   lda hdrBuf+0         ;'P'=$50 or 'R'=$52 (raw SID magic byte)
+   cmp #$52             ;RSID?
+   bne sidIsPlaySID
+   lda #<sidBasicMsg
+   ldy #>sidBasicMsg
+   jmp sidPlaySIDPrint
+sidIsPlaySID = *
+   lda #<sidPlaySIDMsg
+   ldy #>sidPlaySIDMsg
+sidPlaySIDPrint = *
+   jsr puts
+   lda #chrCR
+   jsr putchar
+sidNoPlaySID = *
+   ;** v3+: "  SID2: <model>"
+   lda hdrBuf+5         ;version
+   cmp #3
+   bcc sidFlagsv2Only
+   lda #<sidSID2ChipMsg
+   ldy #>sidSID2ChipMsg
+   jsr puts
+   lda hdrBuf+119
+   and #$c0             ;bits 6-7
+   lsr
+   lsr
+   lsr
+   lsr
+   lsr
+   lsr                  ;→ 0,1,2,3
+   asl                  ;→ 0,2,4,6
+   tax
+   lda sidChipTable,x
+   ldy sidChipTable+1,x
+   jsr puts
+   lda #chrCR
+   jsr putchar
+   ;** v4+: "  SID3: <model>"
+   lda hdrBuf+5
+   cmp #4
+   bcc sidFlagsv2Only
+   lda #<sidSID3ChipMsg
+   ldy #>sidSID3ChipMsg
+   jsr puts
+   lda hdrBuf+118       ;flags hi byte: bits 0-1 = sidModel3
+   and #$03
+   asl                  ;→ 0,2,4,6
+   tax
+   lda sidChipTable,x
+   ldy sidChipTable+1,x
+   jsr puts
+   lda #chrCR
+   jsr putchar
+sidFlagsv2Only = *
+   ;** "  startPage: $XX  pageLen: $XX"
+   lda #<sidStartPageMsg
+   ldy #>sidStartPageMsg
+   jsr puts
+   lda hdrBuf+120
+   jsr puthexbyte
+   lda #<sidPageLenMsg
+   ldy #>sidPageLenMsg
+   jsr puts
+   lda hdrBuf+121
+   jsr puthexbyte
+   lda #chrCR
+   jsr putchar
+   ;** v3+: "  SID2 addr: $XX"
+   lda hdrBuf+5
+   cmp #3
+   bcc fstatSidFlagsDone
+   lda #<sidSID2AddrMsg
+   ldy #>sidSID2AddrMsg
+   jsr puts
+   lda hdrBuf+122
+   jsr puthexbyte
+   lda #chrCR
+   jsr putchar
+   ;** v4+: "  SID3 addr: $XX"
+   lda hdrBuf+5
+   cmp #4
+   bcc fstatSidFlagsDone
+   lda #<sidSID3AddrMsg
+   ldy #>sidSID3AddrMsg
+   jsr puts
+   lda hdrBuf+123
+   jsr puthexbyte
+   lda #chrCR
+   jsr putchar
+fstatSidFlagsDone = *
+   rts
+
+;--- sidSpeedGroup: process one speed byte (up to 8 songs) ---
+;    in: .A=speed byte, fstatTmp=songs remaining, fstatFieldPtr=current song#
+;    out: C=1 all songs done; C=0 byte exhausted, more songs remain
+sidSpeedGroup = *
+   sta fstatStrIdx         ;speed byte shift register
+   lda #8
+   sta fstatFieldPtr+1     ;bit counter
+sidSGloop = *
+   lda fstatFieldPtr
+   sta fstatUtoa+0
+   lda #0
+   sta fstatUtoa+1
+   sta fstatUtoa+2
+   sta fstatUtoa+3
+   lda #<numbuf
+   ldy #>numbuf
+   sta zp
+   sty zp+1
+   ldx #fstatUtoa
+   lda #1
+   jsr aceMiscUtoa
+   lda #<numbuf
+   ldy #>numbuf
+   jsr puts
+   lda #$3a                ;':'
+   jsr putchar
+   lsr fstatStrIdx
+   bcs sidSGcia
+   lda #<sidVSyncStr
+   ldy #>sidVSyncStr
+   jmp sidSGprint
+sidSGcia = *
+   lda #<sidCIAStr
+   ldy #>sidCIAStr
+sidSGprint = *
+   jsr puts
+   lda #$20                ;' '
+   jsr putchar
+   inc fstatFieldPtr
+   dec fstatTmp
+   beq sidSGdone
+   dec fstatFieldPtr+1
+   bne sidSGloop
+   clc
+   rts
+sidSGdone = *
+   sec
    rts
 
 ;--- convert (zp) ASCII string to PETSCII in-place (null-terminated) ---
@@ -763,6 +955,21 @@ sidChipBoth     !pet "6581+8580",0
 
 sidClockTable   !word sidClkUnknown, sidClkPAL, sidClkNTSC, sidClkBoth
 sidChipTable    !word sidChipUnknown, sidChip6581, sidChip8580, sidChipBoth
+
+sidSpeedMsg     !pet "  speed: ",0
+sidVSyncStr     !pet "VSync",0
+sidCIAStr       !pet "CIA",0
+sidPlayerMsg    !pet "  player: ",0
+sidBuiltinStr   !pet "built-in",0
+sidMUSStr       !pet "MUS",0
+sidPlaySIDMsg   !pet "  playsid: yes",0
+sidBasicMsg     !pet "  basic: yes",0
+sidSID2ChipMsg  !pet "  SID2: ",0
+sidSID3ChipMsg  !pet "  SID3: ",0
+sidStartPageMsg !pet "  startPage: $",0
+sidPageLenMsg   !pet "  pageLen: $",0
+sidSID2AddrMsg  !pet "  SID2 addr: $",0
+sidSID3AddrMsg  !pet "  SID3 addr: $",0
 
 ;=== 24-bit by 16-bit division, divisor = 254 ===
 div24by254 = *
