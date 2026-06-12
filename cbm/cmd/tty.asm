@@ -472,10 +472,15 @@ PrintReceivedData = *  ;( readbuf, (zw)=count )
    beq +
    cmp #$0b  ;VT
    beq +
-   cmp #$0c  ;FF
-   beq +
+   cmp #$0c  ;FF: BBSes use as clear-screen
+   beq .prFormFeed
    lda #$fe
    jmp prTroutPut
+.prFormFeed:
+   jsr PrintFlush
+   lda #chrCLS
+   jsr putchar
+   jmp .prAdvance
 +  lda troutcount+0
    ora troutcount+1
    bne +
@@ -512,6 +517,7 @@ PrintReceivedData = *  ;( readbuf, (zw)=count )
    sta troutcount+0
    sty troutcount+1
    jsr PrintFlush
+.prAdvance:
    inc trptr+0
    bne +
    inc trptr+1
@@ -1190,6 +1196,12 @@ escAnsiRawDispatch:
 +  +cmpASCII "D"
    bne +
    jmp escCursorLeft
++  +cmpASCII "E"
+   bne +
+   jmp escCursorNext
++  +cmpASCII "F"
+   bne +
+   jmp escCursorPrev
 +  +cmpASCII "d"
    bne +
    jmp escCursorPos
@@ -1413,7 +1425,9 @@ escCursorUp = *   ;ESC [ count A
    jsr escCursorCntr
    sec
    sbc escParmData+0
-   sta escParmData+0
+   bcs +              ;saturate so large counts don't wrap
+   lda #1             ;(BBSes probe scrn size with ESC [ 255 B/C)
++  sta escParmData+0
    stx escParmData+1
    jmp escCursorPos
 
@@ -1421,7 +1435,9 @@ escCursorDown = *  ;ESC [ count B
    jsr escCursorCntr
    clc
    adc escParmData+0
-   sta escParmData+0
+   bcc +
+   lda #255
++  sta escParmData+0
    stx escParmData+1
    jmp escCursorPos
 
@@ -1431,7 +1447,9 @@ escCursorRight = * ;ESC [ count C
    txa
    clc
    adc escParmData+0
-   sta escParmData+1
+   bcc +
+   lda #255
++  sta escParmData+1
    pla
    sta escParmData+0
    jmp escCursorPos
@@ -1442,9 +1460,29 @@ escCursorLeft = *  ;ESC [ count D
    txa
    sec
    sbc escParmData+0
-   sta escParmData+1
+   bcs +
+   lda #1
++  sta escParmData+1
    pla
    sta escParmData+0
+   jmp escCursorPos
+
+escCursorNext = *  ;ESC [ count E
+   jsr escCursorCntr
+   clc
+   adc escParmData+0
+   sta escParmData+0
+   ldx #1
+   stx escParmData+1
+   jmp escCursorPos
+
+escCursorPrev = *   ;ESC [ count F
+   jsr escCursorCntr
+   sec
+   sbc escParmData+0
+   sta escParmData+0
+   ldx #1
+   stx escParmData+1
    jmp escCursorPos
 
 escBlankspace = *  ;ESC [ count b
@@ -1642,29 +1680,37 @@ escAttrib = *  ;ESC [ mode m
 .escAttribNext:
    inx
    cpx escParm
-   bcc -
+   bne -
    jsr escAssertAttrib
    jmp escFinish
 
    escAttribExtra = *
    lda #$ff-$01
    cpy #22
-   beq +
+   beq ++
    cpy #21
-   beq +
+   beq ++
    lda #$ff-$20
    cpy #24
-   beq +
+   beq ++
    lda #$ff-$10
    cpy #25
-   beq +
+   beq ++
    lda #$ff-$40
    cpy #27
-   bne ++
-+  and attribMode
+   beq ++
+   cpy #39
+   bne +
+   lda toolWinPalette+0
+   jmp colorSetFgrd
++  cpy #49
+   bne +++
+   lda toolWinPalette+7
+   jmp colorSetBgrd
+++ and attribMode
    sta attribMode
 -  rts
-++ cpy #30
++++cpy #30
    bcc -
    cpy #38
    bcs +
@@ -1672,20 +1718,46 @@ escAttrib = *  ;ESC [ mode m
    sec
    sbc #30
    tay
-   lda charColor
-   and #$f0
-   ora escAttribColors,y
-   sta charColor
-   rts
+   lda escAttribColors,y
+   jmp colorSetFgrd
 +  cpy #40
    bcc -
    cpy #48
-   bcs -
+   bcs +
    tya
    sec
    sbc #40
    tay
    lda escAttribColors,y
+   jmp colorSetBgrd
++  cpy #90
+   bcc -
+   cpy #98
+   bcs +
+   tya
+   sec
+   sbc #90
+   tay
+   lda escAttribColor1,y
+   jmp colorSetFgrd
++  cpy #100
+   bcc -
+   cpy #108
+   bcs -
+   tya
+   sec
+   sbc #100
+   tay
+   lda escAttribColor1,y
+   jmp colorSetBgrd
+colorSetFgrd:
+   sta work
+   lda charColor
+   and #$f0
+   ora work
+   sta charColor
+   rts
+colorSetBgrd:
    asl
    asl
    asl
@@ -1696,7 +1768,8 @@ escAttrib = *  ;ESC [ mode m
    ora work
    sta charColor
    rts
-escAttribColors : !byte $0,$8,$4,$d,$2,$a,$7,$e
+escAttribColors : !byte $0,$8,$4,$c,$2,$a,$6,$e
+escAttribColor1 : !byte $1,$9,$5,$d,$3,$b,$7,$f
 
    escAssertAttrib = *
    ldx #3
@@ -1727,7 +1800,6 @@ escTermModeSet = *  ;ESC [ type h   //   ESC [ ? type h
    bne +
    lda #chrCLS
    jsr putchar
-   jmp escFinish
 +  jmp escFinish
 
 escTermModeClear = *  ;ESC [ type l   //   ESC [ ? type l
@@ -1744,7 +1816,6 @@ escTermModeClear = *  ;ESC [ type l   //   ESC [ ? type l
    bne +
    lda #chrCLS
    jsr putchar
-   jmp escFinish
 +  jmp escFinish
 
 escEraseChar = *  ;ESC [ count X
@@ -1760,7 +1831,13 @@ escPrinterControl = *  ;ESC [ command i   //   ESC [ ? command i
 
 escDeviceStatus = *  ;ESC type n
    lda escParmData+0
-   cmp #6
+   cmp #5
+   bne +
+   lda #<escDevStatOk
+   ldy #>escDevStatOk
+   jsr modemSend
+   jmp escFinish
++  cmp #6
    beq +
    nop
    jmp escFinish
@@ -1798,6 +1875,7 @@ escDeviceStatus = *  ;ESC type n
    jmp escFinish
 escDevStatReply: !pet 27,"[24;80r",0,0,0   ;note: taken as ASCII
 escDevLen: !byte 0
+escDevStatOk: !pet 27,"[0",$6e,0
 
    escDevPutnum = * ;( [work+0]=num )
    clc
