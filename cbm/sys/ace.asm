@@ -952,9 +952,10 @@ kernRestart = *
    sta romjmp+1
    jmp loadPrgCont
 !if useC128 {
-+  lda #2      ;Mmap device loading
++  lda #2         ;Mmap device loading
 } else {
 +  lda #66
+   sta turboOff   ;ROM routine ignores turbo; so must disable here.
 }
    sta setparam+1
    lda #$09
