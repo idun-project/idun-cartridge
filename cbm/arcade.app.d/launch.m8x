@@ -1,14 +1,19 @@
 m8_launch_handler = *
+    jsr mapstat
+    ldx zw
     lda #<.launcher
     ldy #>.launcher
     ;never returns!
-    jmp aceMapperProcmsg
+    jmp maprecv
 
 .error = *
     inc $d020       ;what else?
     jmp .error
 
 .launcher = *
+    lda #<mailboxB
+    ldy #>mailboxB
+    jsr aceTtyGet
     ;respond mailbox
     lda #0
     jsr __m8_mailbox_reset
@@ -81,8 +86,8 @@ load_typ !byte 0
     lsr
     lsr
     sta $9c
-    ldx #255            ;CMD_STREAM_CHANNEL
-    jsr aceMapperCommand
+    ldx #MAP_SYS_STREAM_CHAN
+    jsr syscall
     jsr toolUserLayoutEnd
     ldx load_typ
     lda #aceRestartLoadPrg

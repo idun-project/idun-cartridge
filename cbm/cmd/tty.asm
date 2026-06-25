@@ -45,6 +45,7 @@ escChar       = 31  ;(1)  ;current char in esc sequence
 charColor     = 32  ;(1)  ;color of characters
 cursorSaveColor = 33 ;(1) ;saved color of characters
 work          = 48  ;(16) ;lowest-level temporary work area
+ssp           = 64  ;(1)  ;saved SP
 
 scrRows !byte 0         ;rows,cols,top,left for full screen
 scrCols !byte 0
@@ -78,6 +79,8 @@ tpaMsg = *
 
 mainInit = *
    ;** initialize variables
+   tsx
+   stx ssp
    lda #$00
    sta escState
    lda #FALSE
@@ -100,16 +103,8 @@ mainInit = *
    jsr aceWinSize
    stx screenWidth
    jsr userkeyInit
-   ;Check keyboard capture
-   lda #HotkeyCmdK
-   jsr toolKeysRemove
-   lda joykeyCapture
-   bpl +
-   ;If keyboard captured, continue forwarding keys
-   jsr KeyboardForward
-   jmp ++
-+  jsr modemOpen
-++ ldx #0
+   jsr modemOpen
+   ldx #0
    jsr RestoreVersion
    lda toolWinPalette+0
    sta charColor
@@ -477,10 +472,15 @@ PrintReceivedData = *  ;( readbuf, (zw)=count )
    beq +
    cmp #$0b  ;VT
    beq +
-   cmp #$0c  ;FF
-   beq +
+   cmp #$0c  ;FF: BBSes use as clear-screen
+   beq .prFormFeed
    lda #$fe
    jmp prTroutPut
+.prFormFeed:
+   jsr PrintFlush
+   lda #chrCLS
+   jsr putchar
+   jmp .prAdvance
 +  lda troutcount+0
    ora troutcount+1
    bne +
@@ -517,6 +517,7 @@ PrintReceivedData = *  ;( readbuf, (zw)=count )
    sta troutcount+0
    sty troutcount+1
    jsr PrintFlush
+.prAdvance:
    inc trptr+0
    bne +
    inc trptr+1
@@ -582,11 +583,11 @@ writelen: !byte 0,0
 consoleKeys = *
    !byte HotkeyCmdI,HotkeyCmdQ,HotkeyCmdX,HotkeyCmdZ,HotkeyCmdBackarrow
    !byte HotkeyRight,HotkeyLeft,HotkeyDown,HotkeyUp,HotkeyClr,HotkeyHome
-   !byte HotkeyDel,HotkeyStop,0
+   !byte HotkeyDel,HotkeyStop,HotkeyCmdK,0
 consoleKeyHandlers = *
    !word HotI,HotQ,HotX,HotZ,HotCoBackarrow
    !word HotRight,HotLeft,HotDown,HotUp,HotClr,HotHome
-   !word HotDel,HotStop
+   !word HotDel,HotStop,HotK
 
 consKeyPtr !byte 0
 consKeyTmp !byte 0
@@ -608,20 +609,7 @@ HotKeyInit = *
    inc consKeyPtr
    lda consKeyPtr
    jmp -
-   ; If run from shell.app, enable CmdK for keyboard switching
-   ; otherwise, disable the default CmdK behavior.
-+  ldx #4
--  lda $cd0,x
-   cmp isShellApp,x
-   beq +
-   rts
-+  dex
-   bpl -
-   lda #HotkeyCmdK
-   ldx #<HotK
-   ldy #>HotK
-   jmp toolKeysSet
-isShellApp !pet "shell"
++  rts
 
 HotkeyRevert = *
    lda #0
@@ -635,35 +623,19 @@ HotkeyRevert = *
 +  rts
 
 HotK = *
-   ; Toggle keyboard capture
-   lda joykeyCapture
-   eor #$80
-   and #$80
-   sta joykeyCapture
-   lda #TRUE
-   jsr toolStatEnable
-   lda joykeyCapture
-   bmi +
-   rts
    ; We have to pause the terminal
-+  jsr modemClose
-   ; Print warning message
-   lda #<keyswMsg
-   ldy #>keyswMsg
-   jsr puts
+   jsr modemClose
    ; This will forward keys until it returns
-   KeyboardForward = *
-   jsr aceConGetkey
-   ; Process any active signals
-   lda aceSignalProc
-   beq +
-   jsr cursorOff
-   jsr HotkeyRevert
-   jmp die
-+  jsr HotK    ;Toggle capture OFF
-   jmp modemOpen
-keyswMsg !pet 13,10,"Keyboard connected to RaspPi!"
-!pet 13,10,"Press Com+k to switch back.",13,10,0
+   jsr toolKvmHandler
+   bit aceSignalProc
+   bvc +
+   ldx ssp
+   txs
+   rts
++  jsr ActNewline
+   jsr modemOpen
+   clc
+   rts
 
 HotI = *
    lda #<helpMsg
@@ -766,12 +738,6 @@ HotDel = *
    ldx #1
    jmp modemSend
 
-; HotBackarrow = *
-;    lda #<txBackarrow
-;    ldy #>txBackarrow
-;    ldx #1
-;    jmp modemSend
-
 HotStop = *
    lda txStop
    bne +
@@ -823,7 +789,7 @@ composeType:  !byte 0
 composeChars: !byte 0,0
 composeLen:   !byte 0
 composeCode:  !byte 0
-composePrompt:!fill 12,0
+composePrompt:!fill 16,0
 
 Compose = *  ;( .A=0:hex/12:iso8859-1 )
    sta composeType
@@ -1052,18 +1018,26 @@ Buzz = *
 
 ;===user-configurable options===
 
-txBackarrow: !byte $5f  ;underscore
 txHome:      !byte $7f  ;del
 txDel:       !byte $08  ;backspace
 txStop:      !byte $03  ;CTRL+C
 defEmulate:  !byte 2    ;vt100
 
 userkeyInit = *
-   jsr aceConKeyAvail
+   ; Check if internal Kvm needs handling
+   lda kvmCapture
+   beq +
+   jsr toolKvmHandler
+   bit aceSignalProc
+   bvc +
+   ldx ssp
+   txs
+   rts
++  jsr aceConKeyAvail
    cpy #$00
    bne +
    lda #$1b
-   sta txBackarrow
+   sta petToAscTable+$5f
 +  rts
 
 ;=== escape sequence control ===
@@ -1222,6 +1196,12 @@ escAnsiRawDispatch:
 +  +cmpASCII "D"
    bne +
    jmp escCursorLeft
++  +cmpASCII "E"
+   bne +
+   jmp escCursorNext
++  +cmpASCII "F"
+   bne +
+   jmp escCursorPrev
 +  +cmpASCII "d"
    bne +
    jmp escCursorPos
@@ -1445,7 +1425,9 @@ escCursorUp = *   ;ESC [ count A
    jsr escCursorCntr
    sec
    sbc escParmData+0
-   sta escParmData+0
+   bcs +              ;saturate so large counts don't wrap
+   lda #1             ;(BBSes probe scrn size with ESC [ 255 B/C)
++  sta escParmData+0
    stx escParmData+1
    jmp escCursorPos
 
@@ -1453,7 +1435,9 @@ escCursorDown = *  ;ESC [ count B
    jsr escCursorCntr
    clc
    adc escParmData+0
-   sta escParmData+0
+   bcc +
+   lda #255
++  sta escParmData+0
    stx escParmData+1
    jmp escCursorPos
 
@@ -1463,7 +1447,9 @@ escCursorRight = * ;ESC [ count C
    txa
    clc
    adc escParmData+0
-   sta escParmData+1
+   bcc +
+   lda #255
++  sta escParmData+1
    pla
    sta escParmData+0
    jmp escCursorPos
@@ -1474,9 +1460,29 @@ escCursorLeft = *  ;ESC [ count D
    txa
    sec
    sbc escParmData+0
-   sta escParmData+1
+   bcs +
+   lda #1
++  sta escParmData+1
    pla
    sta escParmData+0
+   jmp escCursorPos
+
+escCursorNext = *  ;ESC [ count E
+   jsr escCursorCntr
+   clc
+   adc escParmData+0
+   sta escParmData+0
+   ldx #1
+   stx escParmData+1
+   jmp escCursorPos
+
+escCursorPrev = *   ;ESC [ count F
+   jsr escCursorCntr
+   sec
+   sbc escParmData+0
+   sta escParmData+0
+   ldx #1
+   stx escParmData+1
    jmp escCursorPos
 
 escBlankspace = *  ;ESC [ count b
@@ -1674,29 +1680,37 @@ escAttrib = *  ;ESC [ mode m
 .escAttribNext:
    inx
    cpx escParm
-   bcc -
+   bne -
    jsr escAssertAttrib
    jmp escFinish
 
    escAttribExtra = *
    lda #$ff-$01
    cpy #22
-   beq +
+   beq ++
    cpy #21
-   beq +
+   beq ++
    lda #$ff-$20
    cpy #24
-   beq +
+   beq ++
    lda #$ff-$10
    cpy #25
-   beq +
+   beq ++
    lda #$ff-$40
    cpy #27
-   bne ++
-+  and attribMode
+   beq ++
+   cpy #39
+   bne +
+   lda toolWinPalette+0
+   jmp colorSetFgrd
++  cpy #49
+   bne +++
+   lda toolWinPalette+7
+   jmp colorSetBgrd
+++ and attribMode
    sta attribMode
 -  rts
-++ cpy #30
++++cpy #30
    bcc -
    cpy #38
    bcs +
@@ -1704,20 +1718,46 @@ escAttrib = *  ;ESC [ mode m
    sec
    sbc #30
    tay
-   lda charColor
-   and #$f0
-   ora escAttribColors,y
-   sta charColor
-   rts
+   lda escAttribColors,y
+   jmp colorSetFgrd
 +  cpy #40
    bcc -
    cpy #48
-   bcs -
+   bcs +
    tya
    sec
    sbc #40
    tay
    lda escAttribColors,y
+   jmp colorSetBgrd
++  cpy #90
+   bcc -
+   cpy #98
+   bcs +
+   tya
+   sec
+   sbc #90
+   tay
+   lda escAttribColor1,y
+   jmp colorSetFgrd
++  cpy #100
+   bcc -
+   cpy #108
+   bcs -
+   tya
+   sec
+   sbc #100
+   tay
+   lda escAttribColor1,y
+   jmp colorSetBgrd
+colorSetFgrd:
+   sta work
+   lda charColor
+   and #$f0
+   ora work
+   sta charColor
+   rts
+colorSetBgrd:
    asl
    asl
    asl
@@ -1728,7 +1768,8 @@ escAttrib = *  ;ESC [ mode m
    ora work
    sta charColor
    rts
-escAttribColors : !byte $0,$8,$4,$d,$2,$a,$7,$e
+escAttribColors : !byte $0,$8,$4,$c,$2,$a,$6,$e
+escAttribColor1 : !byte $1,$9,$5,$d,$3,$b,$7,$f
 
    escAssertAttrib = *
    ldx #3
@@ -1759,7 +1800,6 @@ escTermModeSet = *  ;ESC [ type h   //   ESC [ ? type h
    bne +
    lda #chrCLS
    jsr putchar
-   jmp escFinish
 +  jmp escFinish
 
 escTermModeClear = *  ;ESC [ type l   //   ESC [ ? type l
@@ -1776,7 +1816,6 @@ escTermModeClear = *  ;ESC [ type l   //   ESC [ ? type l
    bne +
    lda #chrCLS
    jsr putchar
-   jmp escFinish
 +  jmp escFinish
 
 escEraseChar = *  ;ESC [ count X
@@ -1792,7 +1831,13 @@ escPrinterControl = *  ;ESC [ command i   //   ESC [ ? command i
 
 escDeviceStatus = *  ;ESC type n
    lda escParmData+0
-   cmp #6
+   cmp #5
+   bne +
+   lda #<escDevStatOk
+   ldy #>escDevStatOk
+   jsr modemSend
+   jmp escFinish
++  cmp #6
    beq +
    nop
    jmp escFinish
@@ -1830,6 +1875,7 @@ escDeviceStatus = *  ;ESC type n
    jmp escFinish
 escDevStatReply: !pet 27,"[24;80r",0,0,0   ;note: taken as ASCII
 escDevLen: !byte 0
+escDevStatOk: !pet 27,"[0",$6e,0
 
    escDevPutnum = * ;( [work+0]=num )
    clc

@@ -45,6 +45,7 @@ CmdTable:
    jmp drives        ;5
    jmp mount         ;6
    jmp assign        ;7
+   jmp setdrv        ;8
 
 ;=== Init (one-time) ===
 Init = *
@@ -133,10 +134,11 @@ Startup = *
 ++ txa
    clc
    adc count
-   tay
+   sta zw+1
    pla
-   ldx #$f2
-   jsr aceMapperSetreg
+   sta zw+0
+   ldx #MAP_SET_MACHINE
+   jsr mapsetr
    ;fall-through
    ;=== Initial bash tty runs fetch. ===
    NeoTty = *
@@ -229,10 +231,6 @@ Startup = *
    ; First arg is cmd name
    ldy #0
    jsr getarg
-   ; Release joystick capture for extern cmds
-   lda joykeyCapture
-   and #$7f
-   sta joykeyCapture
    lda argCnt
    ldy #0
    jsr aceProcExec
@@ -263,6 +261,10 @@ setupRedirect = *
    tay
    ldx #1
    jsr aceFileFdswap
+   ; Advance to next line, since term will be restarted w/o
+   ; any generated output.
+   lda #chrCR
+   jsr aceConPutctrl
 +  rts
 
 closeRedirect = *
@@ -347,8 +349,8 @@ load = *
    lda syswork+1
    lsr
    lsr
-   ldx #255            ;CMD_STREAM_CHANNEL
-   jsr aceMapperCommand
+   ldx #MAP_SYS_STREAM_CHAN
+   jsr syscall
    jmp loadCont
    ;close Iec device only. Pid stays open.
    closeIec = *
@@ -1072,6 +1074,18 @@ assign = *
    lda #chrCR
    jmp putchar
 
+setdrv = *
+   lda #<setDrvLetter
+   ldy #>setDrvLetter
+   jsr puts
+   lda #0
+   ldy #0
+   jsr getarg
+   ldx #stdout
+   jsr zpputs
+   lda #chrCR
+   jmp putchar
+setDrvLetter !pet "Change directory to ",0
 ;This is a placeholder, since using exec causes an
 ;external command tool to be executed.
 exec = *

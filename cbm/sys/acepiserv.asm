@@ -22,91 +22,120 @@ pisvcCommonListen = *
   lda #$7F
   jmp pidChOut
 
-settingRegister !byte 0
-;*** (.X=Register, .AY=Value)
-kernMapperSetreg = *
-  stx settingRegister
-  pha
-  tya
-  pha
+;*** (.X=Register, zw=Value)
+kernMapset = *
   ; LISTEN channel @:
   lda #0
   jsr pisvcCommonListen
   ; Send 3-byte message
-  lda settingRegister
+  txa
   jsr pidChOut
-  pla
-  tay
-  pla
+  lda zw+0
   jsr pidChOut
-  tya
+  lda zw+1
   jmp pidChOut
 ;*** (.X=Command, .A=Param)
-kernMapperCommand = *
-  pha
-  txa
+kernMapsys = *
   pha
   ; LISTEN channel @:
   lda #0
   jsr pisvcCommonListen
   ; Send 2-byte message
-  pla
+  txa
   jsr pidChOut
   pla
   jmp pidChOut
-  
-
-;*** (.AY=proc callback)
-kernMapperProcmsg = *
-  sta .mapper_proc_addr+0
-  sty .mapper_proc_addr+1
-  lda #<aceSharedBuf
-  ldy #>aceSharedBuf
+;*** (.X=Command, zw=ParamSize, zp=Params)
+kernMapusr = *
+  txa
+  clc
+  adc #$20
+  tax
+  jsr kernMapset  ;send preamble and ParamSize
+  ;send the Params
+  lda zw+0
+  ora zw+1
+  bne usrSendParams
+  rts               ; end if zw==0
+  usrSendParams = *
+  lda zp+0
+  ldy zp+1
+  sta writePtr+0
+  sty writePtr+1
+- ldx #0
+  cpx zw+1
+  bmi usrSendPage
+  beq usrSendLast
+  jmp +
+  usrSendPage = *
+  jsr pidPutbuf
+  dec zw+1
+  inc writePtr+1
+  jmp -
+  usrSendLast = *
+  ldx zw+0
+  beq +
+  jsr pidPutbuf
++ rts
+;*** ;() : zw=message size, .CS=error,errno
+kernMapstat = *
   ldx #0
-  jsr pisvcCommonGet
+  jsr pisvcCommonTalk
   ;fetch size
 - jsr pidChIn
   bcs -
-  sta @zs
-  sta zz
+  sta zw
 - jsr pidChIn
   bcs -
-  sta @zs+1
-  sta zz+1
-  ;READ rest of message
-- lda zz+1
-  cmp #0
-  beq .mapperLastPg
-  ldx #0        ; this means read whole page (256 bytes)
-  jsr pidGetbuf
-  jsr .mapperUntalk
-  lda #0
-  jsr .mapper_proc_callback
-  dec zz+1
-  ; TALK for next page
-  lda #<aceSharedBuf
-  ldy #>aceSharedBuf
-  ldx #0
-  jsr pisvcCommonGet
-  jmp -
-  .mapperLastPg = *
-  lda zz
-  beq +
-  tax
-  jsr pidGetbuf
-  jsr .mapperUntalk
-  lda zz
-  jsr .mapper_proc_callback
-+ lda @zs
-  ldy @zs+1
+  sta zw+1
+  ;check for ERROR
+  and zw
+  cmp #$ff
+  beq .mapstsError
+  clc
+  jmp .map_untalk
+  .mapstsError = *
+- jsr pidChIn
+  bcs -
+  sta errno
+  jsr .map_untalk
+  sec
   rts
-  .mapperUntalk  = *
+;*** ;(.X=bytes, .AY=receive callback)
+kernMaprecv = *
+  stx zz
+  sta .mapper_proc_addr+0
+  sty .mapper_proc_addr+1
+  ldx #0
+  jsr pisvcCommonTalk
+  ldx zz
+  .mapper_proc_addr = *+1
+  jsr $1234
+  .map_untalk = *
   lda #$5F
   jmp pidChOut
-  .mapper_proc_callback = *
-  .mapper_proc_addr = *+1
-  jmp $1234
-@zs !byte 0,0
+;*** ;(zw=bytes, .AY=dest. addr)
+kernMapload = *
+  sta zp
+  sty zp+1
+  lda zw+1
+- beq +
+  dec zw+1
+  ldx #0
+  lda #<.mapper_load_cb
+  ldy #>.mapper_load_cb
+  jsr kernMaprecv
+  inc zp+1
+  lda zw+1
+  jmp -
++ ldx zw
+  lda #<.mapper_load_cb
+  ldy #>.mapper_load_cb
+  jmp kernMaprecv
+  .mapper_load_cb = *
+  lda zp
+  ldy zp+1
+  jmp kernModemGet
 
 ;*** (.AY = configBuf[256])
 ; returns configBuf[256]
@@ -146,37 +175,33 @@ pisvcPutJoystick = *
   ldx #10
   jmp pidPutbuf
 
-;*** (keycode, shiftValue)
-pisvcPutKeyboard = *
-  lda keycode
-  cmp #nullKey
-  beq +
-  cmp prevKeycode
-  beq keyboardRepeat
-  lda configBuf+$c8
-  sta delayCountdown
-  ; LISTEN channel K:
-- lda #11
-  jsr pisvcCommonListen
-  ; Send 2-byte message
-  lda keycode
-  sta prevKeycode
+;*** (.A=code/buttons, .X=modifier/mouse dX, .Y=$80(for key)/mouse dY
+kernKvmCommand = *
+  pha
+  ; Channel K:
+  lda #$2b
   jsr pidChOut
-  lda shiftValue
+  ; Keyboard or Mouse
+  cpy #$80
+  bne kvmMouseCmd
+  lda #$7f        ;SECOND=$7f indicates key event
   jsr pidChOut
-+ rts
-keyboardRepeat = *
-  lda delayCountdown
-  beq +
-  dec delayCountdown
-  beq ++
+  ; Send 2-byte keyboard message
+  pla
+  jsr pidChOut
+  txa
+  jmp pidChOut
+  kvmMouseCmd = *
+  lda #$7e
+  jsr pidChOut    ;SECOND=$7e indicates mouse event
+  ; Send 3-byte mouse message
+  pla
+  jsr pidChOut
+  txa
+  jsr pidChOut
+  tya
+  jsr pidChOut
   rts
-+ dec repeatCountdown
-  beq ++
-  rts
-++lda configBuf+$c9
-  sta repeatCountdown
-  jmp -
 
 ;*** ( (zp)=msg, .X=0..2 param spec.
 ;      .A=byte param, zw=word param

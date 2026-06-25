@@ -39,7 +39,7 @@ aceMouseLimitX   = aceStatB+46         ;(2)
 aceMouseLimitY   = aceStatB+48         ;(2)
 aceMouseScaleX   = aceStatB+50         ;(1)
 aceMouseScaleY   = aceStatB+51         ;(2)
-joykeyCapture    = aceStatB+53         ;(1) $80=capture keyb, $40=capture joys, $c0=capture both
+kvmCapture       = aceStatB+53         ;(1) $80=capture keyb, $40=capture mouse, $c0=capture both
 aceSignalProc    = aceStatB+54         ;(1) send signal (i.e. Interrupt/Kill) to current process
 ;free public kernel vars from +55 through +63
 ;private kernel vars from +64 through +103
@@ -164,21 +164,20 @@ aceRestartApplReset     = $81
 aceRestartExitBasic     = $82
 aceRestartLoadPrg       = $83
 aceRestart       = aceCallB+246 ;(.A=flag,.X=device,(zp)=appname) : no RTS!
-; IDUN: Communicate with the RPi Memory Mapper process
-aceMapperSetreg = aceCallB+249  ;(.X=Register, .AY=Value)
-aceMapperCommand = aceCallB+252 ;(.X=Command, .A=Param)
-aceMapperProcmsg  = aceCallB+255 ;(.AY=proc callback)
+; IDUN: Communicate with the RPi Memory Mapper system calls
+mapsetr          = aceCallB+249     ;(.X=Register, zw=Value)
+syscall          = aceCallB+252     ;(.X=Command, .A=Param)
+mapstat          = aceCallB+255     ;() : zw=message size, .CS=error,errno
 ; IDUN: Put characters from graphical set
-aceWinGrChrPut  = aceCallB+258
-; IDUN: Read/write by Track/Sector to Virtual Floppy devices
-aceDirectRead   = aceCallB+261 ;( .X=fd, (zp)=buf, .A=# sector) : .AY=(zw)=len, .CS=error
-aceDirectWrite  = aceCallB+264 ;( .X=fd, (zp)=buf, .A=# sector) : .CS=error
-; IDUN: Detect when running in emulator.
-; Custom version of Vice Emulator can connect
-; to Idun services over the network.
-aceViceEmuCheck = aceCallB+267 ;() : .ZS=emulator detected
+aceWinGrChrPut   = aceCallB+258
+; IDUN: Communicate with the RPi Memory Mapper user calls
+usrcall          = aceCallB+261      ;(.X=Command, zw=ParamSize, zp=Params)
+mapload          = aceCallB+264      ;(zw=bytes, .AY=dest. addr)
+maprecv          = aceCallB+267      ;(.X=bytes, .AY=receive callback)
+; IDUN: Control internal KVM switching
+aceKvmCommand   = aceCallB+270
 ; IDUN: Use search path to determine full filename
-aceSearchPath   = aceCallB+270 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
+aceSearchPath   = aceCallB+273 ;( (zp)=filename, .X=PathPos ) : (zp)=lname, .X=nextPathPos,
                                ;                                .CS=end of path
 aceID1 = $cb
 aceID2 = $06
@@ -187,6 +186,19 @@ aceID3 = 16
 aceMemNull     = $00
 aceMemInternal = $01
 aceMemERAM     = $02
+
+;Memory Mapper command constants
+MAP_SYS_LOAD_BINARY  = $00
+MAP_SYS_REBOOT       = $01
+MAP_SYS_KVM_SWITCH   = $02
+MAP_SYS_ALLOCATE     = $f9
+MAP_SYS_GCOLLECT     = $fa
+MAP_SYS_MMAP         = $fb
+MAP_SYS_STREAM_CHAN  = $ff
+MAP_SET_MACHINE      = $f2
+MAP_SET_DEVICE       = $f4
+MAP_SET_DESTINATION  = $f5
+MAP_SET_SOURCE       = $f6
 
 aceErrStopped = 0
 aceErrTooManyFiles = 1

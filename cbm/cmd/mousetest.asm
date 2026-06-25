@@ -37,7 +37,7 @@ main = *
    lda #$00
    ldy #$00
    jsr xGrClear
-   lda #$10
+   lda #$f0
    jsr xGrSetColor
    ;** enable the mouse
    lda #TRUE
@@ -202,6 +202,7 @@ checkStop = *
 ++ lda #FALSE
    jsr xPtrEnable
    jsr aceGrExit
+   jsr toolWinRestore
    lda #TRUE
    jsr toolStatEnable
    lda #1

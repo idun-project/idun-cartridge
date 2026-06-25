@@ -6,9 +6,19 @@ m8_results_handler = *
    sta _result_count_offs+2
    lda #0
    sta endRow
+   jsr mapstat
+-  lda zw+1
+   beq +
+   ldx #0
    lda #<.copyResults
    ldy #>.copyResults
-   jsr aceMapperProcmsg
+   jsr maprecv
+   dec zw+1
+   jmp -
++  ldx zw
+   lda #<.copyResults
+   ldy #>.copyResults
+   jsr maprecv
    lda #0
    sta rowc
    jsr __m8_mailbox_reset
@@ -16,7 +26,10 @@ m8_results_handler = *
    rts
    
    .copyResults = *
-   sta .bytesInMsg
+   stx .bytesInMsg
+   lda #<mailboxB
+   ldy #>mailboxB
+   jsr aceTtyGet
    ldx #0
    lda endRow
    bne +

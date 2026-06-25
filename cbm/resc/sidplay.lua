@@ -1,8 +1,8 @@
+local util = require('idun-util')
 -- Important variables used
 local sidhdr = ""			-- header bytes of sid
 local sidprg  				-- relocated program of sid
-local useMock = false   -- Mock IO for testing
-local handler = require("idun-handler")
+local sidplay = {}
 
 local function ends_with(str, ending)
    return ending == "" or str:sub(-#ending) == ending
@@ -11,16 +11,15 @@ end
 local function relocSid(fname)
 	local RELOCCMD = "sidreloc -s -t 0 -p 71 -z 02-5f --frames 20000 -q "
 	local TMPFNAME = "/tmp/sidreloc.sid"
-	assert(fname, "missing argument: sid file")
 
 	-- Check extension
-	if not ends_with(fname, ".sid") then
+	if (not fname) or (not ends_with(fname, ".sid")) then
 		return 4
 	end
 
 	-- Check type is PSID
 	local psid = io.open(fname, "r")
-	assert(psid,"Failed to open "..fname)
+	if not psid then return 4 end
 	local prefix = psid:read(4)
 	psid:close()
 	if prefix ~= "PSID" then
@@ -31,6 +30,7 @@ local function relocSid(fname)
 	local retval = os.execute(RELOCCMD..fname.." "..TMPFNAME)
 	if retval then
 		local sid = io.open(TMPFNAME, "rb")
+		if not sid then return 2 end
 		local data = sid:read("*all")
 		sid:close()
 		-- Check PSID version and load addr
@@ -54,26 +54,21 @@ local function relocSid(fname)
 	end
 end
 
-function handler.handleRequest(req)
+sidplay.load = function(packed)
+	local sidfile = string.unpack('s2', packed)
+	sidfile = util.pet2asc(sidfile)
 	-- Open and relocate sid file on first request
-	if string.len(sidhdr) == 0 then
-	  local res = relocSid(arg[1])
-     io.write(string.format("relocSid on %s returns %d\n", arg[1], res))
-	  if res > 0 then
-	     return nil, res
-	  end
-	end
-
-	-- Allowed requests: "H"=get sid header, "P"=get sid program
-	if req == "H" then
-		return sidhdr
-	elseif req == "P" then
-		-- Prepend with the size
-		local resp = string.pack("<H", #sidprg)
-		return resp .. sidprg
+	local res = relocSid(sidfile)
+	io.write(string.format("relocSid on %s returns %d\n", sidfile, res))
+	if res > 0 then
+		m8.err(res)
 	else
-		return nil, 3  	-- Bad request
+		m8.ret(sidhdr)
 	end
 end
 
-handler.run(useMock)
+sidplay.getsid = function()
+	m8.ret(sidprg)
+end
+
+return sidplay

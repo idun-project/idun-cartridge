@@ -17,9 +17,11 @@ m8_programs_handler = *
     sta (zp),y
     iny
     jmp -
-+   lda #<.copyProgs
++   jsr mapstat
+    ldx zw
+    lda #<.copyProgs
     ldy #>.copyProgs
-    jsr aceMapperProcmsg
+    jsr maprecv
     lda #0
     jsr __m8_mailbox_reset
     jsr select_ui_programs
@@ -72,6 +74,9 @@ unselect_ui_programs = *
     rts
 
 .copyProgs = *
+    lda #<mailboxB
+    ldy #>mailboxB
+    jsr aceTtyGet
     ldx #0
     stx .count
     lda mailboxB,x

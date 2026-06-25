@@ -1,13 +1,9 @@
-; Idun Go64, Copyright© 2023 Brian Holdsworth, MIT License.
+; Idun Turbo, Copyright© 2026 Brian Holdsworth, MIT License.
 
-; This tool is used to launch C64 native binaries. The binary
-; can be a PRG on any native or virtual drive. If running on
-; a C128, then the mode will be switched to C64. Go64 will also 
-; use first file in a disk image or tape archive, such that this 
-; command is a rough equivalent to LOAD"*":RUN
+; This tool is used to control turbo boost when run on the C64
+; Ultimate. 
 
 !source "sys/acehead.asm"
-!source "sys/acemacro.asm"
 
 * = aceToolAddress
 
@@ -18,114 +14,89 @@ jmp main
 ; Constants
 FALSE     = 0x00
 TRUE      = 0xff
-ldUsage64 = *
-              !pet "Usage: go64 <image>",chrCR
-              !pet "Supports T64 and D64 image.",chrCR,0
-mtDevice      !pet "^:",0
-mtErrorMsg1   !pet "Error: illegal target device",chrCR,0
-mtErrorMsg2   !pet "Error: cannot open image file",chrCR,0
-mtErrorMsg3   !pet "Error: cannot mount image file",chrCR,0
-mtDoneMsg     !pet "Mounted ",0
-mtFoundMsg    !pet "Found ",0
+turboOff  = $d07a
+turboOn   = $d07b
+
+MHz !byte 1,2,3,4,6,8,10,12,14,16,20,24,32,40,48,64
+
+; Usage and args
+ldUsage !pet "Usage: turbo <on",$dc,"off",$dc,"max>",chrCR,0
 argsus = *
-!pet "/?"  ;show help
+!pet "/?"   ;show help
 !word doUsageMsg
+!pet "on"   ;turbo enable
+!word doTurboOn
+!pet "of"   ;"off" turbo disable
+!word doTurboOff
+!pet "ma"   ;"max" turbo max zoomies!
+!word doTurboMax
 !byte 0
 
-; Zp Vars
-loadDevType = 2
-dirFcb      = 3
-loadFd      = 4
-argnum      = 5
-IdunDevice  = $102
+; zp vars
+argnum   = $02 ;(1)
+utoa     = $03 ;(4)
 
 main = *
    lda #0
    sta argnum
-   jsr getNextArg       ;checks for '/?'
-   lda #1
-   ldy #0
-   jsr getarg
-   bne +
-   jmp go64
-+  jsr mountImageFile
-   bcc go64Disk
-go64 = *
-   lda #3
--  sta IdunDevice
-   ldx #MAP_SYS_REBOOT
-   lda #64     ;reboot C64 mode
-   jmp syscall
-go64Disk = *
-   lda #30
+   sta utoa
+   sta utoa+1
+   sta utoa+2
+   sta utoa+3
+   ; TODO: Find a way to support some persistent turbo settings!
+   ; Right now, the C64U doesn't seem to support that. So, we
+   ; just ignore any args and display the current speed.
+   sta aceArgc
+-  inc argnum
+   lda argnum
+   cmp aceArgc
+   bcs +
+   jsr getNextArg
    jmp -
++  clc
+   jsr aceTurboCtl
+   beq turboNone
+   jmp displayMhz
+   turboNone = *
+   jsr aceMiscSysType
+   bmi +                   ;C128?
+   lda #<turboNotAvailable
+   ldy #>turboNotAvailable
+   jmp puts
++  lda $d030
+   and #$01
+   ;fall-through
+   displayMhz = *
+   tax
+   lda MHz,x
+   sta utoa
+   ldx #utoa
+   jsr putnum
+   lda #<displayUnits
+   ldy #>displayUnits
+   jmp puts
+displayUnits !pet " MHz",chrCR,0
+turboNotAvailable !pet "Who needs more than 1 MHz?",chrCR,0
 
 doUsageMsg = *
-   lda #<ldUsage64
-   ldy #>ldUsage64
+   lda #<ldUsage
+   ldy #>ldUsage
    jsr eputs
    jmp die
 
-mountImageFile = *
-   ;mount image file read-only on "^:"
-   lda zp+1
-   pha
-   lda zp
-   pha
-   lda #<mtDevice
-   ldy #>mtDevice
-   sta zp
-   sty zp+1
-   jsr aceMiscDeviceInfo
-   cpx #7
-   bne mtDeviceError
-   ; open the image file
-   ldy #0
-   lda #1
-   jsr getarg
-   lda mtDevice+0
-   +as_device
-   tax
-   pla
-   sta zp
-   pla
-   sta zp+1
-   lda #"W"
-   jsr aceMountImage
-   lda errno
-   beq mtDone
-   cmp #aceErrFileTypeMismatch
-   beq mtMountError
-   mtOpenError = *
-   lda #<mtErrorMsg2
-   ldy #>mtErrorMsg2
-   jmp mtError
-   mtDeviceError = *
-   lda #<mtErrorMsg1
-   ldy #>mtErrorMsg1
-   jmp mtError
-   mtMountError = *
-   lda #<mtErrorMsg3
-   ldy #>mtErrorMsg3
-   mtError = *
+doTurboOn = *
+   sta turboOn
+   rts
+
+doTurboOff = *
+   sta turboOff
+   rts
+
+doTurboMax = *
+   jsr doTurboOn
+   lda #15
    sec
-   rts
-
-   mtDone = *
-   ;print Mounted...
-   lda #<mtDoneMsg
-   ldy #>mtDoneMsg
-   jsr puts
-   ldy #0
-   lda #1
-   jsr getarg
-   ldx #stdout
-   jsr zpputs
-   lda #chrCR
-   jsr putchar
-   clc
-   rts
-
+   jmp aceTurboCtl
 
 ;******** standard library ********
 putchar = *
@@ -191,7 +162,6 @@ getarg = *
    rts
 getNextArg = *
    ldy #0
-   inc argnum
    lda argnum
    jsr getarg
    ldx #0

@@ -19,6 +19,7 @@
 !source "sys/acemacro.asm"
 !source "toolx/gfx.asm"
 
+C128_VDC_ON = %10001000
 jmp main
 
 grXextent   = $02  ;(1)
@@ -33,15 +34,22 @@ drawColor   = $0c  ;(1)
 
 displayUsageErrorMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "usage: showvdc <img1> [img2..imgN]",chrCR,0
+!pet "usage: showvdc <img1> [img2..imgN]",chrCR
+!pet "C128 VDC required",chrCR,0
 
 main = *
    lda #0
    sta argnum
    sta grMode
    sta bmFiledesc
+   ;check for C128
+   jsr aceMiscSysType
+   and #C128_VDC_ON
+   cmp #C128_VDC_ON
+   beq +
+   jmp displayUsageError
    ;check for at least one arg
-   lda aceArgc
++  lda aceArgc
    cmp #2
    bcs getImage
    jmp displayUsageError

@@ -23,11 +23,10 @@ jmp main
 
 ;BE CAREFUL using zp variables with this tool. The loaded SID player
 ;routine can use zp $02-$5f, and Idun uses $70-$ff (leaving only $60-$6f).
-luaFcb      = $60  ;(1)
-sidSize     = $61  ;(2)
-subTune     = $63  ;(4)
-numTune     = $67  ;(4)
-argnum      = $6b  ;(1)
+subTune     = $60  ;(4)
+numTune     = $64  ;(4)
+argnum      = $68  ;(1)
+rsid        = $69  ;(1)
 
 musicIntr !byte 0,0
 sidInfoBuf !fill 35,0
@@ -76,8 +75,8 @@ setSidString = *
 
 main = *
    lda #0
-   ldx #$0b
--  sta luaFcb,x
+   ldx #$09
+-  sta subTune,x
    dex
    bpl -
    ;check for at least one arg
@@ -88,6 +87,12 @@ main = *
    jmp playerUsageError
    ;init hotkeys
 +  jsr initHotkeys
+   ;load sidplay.lua module
+   lda #0
+   ldy #0
+   jsr getarg
+   ldx #0         ;load usr module "sidplay.lua"
+   jsr usrcall
 nextSid = *
    ;get next sid filename
    inc argnum
@@ -96,68 +101,33 @@ nextSid = *
    jsr getarg
    bne +
    jmp exit
-   ; prepare Lua command to relocate/load SID
-+  ldx #255
--  inx
-   lda luaLaunchPrefix,x
-   sta sidData,x
-   bne -
-   ldy #255
--  iny
-   lda (zp),y
-   sta sidData,x
+   ;load sid
++  ldx #2         ;sidplay.load(packed)
+   jsr usrcall
+   jsr mapstat
+   bcs luaError
+   lda #<procSidHdr
+   ldy #>procSidHdr
+   ldx zw
+   jsr maprecv
+   lda rsid
    beq +
-   inx
-   jmp -
-   ; launch Lua
-+  lda #<sidData
-   ldy #>sidData
-   sta zp+0
-   sty zp+1
-   +ldaSCII "w"
-   jsr open
-   bcc +
-   jmp playerLuaError
-   ; wait for Lua
-+  sta luaFcb
-   jsr waitForReady
-   bne +
-   jmp playerLuaError
-   ; request SID header
-+  lda #"H"
-   jsr sendRequest
-   bcc +
-   jmp playerLuaError
+   jsr playerRSID
+   jmp nextSid
    ;process SID header
 +  lda #0
    jsr statusUpdate
-   jsr procSidHdr
-   bne +
-   jsr playerRSID
-   lda luaFcb
-   jsr close
-   jmp nextSid
-   ;load SID program
-+  jsr waitForReady
-   lda #"P"
-   jsr sendRequest
-   bcc +
-   jmp playerLuaError
-+  lda #1
-   jsr statusUpdate
-   jsr procSidProg
-   bne +
-   jsr playerRSID
-   lda luaFcb
-   jsr close
-   jmp nextSid
-   ; sid loaded
-+  jsr waitForReady
-   lda #"Q"    ;send Quit
-   jsr sendRequest
-   jsr waitForReady
-   lda luaFcb
-   jsr close
+   ;get sid program
+   ldx #1         ;sidplay.getsid()
+   lda #0
+   sta zw
+   sta zw+1
+   jsr usrcall
+   jsr mapstat
+   bcs luaError
+   lda #<sidData
+   ldy #>sidData
+   jsr mapload
    ;initialize SID player
    lda #2
    jsr statusUpdate
@@ -175,13 +145,28 @@ nextSid = *
    jmp nextSid
 +  jsr toolKeysHandler
    jmp -
-luaLaunchPrefix !pet "l:sidplay.lua ",0
+luaError = *
+   lda errno
+   clc
+   adc #$30
+   sta luaErrorCode
+   lda #<luaCallErrorMsg
+   ldy #>luaCallErrorMsg
+   jsr eputs
+   jmp exit
+playerRSID = *
+   lda #<playerFileErrorMsg
+   ldy #>playerFileErrorMsg
+   jsr eputs
+   rts
+playerFileErrorMsg !pet "Error",chrCR,0
+luaCallErrorMsg !pet "Lua Error "
+luaErrorCode !byte 0,0
 luaStartMsg !pet "Relocating ",0
 loadingMsg  !pet "Loading...",0
                    ;    |0123456789012345678901|
 playingMsg1 !pet chrBOL,"Playing tune #xx",0
 playingMsg2 !pet        " of yy",0
-luaResultOk !byte 0,0
 statusUpdate = *
    bne +
    lda #<luaStartMsg
@@ -223,18 +208,6 @@ statusUpdate = *
    lda #chrCR
    jmp putchar
 
-playerRSID = *
-   lda #<playerFileErrorMsg
-   ldy #>playerFileErrorMsg
-   jsr eputs
-   rts
-playerFileErrorMsg !pet "Error",chrCR,0
-playerLuaError = *
-   lda #<playerLuaErrorMsg
-   ldy #>playerLuaErrorMsg
-   jsr eputs
-   jmp exit
-playerLuaErrorMsg !pet "Error: Lua script",chrCR,0
 initTune:
    lda subTune
    musicInit = *+1
@@ -243,12 +216,8 @@ initTune:
 stopPlayback:
    ;cancel interrupts
    jsr toolTmoCancel
-   ;close file
-   lda luaFcb
-   beq +
-   jsr close
    ;turn off SID oscillators
-+  lda #$00
+   lda #$00
    sta $d400
    sta $d401
    sta $d407
@@ -314,31 +283,12 @@ playPrev = *
    lda #2
    jmp statusUpdate
 
-waitForReady = *  ;(: .Z=error)
-   ;wait for `READY` or `ERR ec` response
-   lda #<luaMsgBuf
-   ldy #>luaMsgBuf
-   ldx #5
-   jsr aceTtyGet
-   lda luaMsgBuf+0
-   cmp #"E"
-   rts
-
-sendRequest = *
-   sta luaMsgBuf+0
-   lda #$0a
-   sta luaMsgBuf+1
-   ldx #2
-   lda #<luaMsgBuf
-   ldy #>luaMsgBuf
-   jmp aceTtyPut
-
-procSidHdr = *    ;(: .Z=error)
-   ;check first 4 bytes "PSID"
+procSidHdr = *    ;(: rsid=error code)
+   ;copy full message to sidData
    lda #<sidData
    ldy #>sidData
-   ldx #5
    jsr aceTtyGet
+   ;check first 4 bytes "PSID"
    lda sidData+0
    cmp #"P"
    bne errSidHdr
@@ -352,15 +302,10 @@ procSidHdr = *    ;(: .Z=error)
    cmp #"D"
    beq +
    errSidHdr = *
-   lda #0
+   sta rsid
    rts
-   ;retrieve rest of SID header
-+  lda #<(sidData+5)
-   ldy #>(sidData+5)
-   ldx #$79
-   jsr aceTtyGet
    ;store player init and interrupt vector
-   lda sidData+$0a
++  lda sidData+$0a
    ldy sidData+$0b
    sta musicInit+1
    sty musicInit+0
@@ -375,61 +320,9 @@ procSidHdr = *    ;(: .Z=error)
    sta subTune
    ;store SID file text
    jsr setSidInfo
-   lda #1 ;no errors
+   lda #0 ;no errors
+   sta rsid
    rts
-
-procSidProg = *   ;(: .Z=error)
-   ;check first 3-bytes not "ERR"
-   lda #<(sidData-2)
-   ldy #>(sidData-2)
-   ldx #5
-   jsr aceTtyGet
-   lda sidData-2
-   cmp #"E"
-   bne +
-   lda sidData-1
-   cmp #"R"
-   bne +
-   lda sidData+0
-   cmp #"R"
-   bne +
-   rts
-   ;first two bytes is the size
-+  lda sidData-2
-   sec
-   sbc #3
-   sta sidSize+0
-   lda sidData-1
-   sbc #0
-   sta sidSize+1
-   ;check size not too large
-   clc
-   adc #$71
-   cmp #$bf
-   bcc +
-   lda #0   ;too big
-   rts
-+  lda #<(sidData+3)
-   ldy #>(sidData+3)
-   sta loadDest+0
-   sty loadDest+1
-   contLoad = *
-   lda loadDest+0
-   ldy loadDest+1
-   ldx #0
-   cpx sidSize+1
-   beq finishLoad
-   jsr aceTtyGet
-   inc loadDest+1
-   dec sidSize+1
-   jmp contLoad
-   finishLoad = *
-   ldx sidSize+0
-   beq +
-   jsr aceTtyGet
-+  lda #1   ;no errors
-   rts
-loadDest !byte 0,0
 
 ;******** standard library ********
 eputs = *
@@ -479,17 +372,24 @@ getarg = *
    lda (zp),y
    stx zp+0
    sta zp+1
+   bne +
    rts
-;this is a 5-byte buffer used for messaging with the Lua script
-* = $70fb
-luaMsgBuf = *
++  ldy #0
+   sty zw+1
+-  lda (zp),y
+   beq +
+   iny 
+   jmp -
++  sty zw
+   lda zp+1
+   rts
 * = $7100
 ;this is where the SID file header/program loaded to...
 sidData = *
 ;also temporary space for the long'ish instructions
 playerUsageErrorMsg = *
 ;    |1234567890123456789012345678901234567890|
-!pet "usage: sidplay <sidfile> [sid2..sidN]",chrCR
+!pet "usage: sidplay <sidfile> <sidfile2>...",chrCR
 !pet "<cursor> for next/prev tune, <space> for",chrCR
 !pet "next sid, <stop> to quit",chrCR,0
 

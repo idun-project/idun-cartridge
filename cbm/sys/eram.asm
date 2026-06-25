@@ -17,14 +17,6 @@
 ; hash tagging. Any file can be instantly loaded to RAM then
 ; accessed via RAM using the file API.
 
-;Mapper command constants
-SET_SOURCE      = $f6
-SET_DESTINATION = $f5
-SET_DEVICE      = $f4
-CMD_ALLOCATE    = $f9
-CMD_MMAP        = $fb
-CMD_GCOLLECT    = $fa
-
 initEram = *
     lda #0
     sta aceEramCur
@@ -32,9 +24,9 @@ initEram = *
     sta aceTagsStart
     jsr initTags
     ;** free all the ERAM
-    ldx #CMD_GCOLLECT
+    ldx #MAP_SYS_GCOLLECT
     lda #$ff
-    jmp kernMapperCommand
+    jmp kernMapsys
 
 ;=== new === (.AY)=data, .X=$ff? zw=bytes : (mp), .CS=error
 sys_area_alloc !byte 0
@@ -71,11 +63,13 @@ kernNew = *
     bne +
     ldy mp+2
     lda mp+1
-    ldx #SET_SOURCE
-    jsr kernMapperSetreg
-    ldx #CMD_ALLOCATE
+    sty zw+1
+    sta zw
+    ldx #MAP_SET_SOURCE
+    jsr kernMapset
+    ldx #MAP_SYS_ALLOCATE
     lda syswork+2
-    jsr kernMapperCommand
+    jsr kernMapsys
 +   rts
     
     newPageAlloc = *
@@ -139,21 +133,25 @@ kernMmap = *       ;(.AY=tagname, .X=$ff? (zp)=filename) : .CS=error
     ;command the mapper
     lda mp+1
     ldy mp+2
-    ldx #SET_DESTINATION
-    jsr kernMapperSetreg
+    sta zw
+    sty zw+1
+    ldx #MAP_SET_DESTINATION
+    jsr kernMapset
     lda openDevice
     lsr
     lsr
     ldy #0
-    ldx #SET_DEVICE
-    jsr kernMapperSetreg
+    sta zw
+    sty zw+1
+    ldx #MAP_SET_DEVICE
+    jsr kernMapset
     ;check system alloc
     lda sys_area_alloc
     cmp #$ff
     beq +
     lda aceProcessID
-+   ldx #CMD_MMAP
-    jsr kernMapperCommand
++   ldx #MAP_SYS_MMAP
+    jsr kernMapsys
     bcc +
     rts
 +   lda multiBlkStart

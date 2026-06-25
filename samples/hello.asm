@@ -36,29 +36,29 @@ __mb_reset_msgbuf !byte 0,0,0
 
 ;mailbox message handlers
 __m8_viceemu_handler = *
-   jsr aceViceEmuCheck
-   bne +
-   lda #1
-   jmp __m8_mailbox_reset
-+  lda #0
+   lda #0
    jmp __m8_mailbox_reset
    
 __m8_writeln_handler = *
+   jsr mapstat
+   ldx zw
    lda #<.writeln_callback
    ldy #>.writeln_callback
-   jsr aceMapperProcmsg
+   jsr maprecv
    lda #0
    jmp __m8_mailbox_reset
    .writeln_callback = *
-   pha
+   stx .writeln_length
    lda #<mailboxB
    ldy #>mailboxB
    sta zp
    sty zp+1
-   pla
+   jsr aceTtyGet
+   lda .writeln_length
    ldy #0
    ldx #stdout
    jmp write
+.writeln_length !byte 0
 
 idunAppInit = *
    lda #0

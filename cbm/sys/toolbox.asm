@@ -51,6 +51,7 @@ jmp toolTmoJifs
 jmp toolTmoSecs
 jmp toolTmoCancel
 jmp toolSyscall
+jmp toolKvmHandler
 
 ;=== Tool API Data Structs ===
 ;=== (16) toolWin settings
@@ -133,8 +134,8 @@ ToolwinInit = *
    lda #$00
    sec
    jsr aceConOption ;reset attributes
-   lda #0
-   sta joykeyCapture
+   lda #FALSE
+   sta kvmCapture
    ; Enable Hotkey checking in acecon
    lda #<toolKeysHandler
    ldy #>toolKeysHandler
@@ -234,7 +235,7 @@ cmdDispatchTable = *
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$9c-$9f
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a0-$a3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$a4-$a7
-   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdNotImp   ;$a8-$ab
+   !word CmdNotImp,CmdNotImp,CmdModeSw,CmdKvmAct   ;$a8-$ab
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$ac-$af
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b0-$b3
    !word CmdNotImp,CmdNotImp,CmdNotImp,CmdNotImp   ;$b4-$b7
@@ -479,6 +480,61 @@ CmdModeSw = * ;switch 80/40-cols w/ VIC-II enabled
    rts
 +  jmp CmdMode4
 
+;=== Hotkey handler for the internal KVM activation
+
+toolKvmHandler = *
+CmdKvmAct = *
+   ldx #0
+   stx tbwork+4         ;to keep tabs on mouse buttons
+   ; activate internal kvm
+   ldx #MAP_SYS_KVM_SWITCH
+   jsr syscall
+   ; show kvm enabled in status bar
+   lda #$c0
+   sta kvmCapture
+   lda #TRUE
+   jsr toolStatEnable
+   ; forward keystrokes and mouse to service
+-  lda aceSignalProc    ;until signal
+   bne ++
+   jsr aceConKeyAvail
+   bcc kvmKeys
+   jsr aceConMouse
+   cmp tbwork+4         ;check buttons
+   bne kvmMouse
+   jsr kvmCheckMouse
+   beq -                ;no movement
+   lda tbwork+4
+   jmp kvmMouse
+CmdKvmEnd = *
+   lda #FALSE
+   sta kvmCapture
+++ jsr kvmDisarm
+   clc
+   rts
+kvmKeys = *
+   jsr aceConGetkey
+   cmp #$ab             ;until CmdK
+   beq CmdKvmEnd
+   ldy #$80
+   jsr aceKvmCommand
+   jmp -
+kvmMouse = *
+   sta tbwork+4
+   jsr aceKvmCommand
+   jmp -
+kvmDisarm = *
+   lda #$ab
+   ldx #2
+   ldy #$80
+   jmp aceKvmCommand
+kvmCheckMouse = *
+   cpx #0
+   beq +
+   rts
++  cpy #0
+   rts
+
 ;=== Status Line (Top Bar) routines ===
 
 toolStatTitle = *    ;(.AY=title)
@@ -624,7 +680,7 @@ updateStatPutKb = *
    rts
 
 updateStatPutCap = *
-   bit joykeyCapture
+   bit kvmCapture
    bpl +
    ; keyb icon=$fb $fc $fd
    lda #$fb
@@ -639,7 +695,7 @@ updateStatPutCap = *
    sta _labelCapture+1
    sta _labelCapture+2
    sta _labelCapture+3
-   bit joykeyCapture
+   bit kvmCapture
    bvc +
    ; joys icon=$f9 $fa
    lda #$f9

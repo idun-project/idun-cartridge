@@ -4,20 +4,21 @@
 ; This application provides a custom tty that runs cpem -
 ; the CP/M emulator for Idun that runs under Linux.
 !source "sys/toolbox.asm"
+!source "sys/toolhead.asm"
 
 jmp Init
 
 ; String constants we'll need
-cpem_path !pet "c:/idun-base/cpm",0
+cpem_path !pet "c:/CPM",0
 zload_tool_path !pet "z:zload",0
 tty_path !pet "z:tty",0
 
 ; Arguments strings for launching `tty`/`zload`
 cpem_exec_c128 !word 6,12,0
-cpem_c128 !pet "_:tty",0,"x:./cpem C128",0
+cpem_c128 !pet "_:tty",0,"x:cpem C128",0
 cpem_exec_c128_sz = * - cpem_exec_c128
 cpem_exec_c64 !word 6,12,0
-cpem_c64 !pet "_:tty",0,"x:./cpem C64",0
+cpem_c64 !pet "_:tty",0,"x:cpem C64",0
 cpem_exec_c64_sz = * - cpem_exec_c64
 zload_exec !word 6,14,0
 zload_tool !pet "_:zload",0
@@ -82,6 +83,8 @@ Startup = *
    jsr aceWinMax
    jsr aceWinSize
    jsr cls
+   ; Disable internal Kvm
+   jsr kvmOff
    ; start cpem
    jsr aceMiscSysType
    bpl +
@@ -130,7 +133,14 @@ Startup = *
    ; After zload finishes, return CPem
    jmp Startup
 
+   kvmOff = *
+   lda #HotkeyCmdK
+   ldx #<normalExit
+   ldy #>normalExit
+   jmp toolKeysSet
+
    normalExit = *
+   clc
    rts
 
 reTagName = $02

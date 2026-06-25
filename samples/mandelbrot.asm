@@ -36,11 +36,7 @@ __mb_reset_msgbuf !byte 0,0,0
 
 ;mailbox message handlers
 __m8_viceemu_handler = *
-   jsr aceViceEmuCheck
-   bne +
-   lda #1
-   jmp __m8_mailbox_reset
-+  lda #0
+   lda #0
    jmp __m8_mailbox_reset
    
 !source "mandelbrot.app.d/drawit.m8x"

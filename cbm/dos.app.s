@@ -105,10 +105,6 @@ idunDosMain = *
    lda #<minuteTimeout
    ldy #>minuteTimeout
    jsr toolTmoSecs
-   lda #HotkeyCmdK
-   ldx #<HotCmdK
-   ldy #>HotCmdK
-   jsr toolKeysSet
    ; Start shell
    lda #stdin
    sta inputFd
@@ -141,11 +137,6 @@ dosReinit = *
    jsr macrosUpdate
    beq +
    jsr aceMemFetch
-   ; Make sure Com+k enabled for keyboard switching
-+  lda #HotkeyCmdK
-   ldx #<HotCmdK
-   ldy #>HotCmdK
-   jsr toolKeysSet
    rts
 macrosUpdateStash = *
    ; Stash user macros
@@ -171,13 +162,6 @@ macrosUpdate = *
    lda #<256
    ldy #>256
 +  rts
-HotCmdK = *
-   lda joykeyCapture
-   eor #$80
-   and #$80
-   sta joykeyCapture
-   lda #TRUE
-   jmp toolStatEnable
 
 tempIndex = $3
 minuteTimeout = *
@@ -1159,20 +1143,16 @@ reset = *
 
 ;===reboot===
 reboot = *
-   jsr aceViceEmuCheck
-   beq reset   ;just do a warm reset for emulator
-   ldx #1      ;CMD_SYS_REBOOT
+   ldx #MAP_SYS_REBOOT
    lda #0      ;full cartridge reboot
-   jmp aceMapperCommand
+   jmp syscall
 
 ;===basic===
 ; Restart cartridge in BASIC mode
 basic = *
-   jsr aceViceEmuCheck
-   beq reset   ;just do a warm reset for emulator
    jsr aceMiscSysType
-   ldx #1      ;CMD_SYS_REBOOT
-   jmp aceMapperCommand
+   ldx #MAP_SYS_REBOOT
+   jmp syscall
 
 ;===load===
 loadFd      = 2
@@ -1202,8 +1182,8 @@ loader = *
    lsr
    lsr
    sta $9c
-   ldx #255            ;CMD_STREAM_CHANNEL
-   jsr aceMapperCommand
+   ldx #MAP_SYS_STREAM_CHAN
+   jsr syscall
    ldx loadDevType
    jmp loaderRestart
    ;close Iec device only. Pid device stays open

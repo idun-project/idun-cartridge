@@ -1,9 +1,5 @@
 BUILD=build
-ifdef IDUN_SYS_DIR
-	SYSDIR=$(IDUN_SYS_DIR)/sys
-else
-	SYSDIR=$(HOME)/idun-sys/sys
-endif
+SYSDIR=../sys
 ACME=acme --dialect 0.94.12
 
 ACESYS=\
@@ -53,7 +49,9 @@ build/go64\
 build/browse\
 build/zload\
 build/showkoa\
-build/boxer
+build/boxer\
+build/turbo\
+build/nmitest
 
 TEST=\
 build/eram
@@ -84,7 +82,7 @@ $(SYSDIR)/idun128 : idunk.asm $(ACESYS)
 	$(ACME) --vicelabels $(BUILD)/idun128.sym -Dcomputer=128 -Dromsize=0 -o $(SYSDIR)/idun128 -f cbm idunk.asm
 
 $(SYSDIR)/idun-64 : idunk.asm $(ACESYS)
-	$(ACME) -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
+	$(ACME) --vicelabels $(BUILD)/idun.sym -Dcomputer=64 -Dromsize=0 -o $(SYSDIR)/idun-64 -f cbm idunk.asm
 
 $(SYSDIR)/boot128 : $(ACESYS) resc/boot128.prg
 	$(ACME) -Dcomputer=128 -o $(SYSDIR)/boot128 -f cbm sys/hook.asm
@@ -122,3 +120,12 @@ clean:
 	rm -fr $(BUILD)
 	rm -fr $(SYSDIR)
 	rm -fr resc/boot.prg resc/boot128.prg
+
+install: all
+	mkdir -p /usr/share/idun/sys/arcade.app.d
+	for item in $(SYSDIR)/*; do \
+		[ -f "$$item" ] && install -m 644 -o $(USER) -g $(USER) "$$item" /usr/share/idun/sys/; \
+	done
+	for item in $(SYSDIR)/arcade.app.d/*; do \
+		[ -f "$$item" ] && install -m 644 -o $(USER) -g $(USER) "$$item" /usr/share/idun/sys/arcade.app.d/; \
+	done

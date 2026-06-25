@@ -1,19 +1,27 @@
 .copyPageCtr !byte 0
+.mmPages !byte 0
 m8_drawit_handler = *
    lda #0
    sta .copyPageCtr
+   jsr mapstat
+   lda zw+1
+   sta .mmPages
+-  ldx #0
    lda #<.copyVdcPage
    ldy #>.copyVdcPage
-   jsr aceMapperProcmsg
+   jsr maprecv
+   dec .mmPages
+   lda .mmPages
+   bne -
    lda #0
    jsr __m8_mailbox_reset
    jmp xPtrEnable
 
    .copyVdcPage = *
-   cmp #0
-   beq +
-   rts      ;should always receive 256 bytes
-+  lda .copyPageCtr
+   lda #<mailboxB
+   ldy #>mailboxB
+   jsr aceTtyGet
+   lda .copyPageCtr
    inc .copyPageCtr
    cmp #$20
    bcc +

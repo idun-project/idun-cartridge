@@ -186,19 +186,14 @@ entryPoint = *
    jsr kernelChrout
    lda #14
    jsr kernelChrout
+   sta turboOn        ;revving
    ldx #$00
    lda $d0bc
-   and #$80
+   and #$80           ;turbo enabled?
    bne +
    ldx #$ff
 +  stx aceTurboCpuFlag
-   bit aceTurboCpuFlag
-   bpl +
-   lda #15            ;maximum MHz
-   sec
-   jsr kernTurboCtl   ;revving
-   sta turboOn        ;ZOOOOM!
-+  jsr aceBootstrap
+   jsr aceBootstrap
    jsr initMemory
    ; IDUN: Init syswork vars to 0 to prevent weird side-effects
    ldy #15
@@ -382,13 +377,14 @@ jmp kernMountImage
 jmp kernMiscDeviceInfo
 jmp kernCopyHost
 jmp kernRestart
-jmp kernMapperSetreg
-jmp kernMapperCommand
-jmp kernMapperProcmsg
+jmp kernMapset
+jmp kernMapsys
+jmp kernMapstat
 jmp kernWinGrChrPut
-jmp kernDirectRead
-jmp kernDirectWrite
-jmp kernViceEmuCheck
+jmp kernMapusr
+jmp kernMapload
+jmp kernMaprecv
+jmp kernKvmCommand
 jmp kernSearchPath
 
 notImp = *
@@ -446,7 +442,6 @@ aceBootstrap = *
    pla
    sta aceTurboCpuFlag
    lda $9c  ; default device. Should it be C:?
-   cmp #26
    bne +
    lda #3
 +  asl
@@ -957,20 +952,21 @@ kernRestart = *
    sta romjmp+1
    jmp loadPrgCont
 !if useC128 {
-+  lda #2      ;Mmap device loading
++  lda #2         ;Mmap device loading
 } else {
 +  lda #66
+   sta turboOff   ;ROM routine ignores turbo; so must disable here.
 }
    sta setparam+1
    lda #$09
    sta romjmp+1
 loadPrgCont:
    jsr kernShutdownSystem
-   ;Use aceMapperCommand to load via NMI
-   ldx #0      ;CMD_SYS_LOADER
+   ;Use aceMapsys to load via NMI
+   ldx #MAP_SYS_LOAD_BINARY
    setparam = *
    lda #1      ;parameter=1 (iec) or 2 (mmap)
-   jsr kernMapperCommand
+   jsr kernMapsys
 -  nop         ;wait for NMI
    jmp -
    romjmp = *
