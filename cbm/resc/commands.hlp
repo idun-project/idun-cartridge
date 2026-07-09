@@ -21,7 +21,7 @@ clear the screen
 Clears the screen and presents the shell prompt at the home cursor position.
 copy
 copy file(s) between drives
-${bold}Usage:${normal} copy [/h] [/f] <src> <dest> -or- copy <src1..srcN> <dev:> -- The ${green}copy${white} command copies files between drives. You can use it to copy a single file, or multiple files all to the same destination drive. Use the '/h' switch to ensure a Commodore PRG file that is copied retains the 2-byte header; otherwise, it will not load properly. Use the '/f' switch to force over-writing an existing destination file.
+${bold}Usage:${normal} copy [/h] <src> <dest> -or- copy [/f] <src1..srcN> <dev:> -- The ${green}copy${white} command copies files between drives. Source and destination must be different devices. You can copy a single file or multiple files to the same destination drive. When copying to an IEC drive, .prg and .usr extensions are stripped from the filename; files with a .prg extension are saved as CBM PRG type, .usr files as USR type, and all others as SEQ type. When copying to a virtual drive, .prg or .usr extensions are automatically appended based on the source file's CBM type. Use the '/h' switch to prepend a 2-byte load-address header to the destination PRG file. Use the '/f' switch to force overwriting existing destination files without prompting.
 date!
 show current date/time
 Shows the current date & time, which should be accurate, since the clock is set from the Internet each time you boot the idun kernel.
