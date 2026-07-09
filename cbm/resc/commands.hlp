@@ -64,6 +64,9 @@ ${bold}Usage:${normal} fcd <fuzz>, where fuzz is any partial string match for th
 ff$
 Fuzzy search for file
 ${bold}Usage:${normal} ff <fuzz>, where fuzz is any partial string match to a filename you want to locate. The command returns the full path to the closest matching filename in your home path.
+fstat
+display file statistics
+${bold}Usage:${normal} fstat <filename> -- The ${green}fstat${white} command shows the exact byte count and block count for any file on a virtual or IEC disk drive. For ${bold}.prg${normal} files (or files with a PRG type), it also shows the load address in hex and decimal, along with a machine hint identifying the likely target platform (C64, C128, VIC-20, etc.). For ${bold}.sid${normal} files, it displays full SID header metadata: title, author, release, song count, per-song playback speed (VSync or CIA), load/init/play addresses, SID chip model (6581/8580), clock type (PAL/NTSC), and version-2+ extended fields.
 funkey!
 set function key shortcut
 ${bold}Usage:${normal} funkey <key> "string" -- The ${green}funkey${white} command maps a string to a command key so that it can be quickly input as a shell command. The <key> parameter is the hexadecimal code. Only the keycodes $80-$8f may be used with the `funkey` command. This includes F1-F12 codes, plus SH-HELP, SH-RUN, SH-RETURN. The code for CO-1 ($81) is specifically excluded by `funkey` and is available as an application command key instead.
