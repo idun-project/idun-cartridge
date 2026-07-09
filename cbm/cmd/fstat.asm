@@ -168,7 +168,9 @@ fstatVirtual = *
    jsr aceFileStat
    bcc +
    jmp fstatStatError
-+  lda #<aceDirentType
++  lda aceDirentType
+   sta fstatOpenMode
+   lda #<aceDirentType
    sta fstatTypePtr
    lda #>aceDirentType
    sta fstatTypePtr+1
@@ -251,7 +253,10 @@ fstatExtra = *
    cmp #2
    bne +
    jmp fstatSidExtra
-+  rts
++  lda fstatOpenMode
+   +cmpASCII "p"
+   beq fstatPrgExtra
+   rts
 
 ;--- detect .prg (1) or .sid (2) extension; 0=none ---
 fstatDetectExt = *
