@@ -10,6 +10,7 @@ jmp removeMain
 ;*** global declarations
 
 libwork = $60
+rmErrno = libwork  ;(4) zero-extended errno for aceMiscUtoa
 
 chrQuote = $22
 
@@ -81,13 +82,38 @@ rmError = *
    jsr eputs
    lda #<rmErrorMsg2
    ldy #>rmErrorMsg2
+   jsr eputs
+   ;** print errno (decimal) followed by CR
+   lda errno
+   sta rmErrno+0
+   lda #0
+   sta rmErrno+1
+   sta rmErrno+2
+   sta rmErrno+3
+   lda #<rmNumbuf
+   ldy #>rmNumbuf
+   sta zp
+   sty zp+1
+   ldx #rmErrno
+   lda #1
+   jsr aceMiscUtoa
+   lda #<rmNumbuf
+   ldy #>rmNumbuf
+   jsr eputs
+   lda #<rmErrorMsg3
+   ldy #>rmErrorMsg3
    jmp eputs
+
+rmNumbuf !fill 12,0
 
 rmErrorMsg1 = *
    !pet "Error attempting to remove ",chrQuote,0
 
 rmErrorMsg2 = *
-   !pet chrQuote,chrCR,0
+   !pet chrQuote,", code ",0
+
+rmErrorMsg3 = *
+   !pet chrCR,0
 
 rmEcho = *
    lda #<rmEchoMsg1

@@ -286,9 +286,7 @@ cmdchOpen = *  ;( .A=device )
    sta errno
 +  rts
 
-cmdchClose = *
-   lda devtable,x
-   tax
+cmdchClose = *  ;( .X=device, matches cmdchOpen's convention )
    lda configBuf+0,x
    cmp #1
    beq +
@@ -367,6 +365,7 @@ checkDiskStatus = *
 +  cmp #20
    bcc +
    sta errno
+   ;carry already set: bcc above didn't branch, so C=1 from the cmp #20
 +  rts
 
 
@@ -385,6 +384,8 @@ internClose = *
    lda lftable,x
    cmp #cmdlf
    bne +
+   lda devtable,x  ;cmdchClose now takes .X=device, translate fd->device here
+   tax
    jmp cmdchClose
 +  lda pidtable,x
    cmp aceProcessID
@@ -704,6 +705,7 @@ bSlash:
    bcs +
    jsr checkDiskStatus
 +  php
+   ldx removeDevice   ;cmdchClose needs .X=device, not leftover X
    jsr cmdchClose
    plp
 ++ rts
@@ -768,6 +770,7 @@ kernFileRename = *
    bcs +
    jsr checkDiskStatus
 +  php
+   ldx renameDevice  ;cmdchClose needs .X=device, not leftover X
    jsr cmdchClose
    plp
 ++ rts
@@ -1472,6 +1475,7 @@ internDirChange = *
    bcs chdirAbort
    jsr checkDiskStatus
    bcs chdirAbort
+   ldx chdirDevice  ;cmdchClose needs .X=device, not leftover X
    jsr cmdchClose
    lda #0
    sta stringBuffer+2
@@ -1491,6 +1495,7 @@ internDirChange = *
    rts
 
    chdirAbort = *
+   ldx chdirDevice  ;cmdchClose needs .X=device, not leftover X
    jsr cmdchClose
    sec
    rts
@@ -1528,6 +1533,7 @@ kernIecCommand = *
    bne -
    clc
 +  php
+   ldx aceCurrentDevice  ;cmdchClose needs .X=device, not leftover X
    jsr cmdchClose
    plp
 ++ rts
