@@ -8,6 +8,18 @@
 
 kernelSetbnk = $ff68
 
+;-- mioUnsupported: fallback for the +jmpMio macro when useIec=0 -- reached
+;   only if a device is (mis)configured as an IEC drive on a build with no
+;   IEC support. sys/acemionone.asm aliases every mio* entry point to
+;   this label when useIec=0, so +jmpMio's `jmp .label` always resolves
+;   (ACME evaluates macro arguments eagerly, so the label must be defined
+;   in every build, not just conditionally jumped to)
+mioUnsupported = *
+   lda #aceErrIllegalDevice
+   sta errno
+   sec
+   rts
+
 ;====== file calls ======
 
 ;*** open( zp=filenameZ, .A=mode["r","w","a","W","A"] ) : .A=fcb
@@ -98,8 +110,11 @@ internOpen = *
    jmp nonDiskSa
 +  ldy #0
    ;** check native disk device
+!if useIec {
    cmp #1
-   beq openDiskSa
+   bne +
+   jmp mioOpenDiskSa
++  }
    ;** check console
    cmp #2
    bne +
@@ -144,25 +159,6 @@ internOpen = *
    sec
    rts
 
-   openDiskSa = *
-   lda #true
-   sta checkStat
-   ldy #2
-   diskSaSearch = *
-   ldx #fcbCount-1
--  lda lftable,x
-   bmi +
-   lda devtable,x
-   cmp openDevice
-   bne +
-   tya
-   cmp satable,x
-   bne +
-   iny
-   bne diskSaSearch
-+  dex
-   bpl -
-
    nonDiskSa = *
    ldx openFcb
    tya
@@ -181,21 +177,7 @@ internOpen = *
    lda configBuf+0,y
    cmp #1
    bne nonDiskOpen
-   ;** stick the mode for disk files
-   cpx #0
-   bne +
-   lda #aceErrOpenDirectory
-   sec
-   rts
-+  +ldaSCII ","
-   sta stringBuffer,x
-   inx
-   lda openMode
-   sta stringBuffer,x
-   inx
-   lda #0
-   sta stringBuffer,x
-   jmp openGotName
+   +jmpMio mioOpenNameSuffix
 
    ;** get rid of the filename for non-disks
    nonDiskOpen = *
@@ -224,13 +206,17 @@ internOpen = *
    ;do the open
    jsr kernelOpen
    bcs openError
-+  ldx openDevice
+!if useIec {
+   ldx openDevice
    lda configBuf+0,x
    cmp #1
-   bne +
+   bne openSuccess
    txa
-   jsr openDiskStatus
-   bcc +
+   jsr mioOpenDiskStatus
+   bcc openSuccess
+} else {
+   jmp openSuccess
+}
 
    openError = *
    sta errno
@@ -244,129 +230,32 @@ internOpen = *
    sec
    lda #fcbNull
    rts
-+  lda openFcb
+   openSuccess = *
+   lda openFcb
    clc
    rts
-
-openDiskStatus = *  ;( .A=device ) : errno=.A=errcode, .CS=errflag
-   bit checkStat
-   bne +
-   clc
-   rts
-+  sta diskStatusDev ;temp. store device here!
-   jsr cmdchOpen
-   bcc +
-   cmp #aceErrFileOpen
-   bne ++
-+  jsr checkDiskStatus
-   php
-   pha
-   ldx diskStatusDev
-   jsr cmdchClose
-   pla
-   plp
-++ rts
-diskStatusDev !byte 0
-
-cmdchOpen = *  ;( .A=device )
-   ; pha
-   ; jsr cmdchClose
-   ; pla
-   tax
-   lda configBuf+2,x
-   tay
-   lda configBuf+1,x
-   tax
-   lda #cmdlf
-   jsr kernelSetlfs
-   lda #0
-   jsr kernelSetnam
-   jsr kernelOpen
-   bcc +
-   sta errno
-+  rts
 
 cmdchClose = *  ;( .X=device, matches cmdchOpen's convention )
    lda configBuf+0,x
    cmp #1
-   beq +
+   beq cmdchClosePhysical
    lda configBuf+2,x
    sta closeFd
    jmp pidClose
-+  sec
+   cmdchClosePhysical = *
+!if useIec {
+   sec
    lda #cmdlf
    jsr kernelClose
    bcc +
    sta errno
 +  rts
-
-cmdchSend = *  ;( stringBuffer )
-   ldx #cmdlf
-   jsr kernelChkout
-   bcs cmdchErr
-   ldx #0
--  lda stringBuffer,x
-   beq +
-   jsr kernelChrout
-   bcs cmdchErr
-   inx
-   bne -
-+  jsr kernelClrchn
-   clc
-   rts
-
-   cmdchErr = *
-   sta errno
-   pha
-   jsr kernelClrchn
-   pla
-   sec
-   rts
-
-checkDiskStatusCode !byte 0
-
-checkDiskStatus = *
-   ldx #cmdlf
-   jsr kernelChkin
-   bcs cmdchErr
-   jsr kernelChrin
-   bcs cmdchErr
-   and #$0f
-   sta checkDiskStatusCode
-   asl
-   asl
-   adc checkDiskStatusCode
-   asl
-   sta checkDiskStatusCode
-   jsr kernelChrin
-   bcs cmdchErr
-   and #$0f
-   clc
-   adc checkDiskStatusCode
-   sta checkDiskStatusCode
--  jsr kernelReadst
-   and #$80
-   beq +
-   lda #aceErrDeviceNotPresent
-   sec
-   bcs cmdchErr
-+  jsr kernelChrin
-   bcs cmdchErr
-   cmp #chrCR
-   bne -
-   jsr kernelClrchn
-   lda checkDiskStatusCode
-   cmp #62
-   bne +
-   lda #aceErrFileNotFound
+} else {
+   lda #aceErrIllegalDevice
    sta errno
    sec
    rts
-+  cmp #20
-   bcc +
-   sta errno
-   ;carry already set: bcc above didn't branch, so C=1 from the cmp #20
-+  rts
+}
 
 
 ;NAME   :  close
@@ -422,10 +311,7 @@ internClose = *
    bne +
    jsr pidClose
    jmp closeFdEntry
-+  ldx closeFd
-   lda lftable,x
-   clc
-   jsr kernelClose
++  +jmpMio mioClosePath
 
    closeFdEntry = *
    ldx closeFd
@@ -495,40 +381,12 @@ kernFileRead = *
    sty zw+1
    clc
    rts
-+  cmp #1
++  !if useIec {
+   cmp #1
    bne +
    ldy #$ff
-+  ldx readFcb
-   sty readDeviceDisk
-   lda lftable,x
-   tax
-   jsr kernelChkin
-   bcc readByte
-   sta errno
-   rts
-   
-   readByte = *
-   lda readLength+0
-   cmp readMaxLen+0
-   lda readLength+1
-   sbc readMaxLen+1
-   bcs readExit
-   jsr kernelChrin
-   ldy #0
-   sta (readPtr),y
-   inc readPtr+0
-   bne +
-   inc readPtr+1
-+  inc readLength+0
-   bne +
-   inc readLength+1
-+  bit readDeviceDisk
-   bpl readByte
-   lda st
-   and #$40
-   beq readByte
-   ldx readFcb
-   sta eoftable,x
++  }
+   +jmpMio mioReadPath
 
    readExit = *
    jsr kernelClrchn
@@ -594,38 +452,7 @@ internWrite = *
    bne +
    clc
    rts
-+  ldx regsave+1
-   lda lftable,x
-   tax
-   jsr kernelChkout
-   bcc writeByte
-   rts
-
-   writeByte = *
-   lda writeLength+0
-   ora writeLength+1
-   beq writeFinish
-   ldy #0
-   lda (writePtr),y
-   jsr kernelChrout
-   bcc +
-   sta errno
-   jsr kernelClrchn
-   sec
-   rts
-+  inc writePtr+0
-   bne +
-   inc writePtr+1
-+  lda writeLength+0
-   bne +
-   dec writeLength+1
-+  dec writeLength+0
-   jmp writeByte
-   
-   writeFinish = *
-   jsr kernelClrchn
-   clc
-   rts
++  +jmpMio mioWritePath
 
 ;NAME   :  seek
 ;PURPOSE:  seek to file location
@@ -647,8 +474,9 @@ kernFileLseek = *
    lda configBuf+0,x
    ;seek only suppoorted by mem-mapped files (#5)
    cmp #5
-   bne +
+   bne lseekIllegal
    jmp internTagSeek
+   lseekIllegal = *
    lda #aceErrIllegalDevice
    sta errno
    sec
@@ -680,35 +508,7 @@ internRemove = *
    bne +
    ldx removeDevice
    jmp pidRemove
-+  +ldaSCII "s"
-   sta stringBuffer
-   +ldaSCII ":"
-   sta stringBuffer+1
-   ldx #1
-   lda (zp),y
-   +cmpASCII "/"
-   beq bSlash
-   ldx #2
-bSlash:
-   lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne bSlash
-+  lda #0
-   sta stringBuffer,x
-   lda removeDevice
-   jsr cmdchOpen
-   bcs ++
-   jsr cmdchSend
-   bcs +
-   jsr checkDiskStatus
-+  php
-   ldx removeDevice   ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   plp
-++ rts
++  +jmpMio mioRemovePath
 
 
 ;NAME   :  aceFileRename
@@ -739,41 +539,7 @@ kernFileRename = *
    ldx renameDevice
    jmp pidRename
 +  sty renameScan
-   +ldaSCII "r"
-   sta stringBuffer+0
-   +ldaSCII ":"
-   sta stringBuffer+1
-   ;** copy new name
-   ldy #0
-   ldx #2
--  lda (zw),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  +ldaSCII "="
-   sta stringBuffer,x
-   inx
-   ;** copy old name
-   ldy renameScan
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   inx
-   iny
-   bne -
-+  lda renameDevice
-   jsr cmdchOpen
-   bcs ++
-   jsr cmdchSend
-   bcs +
-   jsr checkDiskStatus
-+  php
-   ldx renameDevice  ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   plp
-++ rts
+   +jmpMio mioRenamePath
 
 
 ;NAME   :  aceFileBload/aceFileBkload
@@ -835,66 +601,14 @@ internBload = *
 +  cmp #5
    bne +
    jmp internTagBload
-+  cmp #1
-   beq +
++  !if useIec {
+   cmp #1
+   bne +
+   jmp mioBloadPath
++  }
    lda #aceErrIllegalDevice
    sta errno
    sec
-   rts
-+  lda #true
-   sta checkStat
-   lda configBuf+1,x
-   tax
-   lda #0
-   ldy #0
-   jsr kernelSetlfs
-   ldy #0
--  lda (bloadFilename),y
-   beq +
-   iny
-   bne -
-+  tya
-   ldx bloadFilename+0
-   ldy bloadFilename+1
-   jsr kernelSetnam
-!if useC128 {
-   lda bloadBank
-   beq +
-   ldx #0
-   jsr kernelSetbnk
-}
-+  lda #0
-   ldx bloadAddress+0
-   ldy bloadAddress+1
-   jsr kernelLoad
-   bcc bloadOk
-   pha
-   cmp #aceErrDeviceNotPresent
-   beq +
-   ldx bloadDevice
-   lda configBuf+0,x
-   cmp #1
-   bne +
-   txa
-   jsr openDiskStatus
-+  pla
--  sta errno
-   lda #0
-   ldx #0
-   ldy #0
-   sec
-   rts
-
-   bloadOk = *
-   ldx bloadDevice
-   lda configBuf+0,x
-   cmp #1
-   bne +
-   txa
-   jsr openDiskStatus
-   bcs -
-+  lda bloadAddress+0
-   ldy bloadAddress+1
    rts
 
 ;*** aceDirStat ( .A=stat, (zp)=path ) : CS=error,errno
@@ -943,7 +657,7 @@ dstatRespHandler = *
 
 kernFileStat = *
    jsr kernMiscDeviceInfo
-   bcc iecFileStat
+   bcc mioFileStatEntry
    lda syswork+1
    sta openDevice
    lda #"r"
@@ -973,50 +687,11 @@ fstatRespHandler = *
    ldy aceDirentBytes+1
    rts
 
-;-- iecFileStat: IEC path for aceFileStat
-;   opens filtered dir "$:BASENAME", reads one entry into aceDirentBuffer
-fstatFcb = syswork+3  ; scratch; kernDirRead does not touch syswork+3
-iecFileStat = *
-   +ldaSCII "$"
-   sta stringBuffer+0
-   +ldaSCII ":"
-   sta stringBuffer+1
-   ldy #0
--  lda (zp),y
-   beq fsIECNotFound
-   iny
-   cmp #<":"
-   bne -
-   ldx #2
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  lda syswork+1
-   sta openDevice
-   jsr iecDirOpen      ; .A = fcb
-   bcs fsIECRts
-   sta fstatFcb        ; kernDirRead clobbers openFcb=syswork+0 via dirBlocks
-   tax
-   jsr kernDirRead    ; skip disk name header entry
-   ldx fstatFcb
-   jsr kernDirRead    ; read actual file entry
-   php
-   lda fstatFcb
-   jsr kernDirClose
-   plp
-   bcs fsIECRts
-   bne +
-fsIECNotFound = *
-   lda #aceErrFileNotFound
-   sta errno
-fsIECRts = *
-   sec
-   rts
-+  clc
-   rts
+;-- fstatFcb: scratch shared with mioFileStat (acemioc64.asm); kernDirRead
+;   does not touch syswork+3
+fstatFcb = syswork+3
+mioFileStatEntry = *
+   +jmpMio mioFileStat
 
 ;-- fcbSetup: allocate FCB; fill lftable/devtable/eoftable/satable/openFcb
 ;   ( openDevice=set ) : .X=fcb, .CS=error
@@ -1031,32 +706,6 @@ fcbSetup = *
    sta satable,x
    stx openFcb
 +  rts
-
-;-- iecDirOpen: open IEC filtered dir with pre-built name in stringBuffer
-;   ( openDevice=set, .X=name length ) : .A=fd, .CC
-iecDirOpen = *
-   stx openNameLength
-   jsr fcbSetup
-   bcc +
-   rts
-+  lda #true
-   sta checkStat
-   lda openDevice
-   jsr openDiskStatus
-   ldx openNameLength
-   jsr openGotName
-   bcc +
-   rts
-+  ldx openFcb
-   lda lftable,x
-   tax
-   jsr kernelChkin
-   jsr kernelChrin
-   jsr kernelChrin
-   jsr kernelClrchn
-   lda openFcb
-   clc
-   rts
 
 ;*** aceFileIoctl ( .X=virt. device, (zp)=io cmd ) : .CS=error,errno
 
@@ -1119,13 +768,15 @@ kernDirOpen = *
    rts
 +  sta openDevice
    sty openNameScan
+!if useIec {
    cpx #1               ;IEC device?
    bne +                ;no: virtual
    +ldaSCII "$"
    sta stringBuffer+0
    ldx #1
-   jmp iecDirOpen
-+  jsr fcbSetup         ;virtual: allocate FCB then dispatch
+   jmp mioDirOpen
++  }
+   jsr fcbSetup         ;virtual: allocate FCB then dispatch
    bcc +
    rts
 +  jmp pidDirOpen
@@ -1145,8 +796,6 @@ kernDirClose = *
 
 ;*** aceDirRead( .X=fcb ) : .Z=eof, aceDirentBuffer=data
 
-dirBlocks = syswork+0
-
 kernDirRead = *
    ; ensure aceDirentBytes is zero
    lda #0
@@ -1163,223 +812,7 @@ kernDirRead = *
 +  cmp #7
    bne +
    jmp pidDirRead
-+  lda lftable,x
-   tax
-   jsr kernelChkin
-   bcc +
-   lda #0
-   rts
-   ;** read the link
-+  jsr kernelChrin
-   sta syswork+4
-   jsr kernelReadst
-   and #$40
-   bne dirreadEofExit
-   jsr kernelChrin
-   ora syswork+4
-   bne +
-
-   dirreadEofExit = *
-   jsr kernelClrchn
-   ldx #0
-   rts
-   dirreadErrExit = *
-   sta errno
-   jsr kernelClrchn
-   ldx #0
-   sec
-   rts
-
-   ;** read the block count
-+  jsr kernelChrin
-   sta dirBlocks
-   sta aceDirentBytes+1
-   jsr kernelChrin
-   sta dirBlocks+1
-   sta aceDirentBytes+2
-   asl dirBlocks
-   rol dirBlocks+1
-   lda #0
-   rol
-   sta dirBlocks+2
-   sec
-   lda #0
-   sbc dirBlocks
-   sta aceDirentBytes+0
-   lda aceDirentBytes+1
-   sbc dirBlocks+1
-   sta aceDirentBytes+1
-   lda aceDirentBytes+2
-   sbc dirBlocks+2
-   sta aceDirentBytes+2
-   ;** read the filename
-   lda #0
-   sta aceDirentName
-   sta aceDirentNameLen
--  jsr kernelChrin
-   bcs dirreadErrExit
-   bit st
-   bvs dirreadErrExit
-   +cmpASCII " "
-   beq -
-   cmp #18
-   beq -
-   cmp #$22
-   bne dirreadExit
-   ldx #0
--  jsr kernelChrin
-   bcs dirreadErrExit
-   bit st
-   bvs dirreadErrExit
-   cmp #$22
-   beq +
-   sta aceDirentName,x
-   inx
-   bne -
-+  lda #0
-   sta aceDirentName,x
-   stx aceDirentNameLen
--  jsr kernelChrin
-   +cmpASCII " "
-   beq -
-   ;** read type and flags
-   ldx #%01100000
-   stx aceDirentFlags
-   ldx #%10000000
-   stx aceDirentUsage
-   +cmpASCII "*"
-   bne +
-   lda aceDirentFlags
-   ora #%00001000
-   sta aceDirentFlags
-   jsr kernelChrin
-+  ldx #3
-   ldy #0
-   jmp dirTypeFirst
--  jsr kernelChrin
-   dirTypeFirst = *
-   sta aceDirentType,y
-   iny
-   dex
-   bne -
-   lda #0
-   sta aceDirentType+3
-   lda aceDirentType
-   +cmpASCII "d"
-   bne +
-   lda aceDirentFlags
-   ora #%10010000
-   sta aceDirentFlags
-   jmp dirreadExit
-+  +cmpASCII "p"
-   bne dirreadExit
-   lda aceDirentFlags
-   ora #%00010000
-   sta aceDirentFlags
-   jmp dirreadExit
-
-   dirreadExit = *
-   jsr kernelChrin
-   cmp #0
-   bne +
-   jmp dirreadRealExit
-+  +cmpASCII "<"
-   bne +
-   lda aceDirentFlags
-   and #%11011111
-   sta aceDirentFlags
-+  ldx #7
-   lda #0
--  sta aceDirentDate,x
-   dex
-   bpl -
--  jsr kernelChrin
-   cmp #0
-   beq dirreadRealExit
-   +cmpASCII "0"
-   bcc -
-   cmp #$3a
-   bcs -
-
-   dirreadDate = *
-   jsr dirGetNumGot
-   bcs dirreadRealExit
-   sta aceDirentDate+2
-   jsr dirGetNum
-   bcs dirreadRealExit
-   sta aceDirentDate+3
-   jsr dirGetNum
-   bcs dirreadRealExit
-   sta aceDirentDate+1
-   ldx #$19
-   cmp #$70
-   bcs +
-   ldx #$20
-+  stx aceDirentDate+0  ;century
-   jsr dirGetNum
-   bcs dirreadRealExit
-   sta aceDirentDate+4
-   jsr dirGetNum
-   bcs dirreadRealExit
-   sta aceDirentDate+5
-   jsr kernelChrin
-   and #$ff
-   beq dirreadRealExit
-   jsr kernelChrin
-   and #$ff
-   beq dirreadRealExit
-   +cmpASCII "a"
-   bne dirreadPM
-
-   dirreadAM = *
-   lda aceDirentDate+4
-   cmp #$12
-   bne +
-   lda #$00
-   sta aceDirentDate+4
-   jmp +
-
-   dirreadPM = *
-   lda aceDirentDate+4
-   cmp #$12
-   beq dirReadInternBr
-   clc
-   sed
-   adc #$12
-   cld
-   sta aceDirentDate+4
-dirReadInternBr:
-   jsr kernelChrin
-   cmp #0
-   bne dirReadInternBr
-
-   dirreadRealExit = *
-   jsr kernelClrchn
-   ldx #$ff
-   clc
-   rts
-
-   dirGetNum = *
--  jsr kernelChrin
-   dirGetNumGot = *
-   cmp #0
-   beq +
-   +cmpASCII "0"
-   bcc -
-   cmp #$3a
-   bcs -
-   asl
-   asl
-   asl
-   asl
-   sta syswork+6
-   jsr kernelChrin
-   cmp #0
-   beq +
-   and #$0f
-   ora syswork+6
-   clc
-+  rts
++  +jmpMio mioDirRead
 
 ;*** aceDirIsdir( (zp)=FilenameZ ) : .A=Dev, .X=isDisk, .Y=isDir
 
@@ -1450,37 +883,12 @@ internDirChange = *
    bne +
    ldx chdirDevice
    jmp pidChDir
-+  +ldaSCII "c"
-   sta stringBuffer+0
-   +ldaSCII "d"
-   sta stringBuffer+1
-   ldx #2
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   +cmpASCII ":"
-   beq +
-   iny
-   inx
-   bne -
-+  lda #0
-   sta stringBuffer,x
-   cpx #2
-   beq chdirSetName
-   lda chdirDevice
-   jsr cmdchOpen
-   bcc +
-   rts
-+  jsr cmdchSend
-   bcs chdirAbort
-   jsr checkDiskStatus
-   bcs chdirAbort
-   ldx chdirDevice  ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   lda #0
-   sta stringBuffer+2
++  +jmpMio mioChdirPath
 
-   chdirSetName = *
+;-- chdirSetName: commit chdirDevice as the new current directory; shared by
+;   the IEC path (mioChdirPath, acemioc64.asm) and pidChDir (acepid.asm)
+;   ( chdirDevice=set ) : .CC
+chdirSetName = *
    lda chdirDevice
    sta aceCurrentDevice
    lsr
@@ -1494,49 +902,10 @@ internDirChange = *
    clc
    rts
 
-   chdirAbort = *
-   ldx chdirDevice  ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   sec
-   rts
-
 ;*** aceIecCommand( (zp)=Command )
 
 kernIecCommand = *
-   ldx #0
-   ldy #0
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  ldx aceCurrentDevice
-   lda configBuf+0,x
-   cmp #1
-   beq +
-   sec
-   rts
-+  lda aceCurrentDevice
-   jsr cmdchOpen
-   bcs ++
-   jsr cmdchSend
-   bcs +
-   ;read device response
-   ldx #cmdlf
-   jsr kernelChkin
--  jsr kernelChrin
-   pha
-   jsr kernConPutchar
-   pla
-   cmp #13
-   bne -
-   clc
-+  php
-   ldx aceCurrentDevice  ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   plp
-++ rts
+   +jmpMio mioIecCommand
 
 ;*** aceDirName( .A=sysdir, (zp)=buf, .Y=assignLen ) : buf, .Y=len
 ;***   .A : 0=curDir, 1=homedir, 2=execSearchPath, 3=configSearchPath, 4=tempDir

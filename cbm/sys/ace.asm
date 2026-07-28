@@ -34,6 +34,11 @@
 !source "sys/kernhead.asm"
 !source "sys/acemacro.asm"
 
+!ifdef useIec {
+} else {
+   useIec = 1  ;;IEC/serial-bus drive support; 0 for targets with no IEC bus (e.g. Mega65)
+}
+
 !if computer-64 {
    useC128 = 1
    useC64  = 0
@@ -787,6 +792,11 @@ brkHandler = *
 
 ;These drivers in lower memory space
 !source "sys/acecall.asm"
+!if useIec {
+   !source "sys/acemioc64.asm"
+} else {
+   !source "sys/acemionone.asm"
+}
 !source "idun-io.asm"
 
 aceExitBasic = *

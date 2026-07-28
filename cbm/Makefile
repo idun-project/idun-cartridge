@@ -12,7 +12,8 @@ sys/acehead.asm sys/kernhead.asm sys/acemacro.asm sys/toolhead.asm
 
 ACEDRVS=\
 sys/acevdc.asm sys/acevic.asm sys/acesoft80.asm idun-io.asm \
-sys/acepid.asm sys/acepiserv.asm sys/hook.asm
+sys/acepid.asm sys/acepiserv.asm sys/hook.asm sys/acemioc64.asm \
+sys/acemionone.asm
 
 KERNEL=$(SYSDIR)/idun128 \
 $(SYSDIR)/idun-64
