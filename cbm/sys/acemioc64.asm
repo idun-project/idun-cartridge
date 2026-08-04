@@ -168,10 +168,16 @@ mioClosePath = *
    jmp closeFdEntry
 
 ;-- mioReadPath: physical KERNAL byte-at-a-time read, for fds not owned by
-;   pid/tag/console (.Y=$ff for disk fds, else 0 -- see readDeviceDisk)
-;   ( readFcb=set ) : jmp readExit (acecall.asm)
+;   pid/tag/console. readDeviceDisk is set here from the device type: $ff
+;   for disk fds (watch KERNAL status for EOF), else 0 (read until the
+;   caller's requested length is satisfied, no EOF tracking)
+;   ( .A=device type, readFcb=set ) : jmp readExit (acecall.asm)
 mioReadPath = *
-   ldx readFcb
+   ldy #0
+   cmp #1
+   bne +
+   ldy #$ff
++  ldx readFcb
    sty readDeviceDisk
    lda lftable,x
    tax
@@ -419,6 +425,14 @@ mioFileStatRts = *
    rts
 +  clc
    rts
+
+;-- mioDirOpenRoot: open a physical drive's full directory listing
+;   ( openDevice=set ) : .A=fd, .CC -- falls into mioDirOpen below
+mioDirOpenRoot = *
+   +ldaSCII "$"          ; CBM DOS convention: filename "$" = directory listing
+   sta stringBuffer+0
+   ldx #1                ; name length = 1 (just "$")
+   ;** falls through into mioDirOpen -- no jmp needed, .X is already set up
 
 ;-- mioDirOpen: open IEC filtered dir with pre-built name in stringBuffer
 ;   ( openDevice=set, .X=name length ) : .A=fd, .CC

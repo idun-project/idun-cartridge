@@ -98,13 +98,11 @@ internOpen = *
    jmp nonDiskSa
 +  ldy #0
    ;** check native disk device
-!if useIec {
    cmp #1
    bne +
    jmp mioOpenDiskSa
-+  }
    ;** check console
-   cmp #2
++  cmp #2
    bne +
 -  lda openFcb
    clc
@@ -194,7 +192,6 @@ internOpen = *
    ;do the open
    jsr kernelOpen
    bcs openError
-!if useIec {
    ldx openDevice
    lda configBuf+0,x
    cmp #1
@@ -202,9 +199,6 @@ internOpen = *
    txa
    jsr mioOpenDiskStatus
    bcc openSuccess
-} else {
-   jmp openSuccess
-}
 
    openError = *
    sta errno
@@ -339,8 +333,7 @@ kernFileRead = *
    lda eoftable,x
    beq +
    jmp readEofExit
-+  ldy #0
-   lda devtable,x
++  lda devtable,x
    tax
    lda configBuf+0,x
    ; IDUN: Check idun virtual devices (type #4-7)
@@ -369,12 +362,7 @@ kernFileRead = *
    sty zw+1
    clc
    rts
-+  !if useIec {
-   cmp #1
-   bne +
-   ldy #$ff
-+  }
-   jmp mioReadPath
++  jmp mioReadPath
 
    readExit = *
    jsr kernelClrchn
@@ -581,7 +569,7 @@ internBload = *
 +  cmp #5
    bne +
    jmp internTagBload
-   cmp #1
++  cmp #1
    bne +
    jmp mioBloadPath
 +  lda #aceErrIllegalDevice
@@ -746,15 +734,10 @@ kernDirOpen = *
    rts
 +  sta openDevice
    sty openNameScan
-!if useIec {
    cpx #1               ;IEC device?
    bne +                ;no: virtual
-   +ldaSCII "$"
-   sta stringBuffer+0
-   ldx #1
-   jmp mioDirOpen
-+  }
-   jsr fcbSetup         ;virtual: allocate FCB then dispatch
+   jmp mioDirOpenRoot
++  jsr fcbSetup         ;virtual: allocate FCB then dispatch
    bcc +
    rts
 +  jmp pidDirOpen
