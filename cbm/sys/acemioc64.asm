@@ -1,4 +1,4 @@
-; Idun Kernel, Copyright ©2023 Brian Holdsworth
+; Idun Kernel, Copyright ©2026 Brian Holdsworth
 ; This is free software, released under the MIT License.
 ;
 ; IEC (serial-bus) physical disk drive support, extracted from acecall.asm.
@@ -6,12 +6,11 @@
 ; to the real KERNAL device I/O (kernelOpen/kernelClose/kernelChkin/
 ; kernelChrin/kernelChrout) and/or the disk drive's command channel.
 ;
-; Shared-dispatch call sites in acecall.asm reach these routines via the
-; +jmpMio macro (sys/acemacro.asm). When useIec=0, sys/acemionone.asm is
-; sourced instead of this file and aliases each of these entry point names
-; to mioUnsupported, so +jmpMio's `jmp .label` still resolves to something
-; (ACME evaluates macro arguments eagerly, so the label must be defined in
-; every build, not just conditionally jumped to).
+; Shared-dispatch call sites in acecall.asm reach these routines with a
+; plain `jmp mioXxx`. When useIec=0, sys/acemionone.asm is sourced instead
+; of this file and aliases each of these entry point names to
+; mioUnsupported, so those jumps still resolve to something rather than an
+; undefined symbol.
 
 ;-- mioOpenDiskSa: secondary-address search/assignment for physical disk opens
 ;   ( openDevice=set, openFcb=set ) : .Y=sa, falls into nonDiskSa (acecall.asm)
@@ -338,7 +337,7 @@ mioRemoveSlash:
 ++ rts
 
 ;-- mioRenamePath: send "r:new=old" over the command channel, check status
-;   ( renameDevice=set, renameScan=set, (zp)=old, (zw)=new ) : .CS=error,errno
+;   ( renameDevice=set, openNameScan=set, (zp)=old, (zw)=new ) : .CS=error,errno
 mioRenamePath = *
    +ldaSCII "r"
    sta stringBuffer+0
@@ -357,7 +356,7 @@ mioRenamePath = *
    sta stringBuffer,x
    inx
    ;** copy old name
-   ldy renameScan
+   ldy openNameScan
 -  lda (zp),y
    sta stringBuffer,x
    beq +

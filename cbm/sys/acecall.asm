@@ -8,18 +8,6 @@
 
 kernelSetbnk = $ff68
 
-;-- mioUnsupported: fallback for the +jmpMio macro when useIec=0 -- reached
-;   only if a device is (mis)configured as an IEC drive on a build with no
-;   IEC support. sys/acemionone.asm aliases every mio* entry point to
-;   this label when useIec=0, so +jmpMio's `jmp .label` always resolves
-;   (ACME evaluates macro arguments eagerly, so the label must be defined
-;   in every build, not just conditionally jumped to)
-mioUnsupported = *
-   lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
-
 ;====== file calls ======
 
 ;*** open( zp=filenameZ, .A=mode["r","w","a","W","A"] ) : .A=fcb
@@ -177,7 +165,7 @@ internOpen = *
    lda configBuf+0,y
    cmp #1
    bne nonDiskOpen
-   +jmpMio mioOpenNameSuffix
+   jmp mioOpenNameSuffix
 
    ;** get rid of the filename for non-disks
    nonDiskOpen = *
@@ -311,7 +299,7 @@ internClose = *
    bne +
    jsr pidClose
    jmp closeFdEntry
-+  +jmpMio mioClosePath
++  jmp mioClosePath
 
    closeFdEntry = *
    ldx closeFd
@@ -386,7 +374,7 @@ kernFileRead = *
    bne +
    ldy #$ff
 +  }
-   +jmpMio mioReadPath
+   jmp mioReadPath
 
    readExit = *
    jsr kernelClrchn
@@ -452,7 +440,7 @@ internWrite = *
    bne +
    clc
    rts
-+  +jmpMio mioWritePath
++  jmp mioWritePath
 
 ;NAME   :  seek
 ;PURPOSE:  seek to file location
@@ -499,16 +487,13 @@ internRemove = *
    rts
 +  sta removeDevice
    sty openNameScan
+   ; IDUN: Type #1. Call MOS
+   cpx #1
+   bne +
+   jmp mioRemovePath
    ; IDUN: Type #4/7. Replace with acepid.
-   cpx #4
-   bne +
-   ldx removeDevice
++  ldx removeDevice
    jmp pidRemove
-+  cpx #7
-   bne +
-   ldx removeDevice
-   jmp pidRemove
-+  +jmpMio mioRemovePath
 
 
 ;NAME   :  aceFileRename
@@ -519,7 +504,6 @@ internRemove = *
 ;ALTERS :  .A, .X, .Y, errno
 
 renameDevice = syswork+0
-renameScan   = syswork+1
 
 ;*** aceFileRename( (zp)=OldName, (zw)=NewName )
 ;*** don't even think about renaming files outside the current directory
@@ -529,17 +513,13 @@ kernFileRename = *
    rts
 +  sta renameDevice
    sty openNameScan
+   ; IDUN: Type #1. Call MOS
+   cpx #1
+   bne +
+   jmp mioRenamePath
    ; IDUN: Type #4/7. Replace with acepid.
-   cpx #4
-   bne +
-   ldx renameDevice
++  ldx renameDevice
    jmp pidRename
-+  cpx #7
-   bne +
-   ldx renameDevice
-   jmp pidRename
-+  sty renameScan
-   +jmpMio mioRenamePath
 
 
 ;NAME   :  aceFileBload/aceFileBkload
@@ -601,12 +581,10 @@ internBload = *
 +  cmp #5
    bne +
    jmp internTagBload
-+  !if useIec {
    cmp #1
    bne +
    jmp mioBloadPath
-+  }
-   lda #aceErrIllegalDevice
++  lda #aceErrIllegalDevice
    sta errno
    sec
    rts
@@ -691,7 +669,7 @@ fstatRespHandler = *
 ;   does not touch syswork+3
 fstatFcb = syswork+3
 mioFileStatEntry = *
-   +jmpMio mioFileStat
+   jmp mioFileStat
 
 ;-- fcbSetup: allocate FCB; fill lftable/devtable/eoftable/satable/openFcb
 ;   ( openDevice=set ) : .X=fcb, .CS=error
@@ -812,7 +790,7 @@ kernDirRead = *
 +  cmp #7
    bne +
    jmp pidDirRead
-+  +jmpMio mioDirRead
++  jmp mioDirRead
 
 ;*** aceDirIsdir( (zp)=FilenameZ ) : .A=Dev, .X=isDisk, .Y=isDir
 
@@ -883,7 +861,7 @@ internDirChange = *
    bne +
    ldx chdirDevice
    jmp pidChDir
-+  +jmpMio mioChdirPath
++  jmp mioChdirPath
 
 ;-- chdirSetName: commit chdirDevice as the new current directory; shared by
 ;   the IEC path (mioChdirPath, acemioc64.asm) and pidChDir (acepid.asm)
@@ -905,7 +883,7 @@ chdirSetName = *
 ;*** aceIecCommand( (zp)=Command )
 
 kernIecCommand = *
-   +jmpMio mioIecCommand
+   jmp mioIecCommand
 
 ;*** aceDirName( .A=sysdir, (zp)=buf, .Y=assignLen ) : buf, .Y=len
 ;***   .A : 0=curDir, 1=homedir, 2=execSearchPath, 3=configSearchPath, 4=tempDir

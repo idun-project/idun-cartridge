@@ -7,11 +7,10 @@
 ; with its own physical drive support would provide a sibling file (e.g.
 ; sys/acemiomega65.asm) instead of using this one.
 ;
-; Aliases every mio* entry point that acecall.asm's +jmpMio call sites
-; reference to mioUnsupported, so those macro calls -- which need a defined
-; label in every build, since ACME evaluates macro arguments eagerly --
-; still resolve, just straight to the "illegal device" error instead of
-; real drive code.
+; Aliases every mio* entry point that acecall.asm's shared dispatch code
+; reaches with a plain `jmp mioXxx` to mioUnsupported, so those jumps still
+; resolve to something -- straight to the "illegal device" error -- instead
+; of an undefined symbol.
 
 mioOpenNameSuffix = mioUnsupported
 mioClosePath      = mioUnsupported

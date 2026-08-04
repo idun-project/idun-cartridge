@@ -63,8 +63,3 @@
 	asl
 	asl
 }
-;*** jumps to a mio-only (IEC drive) routine; when useIec=0, sys/acemionone.asm
-;*** aliases .label to mioUnsupported, so this always resolves to a valid jump
-!macro jmpMio .label {
-	jmp .label
-}
