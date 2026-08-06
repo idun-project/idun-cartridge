@@ -35,7 +35,26 @@ mioChdirPath      = mioUnsupported
 mioIecCommand     = mioUnsupported
 mioBloadPath      = mioUnsupported
 mioDirOpenRoot    = mioUnsupported
-mioOpenDiskSa     = mioUnsupported
+mioCmdchClose     = mioUnsupported
+
+;-- mioOpenUnsupported: like mioUnsupported, but also frees the fcb slot
+;   that kernFileOpen (acecall.asm) already claimed before reaching either
+;   mioOpenDiskSa or mioOpenGotName -- both run mid-open, after the fcb is
+;   allocated, so a plain mioUnsupported here would leak it (lftable would
+;   keep the slot marked in-use forever, since the code that frees it on
+;   failure never gets a chance to run)
+mioOpenUnsupported = *
+   ldx openFcb
+   lda #lfnull
+   sta lftable,x
+   lda #aceErrIllegalDevice
+   sta errno
+   sec
+   lda #fcbNull
+   rts
+
+mioOpenDiskSa  = mioOpenUnsupported
+mioOpenGotName = mioOpenUnsupported
 
 ;-- mioOpenDiskStatus: called (.A=device) after a device's open already
 ;   succeeded, to let a real drive implementation additionally verify

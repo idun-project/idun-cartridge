@@ -35,7 +35,7 @@ mioOpenDiskSa = *
    jmp nonDiskSa
 
 ;-- mioOpenNameSuffix: append ",<mode>" for physical disk file opens
-;   ( .X=name length in stringBuffer, openMode=set ) : jmp openGotName (acecall.asm)
+;   ( .X=name length in stringBuffer, openMode=set ) : falls into mioOpenGotName
 mioOpenNameSuffix = *
    ;** stick the mode for disk files
    cpx #0
@@ -51,7 +51,58 @@ mioOpenNameSuffix = *
    inx
    lda #0
    sta stringBuffer,x
-   jmp openGotName
+   ;** falls through into mioOpenGotName -- no jmp needed
+
+;-- mioOpenGotName: perform the actual physical KERNAL open, given a fully
+;   built name (possibly zero-length) in stringBuffer
+;   ( .X=name length, openFcb/openDevice=set ) : .A=fcb,.CC or errno,.CS
+mioOpenGotName = *
+   ;** dispatch here for non-kernel devices
+   txa
+   ldx #<stringBuffer
+   ldy #>stringBuffer
+   jsr kernelSetnam
+
+   ;set lfs
+   ldx openFcb
+   lda lftable,x
+   pha
+   lda satable,x
+   tay
+   lda devtable,x
+   tax
+   lda configBuf+1,x
+   tax
+   pla
+   jsr kernelSetlfs
+
+   ;do the open
+   jsr kernelOpen
+   bcs mioOpenError
+   ldx openDevice
+   lda configBuf+0,x
+   cmp #1
+   bne mioOpenSuccess
+   txa
+   jsr mioOpenDiskStatus
+   bcc mioOpenSuccess
+
+   mioOpenError = *
+   sta errno
+   ldx openFcb
+   lda lftable,x
+   clc
+   jsr kernelClose
+   ldx openFcb
+   lda #lfnull
+   sta lftable,x
+   sec
+   lda #fcbNull
+   rts
+   mioOpenSuccess = *
+   lda openFcb
+   clc
+   rts
 
 ;-- mioOpenDiskStatus: verify disk drive status after open/bload
 ;   ( .A=device, checkStat=flag ) : errno=.A=errcode, .CS=errflag
@@ -86,6 +137,16 @@ mioCmdchOpen = *  ;( .A=device )
    lda #0
    jsr kernelSetnam
    jsr kernelOpen
+   bcc +
+   sta errno
++  rts
+
+;-- mioCmdchClose: physical KERNAL close of a device's command channel
+;   ( .X=device, matches mioCmdchOpen's convention ) : .CS=error,errno
+mioCmdchClose = *
+   sec
+   lda #cmdlf
+   jsr kernelClose
    bcc +
    sta errno
 +  rts
@@ -171,7 +232,7 @@ mioClosePath = *
 ;   pid/tag/console. readDeviceDisk is set here from the device type: $ff
 ;   for disk fds (watch KERNAL status for EOF), else 0 (read until the
 ;   caller's requested length is satisfied, no EOF tracking)
-;   ( .A=device type, readFcb=set ) : jmp readExit (acecall.asm)
+;   ( .A=device type, readFcb=set ) : falls into mioReadExit below on exit
 mioReadPath = *
    ldy #0
    cmp #1
@@ -192,7 +253,7 @@ mioReadPath = *
    lda readLength+1
    sbc readMaxLen+1
    bcc +
-   jmp readExit
+   jmp mioReadExit
 +  jsr kernelChrin
    ldy #0
    sta (readPtr),y
@@ -209,7 +270,18 @@ mioReadPath = *
    beq mioReadByte
    ldx readFcb
    sta eoftable,x
-   jmp readExit
+   ;** falls through into mioReadExit -- no jmp needed
+
+   mioReadExit = *
+   jsr kernelClrchn
+   mioReadExitNoclr = *
+   lda readLength+0
+   ldy readLength+1
+   sta zw+0
+   sty zw+1
+   ldx #$ff
+   clc
+   rts
 
 ;-- mioWritePath: physical KERNAL byte-at-a-time write, for fds not owned by
 ;   pid/console/null
@@ -446,7 +518,7 @@ mioDirOpen = *
    lda openDevice
    jsr mioOpenDiskStatus
    ldx openNameLength
-   jsr openGotName
+   jsr mioOpenGotName
    bcc +
    rts
 +  ldx openFcb

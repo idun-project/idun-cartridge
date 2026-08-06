@@ -6,8 +6,6 @@
 ;
 ; Main file/dir/other system calls
 
-kernelSetbnk = $ff68
-
 ;====== file calls ======
 
 ;*** open( zp=filenameZ, .A=mode["r","w","a","W","A"] ) : .A=fcb
@@ -168,76 +166,16 @@ internOpen = *
    ;** get rid of the filename for non-disks
    nonDiskOpen = *
    ldx #0
-
-   openGotName = *
-   ;** dispatch here for non-kernel devices
-   txa
-   ldx #<stringBuffer
-   ldy #>stringBuffer
-   jsr kernelSetnam
-
-   ;set lfs
-   ldx openFcb
-   lda lftable,x
-   pha
-   lda satable,x
-   tay
-   lda devtable,x
-   tax
-   lda configBuf+1,x
-   tax
-   pla
-   jsr kernelSetlfs
-
-   ;do the open
-   jsr kernelOpen
-   bcs openError
-   ldx openDevice
-   lda configBuf+0,x
-   cmp #1
-   bne openSuccess
-   txa
-   jsr mioOpenDiskStatus
-   bcc openSuccess
-
-   openError = *
-   sta errno
-   ldx openFcb
-   lda lftable,x
-   clc
-   jsr kernelClose
-   ldx openFcb
-   lda #lfnull
-   sta lftable,x
-   sec
-   lda #fcbNull
-   rts
-   openSuccess = *
-   lda openFcb
-   clc
-   rts
+   jmp mioOpenGotName
 
 cmdchClose = *  ;( .X=device, matches cmdchOpen's convention )
    lda configBuf+0,x
    cmp #1
-   beq cmdchClosePhysical
-   lda configBuf+2,x
+   bne +
+   jmp mioCmdchClose
++  lda configBuf+2,x
    sta closeFd
    jmp pidClose
-   cmdchClosePhysical = *
-!if useIec {
-   sec
-   lda #cmdlf
-   jsr kernelClose
-   bcc +
-   sta errno
-+  rts
-} else {
-   lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
-}
 
 
 ;NAME   :  close
@@ -363,17 +301,6 @@ kernFileRead = *
    clc
    rts
 +  jmp mioReadPath
-
-   readExit = *
-   jsr kernelClrchn
-   readExitNoclr = *
-   lda readLength+0
-   ldy readLength+1
-   sta zw+0
-   sty zw+1
-   ldx #$ff
-   clc
-   rts
 
    readEofExit = *
    lda #0
