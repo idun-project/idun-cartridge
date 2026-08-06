@@ -470,10 +470,8 @@ removeDevice = syswork+0
 ;*** aceFileRemove( (zp)=Name )
 kernFileRemove = *
 internRemove = *
-   jsr getDiskDevice
-   bcc +
-   rts
-+  sta removeDevice
+   jsr getDiskDevice     ;bails out of this call on non-disk device
+   sta removeDevice
    sty openNameScan
    ; IDUN: Type #1. Call MOS
    cpx #1
@@ -496,10 +494,8 @@ renameDevice = syswork+0
 ;*** aceFileRename( (zp)=OldName, (zw)=NewName )
 ;*** don't even think about renaming files outside the current directory
 kernFileRename = *
-   jsr getDiskDevice
-   bcc +
-   rts
-+  sta renameDevice
+   jsr getDiskDevice     ;bails out of this call on non-disk device
+   sta renameDevice
    sty openNameScan
    ; IDUN: Type #1. Call MOS
    cpx #1
@@ -729,10 +725,8 @@ kernFileFdswap = *
 kernDirOpen = *
    lda #false
    sta checkStat
-   jsr getDiskDevice
-   bcc +
-   rts
-+  sta openDevice
+   jsr getDiskDevice     ;bails out of this call on non-disk device
+   sta openDevice
    sty openNameScan
    cpx #1               ;IEC device?
    bne +                ;no: virtual
@@ -830,10 +824,8 @@ internDirChange = *
    ldy #>configBuf+$80
    sta zp+0
    sty zp+1
-++ jsr getDiskDevice
-   bcc +
-   rts
-+  sty chdirNameScan
+++ jsr getDiskDevice     ;bails out of this call on non-disk device
+   sty chdirNameScan
    sta chdirDevice
    ; IDUN: Replace with acepid for virtual drives/floppies.
    cpx #4
@@ -1336,6 +1328,9 @@ getLfAndFcb = * ;() : .X=fcb, .A=lf
    rts
 
 getDiskDevice = *  ;( (zp)=devname ) : .A=device, .Y=scan, .X=dev_t, .CC=isDisk
+   ; on failure this pops its own return address and bails out of
+   ; the *caller* too (.CS/errno set) - callers just "jsr getDiskDevice"
+   ; with no bcc/rts needed; only reachable on success
    jsr getDevice
    pha
    tax
@@ -1350,6 +1345,10 @@ getDiskDevice = *  ;( (zp)=devname ) : .A=device, .Y=scan, .X=dev_t, .CC=isDisk
    beq -
    cmp #7
    beq -
+   pla                     ;discard saved device idx
+   ; not a disk: pop our own return address so this rts drops
+   ; straight back to our caller's caller, bailing it out too
+   pla
    pla
    lda #aceErrDiskOnlyOperation
    sta errno
