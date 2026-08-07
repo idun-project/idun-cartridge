@@ -19,12 +19,10 @@ aceOpenOverwrite = *
    cpy #aceErrFileExists
    beq +
    sec
-   rts
+-  rts
 +  jsr internRemove
-   bcs +
-   +ldaSCII "w"
-   jsr open
-+  rts
+   bcs -
+   bcc aceOpenWrite   ;.CC guaranteed here (fell through bcs above), effectively 2-byte jmp
 
 aceOpenForceAppend = *
    +ldaSCII "a"
@@ -33,12 +31,13 @@ aceOpenForceAppend = *
    rts
 +  ldy errno
    cpy #aceErrFileNotFound
-   beq +
+   beq aceOpenWrite
    sec
    rts
-+  +ldaSCII "w"
-   jsr open
-   rts
+
+aceOpenWrite = *
+   +ldaSCII "w"
+   jmp kernFileOpen
 
 ;NAME   :  open
 ;PURPOSE:  open a file
@@ -130,7 +129,7 @@ internOpen = *
    bcc +
    jmp -
    ;** check mem-mapper files
-+ cmp #5
++  cmp #5
    bne +
    jmp internTagOpen
    ;** check virtual console
