@@ -48,7 +48,8 @@ aceOpenWrite = *
 ;ALTERS :  .X, .Y, errno
 
 openFcb      = syswork+0
-openNameScan = syswork+1
+openNameScan = syswork+1  ;mioCheckDiskStatus (acemioc64.asm) reuses this byte
+                          ;for its parsed status code once the name scan is done
 openMode     = syswork+2
 openNameLength = syswork+3
 openDevice   = syswork+4
@@ -392,6 +393,8 @@ kernFileLseek = *
 ;ALTERS :  .A, .X, .Y, errno
 
 removeDevice = syswork+0
+;openNameScan(syswork+1) is set below too, then reused by mioCheckDiskStatus
+;for its status code once mioRemovePath has consumed it -- see acemioc64.asm
 
 ;*** aceFileRemove( (zp)=Name )
 kernFileRemove = *
@@ -416,6 +419,8 @@ internRemove = *
 ;ALTERS :  .A, .X, .Y, errno
 
 renameDevice = syswork+0
+;openNameScan(syswork+1) is set below too, then reused by mioCheckDiskStatus
+;for its status code once mioRenamePath has consumed it -- see acemioc64.asm
 
 ;*** aceFileRename( (zp)=OldName, (zw)=NewName )
 ;*** don't even think about renaming files outside the current directory
@@ -732,7 +737,8 @@ kernDirIsdir = *
 ;*** aceDirChange( (zp)=DirName, .A=flags($80=home,$40=parent) )
 
 chdirDevice = syswork+0
-chdirNameScan = syswork+1
+chdirNameScan = syswork+1  ;reused by mioCheckDiskStatus for its status code
+                            ;once mioChdirPath has consumed it -- see acemioc64.asm
 chdirParent !byte $5f,0
 
 kernDirChange = *

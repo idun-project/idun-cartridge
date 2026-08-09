@@ -174,7 +174,13 @@ mioCmdchSend = *  ;( stringBuffer )
    sec
    rts
 
-mioCheckDiskStatusCode !byte 0
+;-- mioCheckDiskStatus: zero-page scratch. Reuses syswork+1 (openNameScan /
+;   chdirNameScan) for the parsed status code -- safe because every caller
+;   (mioOpenDiskStatus, mioRemovePath, mioRenamePath, mioChdirPath) has
+;   already fully consumed its syswork+1 name-scan value by the time it
+;   calls here. See the syswork+1 aliases in acecall.asm for the other side
+;   of this contract.
+mioCheckDiskStatusCode = syswork+1
 
 mioCheckDiskStatus = *
    ldx #cmdlf
@@ -196,8 +202,7 @@ mioCheckDiskStatus = *
    adc mioCheckDiskStatusCode
    sta mioCheckDiskStatusCode
 -  jsr kernelReadst
-   and #$80
-   beq +
+   bpl +           ;READST leaves N=bit7 of the status byte it just loaded
    lda #aceErrDeviceNotPresent
    sec
    bcs mioCmdchErr
