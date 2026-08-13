@@ -2,12 +2,12 @@
 ; This is free software, released under the MIT License.
 ;
 ; IEC (serial-bus) physical disk drive support, extracted from acecall.asm.
-; Only assembled when useIec=1 (see sys/ace.asm). Every routine here talks
+; Only assembled when useMioCbm=1 (see sys/ace.asm). Every routine here talks
 ; to the real KERNAL device I/O (kernelOpen/kernelClose/kernelChkin/
 ; kernelChrin/kernelChrout) and/or the disk drive's command channel.
 ;
 ; Shared-dispatch call sites in acecall.asm reach these routines with a
-; plain `jmp mioXxx`. When useIec=0, sys/acemionone.asm is sourced instead
+; plain `jmp mioXxx`. When useMioCbm=0, sys/acemionone.asm is sourced instead
 ; of this file and aliases each of these entry point names to
 ; mioUnsupported, so those jumps still resolve to something rather than an
 ; undefined symbol.

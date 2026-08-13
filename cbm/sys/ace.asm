@@ -34,9 +34,9 @@
 !source "sys/kernhead.asm"
 !source "sys/acemacro.asm"
 
-!ifdef useIec {
+!ifdef useMioCbm {
 } else {
-   useIec = 1  ;;IEC/serial-bus drive support; 0 for targets with no IEC bus (e.g. Mega65)
+   useMioCbm = 1  ;;IEC/serial-bus drive & printer support using CBM kernal
 }
 
 !if computer-64 {
@@ -795,8 +795,8 @@ brkHandler = *
 
 ;These drivers in lower memory space
 !source "sys/acecall.asm"
-!if useIec {
-   !source "sys/acemioc64.asm"
+!if useMioCbm {
+   !source "sys/acemiocbm.asm"
 } else {
    !source "sys/acemionone.asm"
 }

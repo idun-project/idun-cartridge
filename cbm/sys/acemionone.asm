@@ -2,8 +2,8 @@
 ; This is free software, released under the MIT License.
 ;
 ; Stand-in mio* implementation for platforms with no IEC/serial-bus drive
-; support at all (useIec=0, see sys/ace.asm) -- the "no drive" counterpart
-; to sys/acemioc64.asm's C64/128 IEC implementation. A future platform
+; support at all (useMioCbm=0, see sys/ace.asm) -- the "no drive" counterpart
+; to sys/acemiocbm.asm's C64/128 IEC implementation. A future platform
 ; with its own physical drive support would provide a sibling file (e.g.
 ; sys/acemiomega65.asm) instead of using this one.
 ;
@@ -13,9 +13,9 @@
 ; of an undefined symbol.
 
 ;-- mioUnsupported: fallback for shared dispatch code's plain `jmp mioXxx`
-;   sites when useIec=0 -- reached only if a device is (mis)configured as
+;   sites when useMioCbm=0 -- reached only if a device is (mis)configured as
 ;   an IEC drive on a build with no IEC support. sys/acemionone.asm aliases
-;   every mio* entry point to this label when useIec=0, so those `jmp`s
+;   every mio* entry point to this label when useMioCbm=0, so those `jmp`s
 ;   always resolve to something instead of an undefined symbol
 mioUnsupported = *
    lda #aceErrIllegalDevice

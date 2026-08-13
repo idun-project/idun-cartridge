@@ -48,7 +48,7 @@ aceOpenWrite = *
 ;ALTERS :  .X, .Y, errno
 
 openFcb      = syswork+0
-openNameScan = syswork+1  ;mioCheckDiskStatus (acemioc64.asm) reuses this byte
+openNameScan = syswork+1  ;mioCheckDiskStatus (acemiocbm.asm) reuses this byte
                           ;for its parsed status code once the name scan is done
 openMode     = syswork+2
 openNameLength = syswork+3
@@ -390,7 +390,7 @@ kernFileLseek = *
 
 removeDevice = syswork+0
 ;openNameScan(syswork+1) is set below too, then reused by mioCheckDiskStatus
-;for its status code once mioRemovePath has consumed it -- see acemioc64.asm
+;for its status code once mioRemovePath has consumed it -- see acemiocbm.asm
 
 ;*** aceFileRemove( (zp)=Name )
 kernFileRemove = *
@@ -416,7 +416,7 @@ internRemove = *
 
 renameDevice = syswork+0
 ;openNameScan(syswork+1) is set below too, then reused by mioCheckDiskStatus
-;for its status code once mioRenamePath has consumed it -- see acemioc64.asm
+;for its status code once mioRenamePath has consumed it -- see acemiocbm.asm
 
 ;*** aceFileRename( (zp)=OldName, (zw)=NewName )
 ;*** don't even think about renaming files outside the current directory
@@ -570,7 +570,7 @@ fstatRespHandler = *
    ldy aceDirentBytes+1
    rts
 
-;-- fstatFcb: scratch shared with mioFileStat (acemioc64.asm); kernDirRead
+;-- fstatFcb: scratch shared with mioFileStat (acemiocbm.asm); kernDirRead
 ;   does not touch syswork+3
 fstatFcb = syswork+3
 mioFileStatEntry = *
@@ -728,7 +728,7 @@ kernDirIsdir = *
 
 chdirDevice = syswork+0
 chdirNameScan = syswork+1  ;reused by mioCheckDiskStatus for its status code
-                            ;once mioChdirPath has consumed it -- see acemioc64.asm
+                            ;once mioChdirPath has consumed it -- see acemiocbm.asm
 chdirParent !byte $5f,0
 
 kernDirChange = *
@@ -761,7 +761,7 @@ internDirChange = *
 +  jmp mioChdirPath
 
 ;-- chdirSetName: commit chdirDevice as the new current directory; shared by
-;   the IEC path (mioChdirPath, acemioc64.asm) and pidChDir (acepid.asm)
+;   the IEC path (mioChdirPath, acemiocbm.asm) and pidChDir (acepid.asm)
 ;   ( chdirDevice=set ) : .CC
 chdirSetName = *
    lda chdirDevice
