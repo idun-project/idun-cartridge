@@ -215,9 +215,7 @@ mioCheckDiskStatus = *
    cmp #62
    bne +
    lda #aceErrFileNotFound
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 +  cmp #20
    bcc +
    sta errno

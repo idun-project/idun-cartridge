@@ -139,9 +139,7 @@ internOpen = *
    jmp pidOpen
    ;** illegal device
 +  lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 
    nonDiskSa = *
    ldx openFcb
@@ -381,9 +379,7 @@ kernFileLseek = *
    jmp internTagSeek
    lseekIllegal = *
    lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 
 
 ;NAME   :  aceFileRemove
@@ -481,9 +477,7 @@ internBload = *
    lda (bloadFilename),y
    bne +
    lda #aceErrFileNotFound
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 +  lda configBuf+0,x
    ; IDUN: Load from RAM disk replaced with acepid.
    cmp #4
@@ -500,9 +494,7 @@ internBload = *
    bne +
    jmp mioBloadPath
 +  lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 
 ;*** aceDirStat ( .A=stat, (zp)=path ) : CS=error,errno
 ;                                .CC=filled aceSharedBuf
@@ -516,9 +508,7 @@ kernDirStat = *
    jsr kernMiscDeviceInfo
    bcs +
    lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 +  lda syswork+1
    sta openDevice
    lda #"r"
@@ -1234,9 +1224,7 @@ getFcb = *
    cpx #fcbCount
    bcc -
    lda #aceErrTooManyFiles
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 +  lda aceProcessID
    sta pidtable,x
    rts
@@ -1283,9 +1271,7 @@ getDiskDevice = *  ;( (zp)=devname ) : .A=device, .Y=scan, .X=dev_t, .CC=isDisk
    pla
    pla
    lda #aceErrDiskOnlyOperation
-   sta errno
-   sec
-   rts
+   jmp rtsCarryErrno
 
 
 ;┌────────────────────────────────────────────────────────────────────────┐

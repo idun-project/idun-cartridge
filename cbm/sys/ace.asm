@@ -394,6 +394,9 @@ jmp kernSearchPath
 
 notImp = *
    lda #aceErrNotImplemented
+   ; Intentional fall through
+
+rtsCarryErrno = *
    sta errno
    sec
    rts
