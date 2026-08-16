@@ -1055,31 +1055,6 @@ kernMiscUtoa = *
    iny
    rts
 
-;*** aceMiscIoPeek( (zw)=ioaddr, .Y=offset ) : .A=data
-
-kernMiscIoPeek = *
-   lda #bkKernel
-   sta bkSelect
-   lda (zw),y
-   pha
-   lda #bkApp
-   sta bkSelect
-   pla
-   rts
-
-;*** aceMiscIoPoke( (zw)=ioaddr, .Y=offset, .A=data )
-
-kernMiscIoPoke = *
-   pha
-   lda #bkKernel
-   sta bkSelect
-   pla
-   sta (zw),y
-   pha
-   lda #bkApp
-   sta bkSelect
-   pla
-   rts
 
 ;*** aceMiscSysType () : .A=model, .X=int. banks, .Y=ERAM banks
 ;                        .sw+0=vdc mem.

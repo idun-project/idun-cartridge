@@ -361,8 +361,8 @@ jmp kernTimeSetDate
 jmp kernIrqHook
 
 jmp kernMiscUtoa
-jmp kernMiscIoPeek
-jmp kernMiscIoPoke
+jmp notImp
+jmp notImp
 
 jmp kernFileFdswap
 jmp kernConRead
