@@ -203,33 +203,22 @@ internClose = *
    stx closeFd
    internCloseCont = *
    lda configBuf+0,y
+   ;** #0-#1 go to mio
    cmp #2
-   bne +
-   jmp closeFdEntry
-+  cmp #3
-   bne +
-   jmp closeFdEntry
-   ; IDUN: Check idun virtual devices (type #4-7)
-   ;** check virtual disk
+   bcs +
+   jmp mioClosePath
+   ;** #2-#3 just close entry
 +  cmp #4
-   bne +
-   jsr pidClose
-   jmp closeFdEntry
-+  cmp #7
-   bcc +
-   jsr pidClose
-   jmp closeFdEntry
+   bcs +
+   bcc closeFdEntry ;.CC guaranteed here (fell through bcs above), effectively 2-byte jmp
    ;** check mem-mapper files
 +  cmp #5
    bne +
    jsr internTagClose
    jmp closeFdEntry
-   ;** check virtual console
-+  cmp #6
-   bne +
-   jsr pidClose
-   jmp closeFdEntry
-+  jmp mioClosePath
+   ;** IDUN virtual devices by now (type >=#4 except #5, including #6 virtual console)
++  jsr pidClose
+   ; fall through to closeFdEntry
 
    closeFdEntry = *
    ldx closeFd
