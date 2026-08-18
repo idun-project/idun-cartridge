@@ -12,8 +12,18 @@
 ; mioUnsupported, so those jumps still resolve to something rather than an
 ; undefined symbol.
 
-;-- mioOpenDiskSa: secondary-address search/assignment for physical disk opens
-;   ( openDevice=set, openFcb=set ) : .Y=sa, falls into nonDiskSa (acecall.asm)
+;-- mioOpenSa: entry point for type-0/type-1 opens (device type < 2); decide
+;   the secondary address, then falls into mioNonDiskSa below
+;   ( .X=openDevice, .A=device type (0 or 1), openFcb=set ) : .Y=sa
+mioOpenSa = *
+   cmp #1
+   beq mioOpenDiskSa
+   ldy configBuf+2,x  ;type 0: fixed sa, configured per-device
+   jmp mioNonDiskSa
+
+;-- mioOpenDiskSa: secondary-address search/assignment for physical disk
+;   opens (type 1) -- falls into mioNonDiskSa below
+;   ( openDevice=set, openFcb=set ) : .Y=sa
 mioOpenDiskSa = *
    lda #true
    sta checkStat
@@ -32,7 +42,35 @@ mioOpenDiskSa = *
    bne diskSaSearch
 +  dex
    bpl -
-   jmp nonDiskSa
+   ;** falls through into mioNonDiskSa -- no jmp needed
+
+;-- mioNonDiskSa: store sa, build the filename, dispatch to the disk-suffix
+;   handling (type 1) or straight to the open (type 0)
+;   ( .Y=sa, openFcb/openNameScan=set, (zp)=path ) : falls into mioOpenGotName
+mioNonDiskSa = *
+   ldx openFcb
+   tya
+   sta satable,x
+
+   ;set the name
+   ldx #0
+   ldy openNameScan
+-  lda (zp),y
+   sta stringBuffer,x
+   beq +
+   iny
+   inx
+   bne -
++  ldy openDevice
+   lda configBuf+0,y
+   cmp #1
+   bne mioNonDiskOpen
+   jmp mioOpenNameSuffix
+
+   ;** get rid of the filename for non-disks
+   mioNonDiskOpen = *
+   ldx #0
+   jmp mioOpenGotName
 
 ;-- mioOpenNameSuffix: append ",<mode>" for physical disk file opens
 ;   ( .X=name length in stringBuffer, openMode=set ) : falls into mioOpenGotName

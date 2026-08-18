@@ -76,6 +76,7 @@ internOpen = *
 ++ jsr getLfAndFcb
    bcc fileOpenCont
    rts
+
    fileOpenCont = *
    sta lftable,x
    lda #$00
@@ -90,29 +91,27 @@ internOpen = *
    tax
    ;get sa here
    lda configBuf+0,x
-   cmp #0
-   bne +
-   ldy configBuf+2,x
-   jmp nonDiskSa
-+  ldy #0
-   ;** check native disk device
-   cmp #1
-   bne +
-   jmp mioOpenDiskSa
-   ;** check console
-+  cmp #2
-   bne +
--  lda openFcb
-   clc
+   ;** #0-#1 go to mio
+   cmp #2
+   bcs +
+   jmp mioOpenSa
+   ;** #2-#3: nothing else to do, just return the fcb
++  cmp #4
+   bcs +
+   lda openFcb
+   ;clc not needed -- carry is guaranteed clear here (fell through bcs above)
    rts
-   ;** check null device
-+  cmp #3
-   beq -
-   ; IDUN: Check idun virtual devices (type #4-7)
-   ;** check virtual disk
-   cmp #4
-   bne +++
--  ldx openFcb
+   ;** check mem-mapper files
++  cmp #5
+   bne +
+   jmp internTagOpen
+   ;** check virtual console
++  cmp #6
+   bne +
+   jmp pidOpen
+   ; IDUN: type #4 and #7+ share this cmdlf/regsave dispatch --
+   ; nothing else can reach here (0-3,5,6 all handled above)
++  ldx openFcb
    lda lftable,x
    cmp #cmdlf
    bne ++
@@ -126,45 +125,6 @@ internOpen = *
 +  lda regsave+1
    rts
 ++ jmp pidOpen
-+++cmp #7
-   bcc +
-   jmp -
-   ;** check mem-mapper files
-+  cmp #5
-   bne +
-   jmp internTagOpen
-   ;** check virtual console
-+  cmp #6
-   bne +
-   jmp pidOpen
-   ;** illegal device
-+  lda #aceErrIllegalDevice
-   jmp rtsCarryErrno
-
-   nonDiskSa = *
-   ldx openFcb
-   tya
-   sta satable,x
-
-   ;set the name
-   ldx #0
-   ldy openNameScan
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  ldy openDevice
-   lda configBuf+0,y
-   cmp #1
-   bne nonDiskOpen
-   jmp mioOpenNameSuffix
-
-   ;** get rid of the filename for non-disks
-   nonDiskOpen = *
-   ldx #0
-   jmp mioOpenGotName
 
 cmdchClose = *  ;( .X=device, matches cmdchOpen's convention )
    lda configBuf+0,x

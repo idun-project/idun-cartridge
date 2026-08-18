@@ -39,7 +39,7 @@ mioCmdchClose     = mioUnsupported
 
 ;-- mioOpenUnsupported: like mioUnsupported, but also frees the fcb slot
 ;   that kernFileOpen (acecall.asm) already claimed before reaching either
-;   mioOpenDiskSa or mioOpenGotName -- both run mid-open, after the fcb is
+;   mioOpenSa or mioOpenGotName -- both run mid-open, after the fcb is
 ;   allocated, so a plain mioUnsupported here would leak it (lftable would
 ;   keep the slot marked in-use forever, since the code that frees it on
 ;   failure never gets a chance to run)
@@ -53,7 +53,7 @@ mioOpenUnsupported = *
    lda #fcbNull
    rts
 
-mioOpenDiskSa  = mioOpenUnsupported
+mioOpenSa      = mioOpenUnsupported
 mioOpenGotName = mioOpenUnsupported
 
 ;-- mioOpenDiskStatus: called (.A=device) after a device's open already
