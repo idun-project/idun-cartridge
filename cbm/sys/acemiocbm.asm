@@ -158,7 +158,8 @@ mioOpenDiskStatus = *
    php
    pha
    ldx mioDiskStatusDev
-   jsr cmdchClose
+   jsr mioCmdchClose  ;checkStat is only ever true for type-1 devices, so the
+                      ;generic cmdchClose dispatch/type-recheck is unneeded
    pla
    plp
 ++ rts
