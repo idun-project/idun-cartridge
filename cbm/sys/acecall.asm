@@ -338,8 +338,7 @@ kernFileLseek = *
    bne lseekIllegal
    jmp internTagSeek
    lseekIllegal = *
-   lda #aceErrIllegalDevice
-   jmp rtsCarryErrno
+   jmp rtsErrIllegalDevice
 
 
 ;NAME   :  aceFileRemove
@@ -453,8 +452,7 @@ internBload = *
 +  cmp #1
    bne +
    jmp mioBloadPath
-+  lda #aceErrIllegalDevice
-   jmp rtsCarryErrno
++  jmp rtsErrIllegalDevice
 
 ;*** aceDirStat ( .A=stat, (zp)=path ) : CS=error,errno
 ;                                .CC=filled aceSharedBuf
@@ -467,8 +465,7 @@ kernDirStat = *
 +  stx cmdPrefix
    jsr kernMiscDeviceInfo
    bcs +
-   lda #aceErrIllegalDevice
-   jmp rtsCarryErrno
+   jmp rtsErrIllegalDevice
 +  lda syswork+1
    sta openDevice
    lda #"r"
