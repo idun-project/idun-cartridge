@@ -229,14 +229,14 @@ kernFileRead = *
    cmp #2
    bcs +
    jmp mioReadPath
-   ;** check console
+   ;** check #2 console
 +  cmp #2
    bne +
    lda readMaxLen+0
    ldy readMaxLen+1
    ldx readFcb
    jmp conRead
-   ;** check null device
+   ;** check #3 null device
 +  cmp #3
    bne +
    lda #0
@@ -289,15 +289,11 @@ internWrite = *
    lda devtable,x
    tax
    lda configBuf+0,x
-   ; IDUN: Virtual disks (type #4, 7). Replace with acepid.
-   cmp #4
-   bne +
-   ldx regsave+1
-   jmp pidWrite
-+  cmp #7
-   bcc +
-   ldx regsave+1
-   jmp pidWrite
+   ;** #0-#1 go to mio
+   cmp #2
+   bcs +
+   jmp mioWritePath
+   ;** check console
 +  cmp #2
    bne +
    lda writeLength+0
@@ -309,7 +305,15 @@ internWrite = *
    bne +
    clc
    rts
-+  jmp mioWritePath
+   ;** #5-#6: mem-mapper files/virtual console, neither implemented for write;
++  cmp #5
+   bcc +
+   cmp #7
+   bcs +
+   jmp rtsErrIllegalDevice
+   ;** everything else (type #4, #7+) goes to pidWrite
++  ldx regsave+1
+   jmp pidWrite
 
 ;NAME   :  seek
 ;PURPOSE:  seek to file location
