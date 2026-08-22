@@ -6,6 +6,10 @@
 ;
 ; Main file/dir/other system calls
 
+rtsErrIllegalDevice = *
+   lda #aceErrIllegalDevice
+   jmp rtsCarryErrno
+
 ;====== file calls ======
 
 ;*** open( zp=filenameZ, .A=mode["r","w","a","W","A"] ) : .A=fcb
@@ -221,24 +225,18 @@ kernFileRead = *
 +  lda devtable,x
    tax
    lda configBuf+0,x
-   ; IDUN: Check idun virtual devices (type #4-7)
-   ;** check virtual disk
-   cmp #4
-   bne +
-   jmp pidRead
-+  cmp #7
-   bcc +
-   jmp pidRead
-   ;** check mem-mapper files
-+  cmp #5
-   bne +
-   jmp internTagRead
+   ;** #0-#1 go to mio
+   cmp #2
+   bcs +
+   jmp mioReadPath
+   ;** check console
 +  cmp #2
    bne +
    lda readMaxLen+0
    ldy readMaxLen+1
    ldx readFcb
    jmp conRead
+   ;** check null device
 +  cmp #3
    bne +
    lda #0
@@ -247,7 +245,16 @@ kernFileRead = *
    sty zw+1
    clc
    rts
-+  jmp mioReadPath
+   ;** check mem-mapper files
++  cmp #5
+   bne +
+   jmp internTagRead
+   ;** check virtual console -- not implemented for read
++  cmp #6
+   bne +
+   jmp rtsErrIllegalDevice
+   ;** IDUN virtual devices (type #4, #7+); nothing else can reach here
++  jmp pidRead
 
    readEofExit = *
    lda #0
