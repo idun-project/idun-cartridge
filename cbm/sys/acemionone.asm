@@ -8,39 +8,28 @@
 ; sys/acemiomega65.asm) instead of using this one.
 ;
 ; Aliases every mio* entry point that acecall.asm's shared dispatch code
-; reaches with a plain `jmp mioXxx` to mioUnsupported, so those jumps still
-; resolve to something -- straight to the "illegal device" error -- instead
-; of an undefined symbol.
+; reaches with a plain `jmp mioXxx` to rtsErrIllegalDevice (acecall.asm), so
+; those jumps still resolve to something -- straight to the "illegal device"
+; error -- instead of an undefined symbol.
 
-;-- mioUnsupported: fallback for shared dispatch code's plain `jmp mioXxx`
-;   sites when useMioCbm=0 -- reached only if a device is (mis)configured as
-;   an IEC drive on a build with no IEC support. sys/acemionone.asm aliases
-;   every mio* entry point to this label when useMioCbm=0, so those `jmp`s
-;   always resolve to something instead of an undefined symbol
-mioUnsupported = *
-   lda #aceErrIllegalDevice
-   sta errno
-   sec
-   rts
+mioOpenNameSuffix = rtsErrIllegalDevice
+mioClosePath      = rtsErrIllegalDevice
+mioReadPath       = rtsErrIllegalDevice
+mioWritePath      = rtsErrIllegalDevice
+mioRemovePath     = rtsErrIllegalDevice
+mioRenamePath     = rtsErrIllegalDevice
+mioFileStat       = rtsErrIllegalDevice
+mioDirRead        = rtsErrIllegalDevice
+mioChdirPath      = rtsErrIllegalDevice
+mioIecCommand     = rtsErrIllegalDevice
+mioBloadPath      = rtsErrIllegalDevice
+mioDirOpenRoot    = rtsErrIllegalDevice
+mioCmdchClose     = rtsErrIllegalDevice
 
-mioOpenNameSuffix = mioUnsupported
-mioClosePath      = mioUnsupported
-mioReadPath       = mioUnsupported
-mioWritePath      = mioUnsupported
-mioRemovePath     = mioUnsupported
-mioRenamePath     = mioUnsupported
-mioFileStat       = mioUnsupported
-mioDirRead        = mioUnsupported
-mioChdirPath      = mioUnsupported
-mioIecCommand     = mioUnsupported
-mioBloadPath      = mioUnsupported
-mioDirOpenRoot    = mioUnsupported
-mioCmdchClose     = mioUnsupported
-
-;-- mioOpenUnsupported: like mioUnsupported, but also frees the fcb slot
+;-- mioOpenUnsupported: like rtsErrIllegalDevice, but also frees the fcb slot
 ;   that kernFileOpen (acecall.asm) already claimed before reaching either
 ;   mioOpenSa or mioOpenGotName -- both run mid-open, after the fcb is
-;   allocated, so a plain mioUnsupported here would leak it (lftable would
+;   allocated, so rtsErrIllegalDevice here would leak it (lftable would
 ;   keep the slot marked in-use forever, since the code that frees it on
 ;   failure never gets a chance to run)
 mioOpenUnsupported = *
@@ -62,7 +51,7 @@ mioOpenGotName = mioOpenUnsupported
 ;   this isn't an operation that inherently requires drive support -- it's
 ;   an optional extra check on an already-successful open -- so with no
 ;   drive implementation at all there's nothing to verify: always .CC=ok,
-;   not mioUnsupported's error.
+;   not rtsErrIllegalDevice's error.
 mioOpenDiskStatus = *
    clc
    rts

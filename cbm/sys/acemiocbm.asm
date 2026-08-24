@@ -9,8 +9,8 @@
 ; Shared-dispatch call sites in acecall.asm reach these routines with a
 ; plain `jmp mioXxx`. When useMioCbm=0, sys/acemionone.asm is sourced instead
 ; of this file and aliases each of these entry point names to
-; mioUnsupported, so those jumps still resolve to something rather than an
-; undefined symbol.
+; rtsErrIllegalDevice (acecall.asm), so those jumps still resolve to
+; something rather than an undefined symbol.
 
 ;-- mioOpenSa: entry point for type-0/type-1 opens (device type < 2); decide
 ;   the secondary address, then falls into mioNonDiskSa below
