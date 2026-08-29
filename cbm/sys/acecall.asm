@@ -347,7 +347,10 @@ kernFileLseek = *
 ;RETURNS:  .CS  = error occurred flag
 ;ALTERS :  .A, .X, .Y, errno
 
-removeDevice = syswork+0
+removeDevice = syswork+0  ;== renameDevice/chdirDevice below -- acemiocbm.asm's
+                           ;mioCmdchTransact relies on this shared location to
+                           ;fold its open/send/status/close tail across
+                           ;mioRemovePath, mioRenamePath and mioChdirPath
 ;openNameScan(syswork+1) is set below too, then reused by mioCheckDiskStatus
 ;for its status code once mioRemovePath has consumed it -- see acemiocbm.asm
 
@@ -373,7 +376,8 @@ internRemove = *
 ;RETURNS:  .CS  = error occurred flag
 ;ALTERS :  .A, .X, .Y, errno
 
-renameDevice = syswork+0
+renameDevice = syswork+0  ;== removeDevice above/chdirDevice below -- see the
+                           ;mioCmdchTransact note at removeDevice's definition
 ;openNameScan(syswork+1) is set below too, then reused by mioCheckDiskStatus
 ;for its status code once mioRenamePath has consumed it -- see acemiocbm.asm
 
@@ -457,6 +461,14 @@ internBload = *
 ;*** aceDirStat ( .A=stat, (zp)=path ) : CS=error,errno
 ;                                .CC=filled aceSharedBuf
 
+miscInfoDevice = syswork+1  ;kernMiscDeviceInfo's (below) returned device
+                            ;number; every caller (here, kernFileStat, and
+                            ;mioFileStat in acemiocbm.asm) reads it right
+                            ;back out before this slot goes back to being
+                            ;openNameScan/chdirNameScan. Defined here, ahead
+                            ;of kernMiscDeviceInfo's own definition, so ACME
+                            ;sees it as zero page from its first use instead
+                            ;of sizing a forward-referenced load as absolute
 kernDirStat = *
    ldx #"/"
    cmp #$80
@@ -466,7 +478,7 @@ kernDirStat = *
    jsr kernMiscDeviceInfo
    bcs +
    jmp rtsErrIllegalDevice
-+  lda syswork+1
++  lda miscInfoDevice
    sta openDevice
    lda #"r"
    sta openMode
@@ -498,7 +510,7 @@ dstatRespHandler = *
 kernFileStat = *
    jsr kernMiscDeviceInfo
    bcc mioFileStatEntry
-   lda syswork+1
+   lda miscInfoDevice
    sta openDevice
    lda #"r"
    sta openMode
@@ -683,7 +695,8 @@ kernDirIsdir = *
 
 ;*** aceDirChange( (zp)=DirName, .A=flags($80=home,$40=parent) )
 
-chdirDevice = syswork+0
+chdirDevice = syswork+0  ;== removeDevice/renameDevice above -- see the
+                          ;mioCmdchTransact note at removeDevice's definition
 chdirNameScan = syswork+1  ;reused by mioCheckDiskStatus for its status code
                             ;once mioChdirPath has consumed it -- see acemiocbm.asm
 chdirParent !byte $5f,0
@@ -1030,10 +1043,11 @@ kernMiscSysType = *
 
 ;*** aceMiscDeviceInfo( (zp)=path: .A=iec addr,.X=type,.Y=scan pos
 ;                                  sw=flags,sw+1=device,.CS=virt.drv )
+;   ( miscInfoDevice=sw+1 is aliased above, ahead of kernDirStat )
 kernMiscDeviceInfo = *
    jsr getDevice
    sty syswork+2
-   sta syswork+1
+   sta miscInfoDevice
    tay
    lda configBuf+3,y
    sta syswork+0

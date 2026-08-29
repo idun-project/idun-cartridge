@@ -55,13 +55,8 @@ mioNonDiskSa = *
    ;set the name
    ldx #0
    ldy openNameScan
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  ldy openDevice
+   jsr mioCopyNameZp
+   ldy openDevice
    lda configBuf+0,y
    cmp #1
    bne mioNonDiskOpen
@@ -118,11 +113,7 @@ mioOpenGotName = *
    jsr kernelOpen
    bcs mioOpenError
    ldx openDevice
-   lda configBuf+0,x
-   cmp #1
-   bne mioOpenSuccess
-   txa
-   jsr mioOpenDiskStatus
+   jsr mioTypeCheckDiskStatus
    bcc mioOpenSuccess
 
    mioOpenError = *
@@ -141,6 +132,20 @@ mioOpenGotName = *
    lda openFcb
    clc
    rts
+
+;-- mioCopyNameZp: copy a null-terminated string from (zp),Y into
+;   stringBuffer,X, starting at the caller's X/Y, until the terminator.
+;   Shared by mioNonDiskSa, mioRenamePath, mioFileStat and mioIecCommand,
+;   which all inlined this same loop to assemble a name/path
+;   ( .X=starting index, .Y=starting offset, (zp)=source ) : .X=index of nul
+mioCopyNameZp = *
+-  lda (zp),y
+   sta stringBuffer,x
+   beq +
+   iny
+   inx
+   bne -
++  rts
 
 ;-- mioOpenDiskStatus: verify disk drive status after open/bload
 ;   ( .A=device, checkStat=flag ) : errno=.A=errcode, .CS=errflag
@@ -164,6 +169,21 @@ mioOpenDiskStatus = *
    plp
 ++ rts
 mioDiskStatusDev !byte 0
+
+;-- mioTypeCheckDiskStatus: re-verify disk status for a device, but only if
+;   it actually is a physical disk (type 1); non-disk devices are a no-op
+;   success. Shared by mioOpenGotName and mioBloadPath -- both used to
+;   inline this same configBuf type test around a mioOpenDiskStatus call
+;   ( .X=device ) : .CS=error,errno (disk devices only) or .CC
+mioTypeCheckDiskStatus = *
+   lda configBuf+0,x
+   cmp #1
+   bne mioTypeCheckDiskStatusSkip
+   txa
+   jmp mioOpenDiskStatus   ;tail call: its rts returns to our caller
+   mioTypeCheckDiskStatusSkip = *
+   clc
+   rts
 
 mioCmdchOpen = *  ;( .A=device )
    tax
@@ -213,7 +233,7 @@ mioCmdchSend = *  ;( stringBuffer )
    sec
    rts
 
-;-- mioCheckDiskStatus: zero-page scratch. Reuses syswork+1 (openNameScan /
+;-- mioCheckDiskStatusCode: zero-page scratch. Reuses syswork+1 (openNameScan /
 ;   chdirNameScan) for the parsed status code -- safe because every caller
 ;   (mioOpenDiskStatus, mioRemovePath, mioRenamePath, mioChdirPath) has
 ;   already fully consumed its syswork+1 name-scan value by the time it
@@ -397,11 +417,7 @@ mioBloadPath = *
    cmp #aceErrDeviceNotPresent
    beq +
    ldx bloadDevice
-   lda configBuf+0,x
-   cmp #1
-   bne +
-   txa
-   jsr mioOpenDiskStatus
+   jsr mioTypeCheckDiskStatus
 +  pla
 -  sta errno
    lda #0
@@ -412,11 +428,7 @@ mioBloadPath = *
 
    mioBloadOk = *
    ldx bloadDevice
-   lda configBuf+0,x
-   cmp #1
-   bne +
-   txa
-   jsr mioOpenDiskStatus
+   jsr mioTypeCheckDiskStatus
    bcs -
 +  lda bloadAddress+0
    ldy bloadAddress+1
@@ -445,16 +457,7 @@ mioRemoveSlash:
 +  lda #0
    sta stringBuffer,x
    lda removeDevice
-   jsr mioCmdchOpen
-   bcs ++
-   jsr mioCmdchSend
-   bcs +
-   jsr mioCheckDiskStatus
-+  php
-   ldx removeDevice   ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   plp
-++ rts
+   jmp mioCmdchTransact
 
 ;-- mioRenamePath: send "r:new=old" over the command channel, check status
 ;   ( renameDevice=set, openNameScan=set, (zp)=old, (zw)=new ) : .CS=error,errno
@@ -477,27 +480,35 @@ mioRenamePath = *
    inx
    ;** copy old name
    ldy openNameScan
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   inx
-   iny
-   bne -
-+  lda renameDevice
+   jsr mioCopyNameZp
+   lda renameDevice
+   ;** falls through into mioCmdchTransact -- no jmp needed
+
+;-- mioCmdchTransact: open a device's command channel, send stringBuffer as
+;   a DOS command, check status, then close. Shared tail for mioRemovePath
+;   and mioRenamePath -- safe to fold together because removeDevice and
+;   renameDevice both alias syswork+0 (see acecall.asm). Placed directly
+;   after mioRenamePath so its call falls through instead of jmp'ing
+;   ( .A=device=syswork+0, stringBuffer=command ) : .CS=error,errno
+mioCmdchTransact = *
    jsr mioCmdchOpen
-   bcs ++
+   bcs mioCmdchTransactErr
    jsr mioCmdchSend
-   bcs +
+   bcs mioCmdchTransactClose
    jsr mioCheckDiskStatus
-+  php
-   ldx renameDevice  ;cmdchClose needs .X=device, not leftover X
+
+   mioCmdchTransactClose = *
+   php
+   ldx syswork+0
    jsr cmdchClose
    plp
-++ rts
+   
+   mioCmdchTransactErr = *
+   rts
 
 ;-- mioFileStat: IEC path for aceFileStat
 ;   opens filtered dir "$:BASENAME", reads one entry into aceDirentBuffer
-;   ( syswork+1=device, (zp)=path ) : .AY=file size,.CS=error,errno
+;   ( miscInfoDevice=device, (zp)=path ) : .AY=file size,.CS=error,errno
 mioFileStat = *
    +ldaSCII "$"
    sta stringBuffer+0
@@ -510,13 +521,8 @@ mioFileStat = *
    cmp #<":"
    bne -
    ldx #2
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  lda syswork+1
+   jsr mioCopyNameZp
+   lda miscInfoDevice
    sta openDevice
    jsr mioDirOpen      ; .A = fcb
    bcs mioFileStatRts
@@ -596,37 +602,21 @@ mioChdirPath = *
    bne +
    jmp chdirSetName
 +  lda chdirDevice
-   jsr mioCmdchOpen
-   bcc +
-   rts
-+  jsr mioCmdchSend
-   bcs mioChdirAbort
-   jsr mioCheckDiskStatus
-   bcs mioChdirAbort
-   ldx chdirDevice  ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
+   jsr mioCmdchTransact  ;.CS,errno on open/send/status failure -- already
+                         ;closed the cmd channel either way, same as before
+   bcs +
    lda #0
    sta stringBuffer+2
    jmp chdirSetName
-
-   mioChdirAbort = *
-   ldx chdirDevice  ;cmdchClose needs .X=device, not leftover X
-   jsr cmdchClose
-   sec
-   rts
++  rts
 
 ;-- mioIecCommand: aceIecCommand( (zp)=Command ), send raw DOS command
 ;   string to the current device's command channel
 mioIecCommand = *
    ldx #0
    ldy #0
--  lda (zp),y
-   sta stringBuffer,x
-   beq +
-   iny
-   inx
-   bne -
-+  ldx aceCurrentDevice
+   jsr mioCopyNameZp
+   ldx aceCurrentDevice
    lda configBuf+0,x
    cmp #1
    beq +
