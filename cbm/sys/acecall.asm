@@ -442,21 +442,21 @@ internBload = *
    lda #aceErrFileNotFound
    jmp rtsCarryErrno
 +  lda configBuf+0,x
-   ; IDUN: Load from RAM disk replaced with acepid.
-   cmp #4
+   ;** #1 -> mio
+   cmp #1
    bne +
-   jmp pidBload
-+  cmp #7
-   bne +
-   jmp pidBload
-   ; IDUN: Load from Tag RAM replaces RAM disk.
+   jmp mioBloadPath
+   ;** #5 -> tag RAM
 +  cmp #5
    bne +
    jmp internTagBload
-+  cmp #1
-   bne +
-   jmp mioBloadPath
-+  jmp rtsErrIllegalDevice
+   ;** #4/#7 -> pid
++  cmp #4
+   beq +
+   cmp #7
+   bne ++
++  jmp pidBload
+++ jmp rtsErrIllegalDevice
 
 ;*** aceDirStat ( .A=stat, (zp)=path ) : CS=error,errno
 ;                                .CC=filled aceSharedBuf
@@ -650,14 +650,12 @@ kernDirRead = *
    bpl -
    ldy devtable,x
    lda configBuf+0,y
-   ; IDUN: Replace with acepid for type #4/7
-   cmp #4
+   ;fcb's device always came from kernDirOpen's getDiskDevice call, so it's
+   ;guaranteed to be type #1, #4 or #7 here -- anything not #1 is acepid's
+   cmp #1
    bne +
-   jmp pidDirRead
-+  cmp #7
-   bne +
-   jmp pidDirRead
-+  jmp mioDirRead
+   jmp mioDirRead
++  jmp pidDirRead
 
 ;*** aceDirIsdir( (zp)=FilenameZ ) : .A=Dev, .X=isDisk, .Y=isDir
 
@@ -719,16 +717,13 @@ internDirChange = *
 ++ jsr getDiskDevice     ;bails out of this call on non-disk device
    sty chdirNameScan
    sta chdirDevice
-   ; IDUN: Replace with acepid for virtual drives/floppies.
-   cpx #4
+   ;getDiskDevice guarantees type #1, #4 or #7 here -- anything not #1 is
+   ;acepid's (virtual drives/floppies)
+   cpx #1
    bne +
-   ldx chdirDevice
+   jmp mioChdirPath
++  ldx chdirDevice
    jmp pidChDir
-+  cpx #7
-   bne +
-   ldx chdirDevice
-   jmp pidChDir
-+  jmp mioChdirPath
 
 ;-- chdirSetName: commit chdirDevice as the new current directory; shared by
 ;   the IEC path (mioChdirPath, acemiocbm.asm) and pidChDir (acepid.asm)
@@ -1056,14 +1051,12 @@ kernMiscDeviceInfo = *
    lda configBuf+1,y
    ldy syswork+2
    cpx #7
-   bne +
-   sec
+   beq +
+   cpx #4
+   bne ++
++  sec
    rts
-+  cpx #4
-   bne +
-   sec
-   rts
-+  clc
+++ clc
    rts
 
 ;*** aceDirAssign ( (zp)=path .X=device ) : .CS=error
