@@ -163,7 +163,7 @@ mmap_file = *
    ;send Mmap command
    ldx #MAP_SYS_MMAP
    lda aceStatB+75
-   jsr aceMapsys
+   jsr syscall
    ;wait for mmap to be completed
    lda #255
    jsr setBlk
