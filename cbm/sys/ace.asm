@@ -1054,6 +1054,11 @@ aceBss = *
 
 !if aceBssEnd>aceAppAddress {
    !error "Kernel exceeds maximum address ",aceAppAddress, " by ", aceBssEnd-aceAppAddress, " bytes."
+} else {
+   !ifndef KERNEL_BYTES_WARNING {
+      !warn "Kernel bytes remaining ", aceAppAddress-aceBssEnd
+      KERNEL_BYTES_WARNING = 1
+   }
 }
 
 
