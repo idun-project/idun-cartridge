@@ -1488,30 +1488,6 @@ ALTERS :  .A, .X
 This is a utility call in the kernel.  It is really not necessary for it to be in the kernel, but so many programs make use of it that it makes sense for it to be factored out.  You give a pointer to a 32-bit unsigned value in zero page memory, a pointer to a buffer to store that string that is at least as long as necessary to store the value plus the null-character terminator that will be put on the end of the string, and a minimum length value for the string.  If the number requires fewer digits than the minimum length, the string will be padded with spaces on the left.  Since a 32-bit quantity can only contain an maximum of ten decimal digits, the string buffer will only need to be a maximum of eleven bytes in size.
 
 ```
-NAME   :  aceMiscIoPeek
-PURPOSE:  do a peek into the I/O space ($D000-$DFFF)
-ARGS   :  (zw) = I/O-space address
-          .Y   = offset from (zw)
-RETURNS:  .A   = peeked value
-          .CS  = error if operation not supported
-ALTERS :  <nothing>
-```
-
-Does a peek into the system I/O-address space.  This is a pretty ugly call, but you should use this rather than peeking into the space directly because application programs aren't supposed to directly peek into there at all.
-
-```
-NAME   :  aceMiscIoPoke
-PURPOSE:  do a peek into the I/O space ($D000-$DFFF)
-ARGS   :  (zw) = I/O-space address
-          .Y   = offset from (zw)
-          .A   = value to poke
-RETURNS:  .CS  = error if operation not supported
-ALTERS :  <nothing>
-```
-
-Does a poke into the system I/O-address space.  This is a pretty ugly call, but you should use this rather than poking into the space directly because application programs aren't supposed to directly peek into there at all.
-
-```
 NAME   :  aceTurboCtl
 PURPOSE:  control the turbo boost of the C64 Ultimate
 ARGS   :  .A   = index value for speed (0 to 15)

@@ -34,6 +34,11 @@
 !source "sys/kernhead.asm"
 !source "sys/acemacro.asm"
 
+!ifdef useMioCbm {
+} else {
+   useMioCbm = 1  ;;IEC/serial-bus drive & printer support using CBM kernal
+}
+
 !if computer-64 {
    useC128 = 1
    useC64  = 0
@@ -356,8 +361,8 @@ jmp kernTimeSetDate
 jmp kernIrqHook
 
 jmp kernMiscUtoa
-jmp kernMiscIoPeek
-jmp kernMiscIoPoke
+jmp notImp
+jmp notImp
 
 jmp kernFileFdswap
 jmp kernConRead
@@ -389,6 +394,9 @@ jmp kernSearchPath
 
 notImp = *
    lda #aceErrNotImplemented
+   ; Intentional fall through
+
+rtsCarryErrno = *
    sta errno
    sec
    rts
@@ -787,6 +795,11 @@ brkHandler = *
 
 ;These drivers in lower memory space
 !source "sys/acecall.asm"
+!if useMioCbm {
+   !source "sys/acemiocbm.asm"
+} else {
+   !source "sys/acemionone.asm"
+}
 !source "idun-io.asm"
 
 aceExitBasic = *
