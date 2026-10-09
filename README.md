@@ -90,7 +90,7 @@ The idun-cartridge software in this repository is self-hosting. All of the assem
 3. `cd cbm && make` -builds cartridge software
 4. To make the new cartridge software active, just `sudo make install` from the `cbm` directory.
 
-See the [Makefile](https://github.com/idun-project/idun-cartridge/cbm/Makefile) for details.
+See the [Makefile](https://github.com/idun-project/idun-cartridge/blob/main/cbm/Makefile) for details.
 
 ### Patched Commodore Kernal (Optional)
 
@@ -121,7 +121,7 @@ It is certainly possible to use other assemblers besides acme; just requiring th
 
 The idun software running on the Raspberry Pi embeds a Lua scripting engine. This allows you to create either Tools or Apps in which much, even a majority of the functionality, is implemented in Lua.
 
-Begin by reading [luaref.md](https://idun-project.github.io/docs/doc/luaref/). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/samples/), and the [arcade.app](https://github.com/idun-project/idun-cartridge/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
+Begin by reading [luaref.md](https://idun-project.github.io/docs/doc/luaref/). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/tree/main/samples), and the [arcade.app](https://github.com/idun-project/idun-cartridge/blon/main/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
 
  _NOTE: There is a forthcoming tool called `mace` that will generate new Lua Apps automatically, including all the boiler-plate needed._
 
