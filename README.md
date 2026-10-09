@@ -121,7 +121,7 @@ It is certainly possible to use other assemblers besides acme; just requiring th
 
 The idun software running on the Raspberry Pi embeds a Lua scripting engine. This allows you to create either Tools or Apps in which much, even a majority of the functionality, is implemented in Lua.
 
-Begin by reading [luaref.md](https://idun-project.github.io/docs/doc/luaref/). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/tree/main/samples), and the [arcade.app](https://github.com/idun-project/idun-cartridge/blon/main/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
+Begin by reading [luaref.md](https://idun-project.github.io/docs/doc/luaref/). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/tree/main/samples), and the [arcade.app](https://github.com/idun-project/idun-cartridge/blob/main/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
 
  _NOTE: There is a forthcoming tool called `mace` that will generate new Lua Apps automatically, including all the boiler-plate needed._
 
