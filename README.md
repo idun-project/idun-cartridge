@@ -35,10 +35,11 @@ You can download the customized Arch Linux OS image and flash it to a microSD ca
 1. Ensure you have a suitable SD card compatible with your Raspberry Pi and at least 4GB (recommend 16 GB).
 2. [Download Image](https://drive.google.com/file/d/1j5v-0p9-eopSoVMuX6h2P_U8w21OJF-Q/view?usp=drive_link)
 3. Use [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or a similar program to write image to SD card.
+4. **IMPORTANT** If you have received an idun-cartridge with a _unique serial number printed on your instruction sheet_, then you need to transfer that serial number onto your SD card. This is essential for your cartridge to work properly. Using a text file editor, modify the file "idunhw.toml" located on the first partition of the SD card. This is the "boot" partition and it is in the FAT32 disk format, which should easily mount on the same computer you used to write the image. Open the "idunhw.toml" file and set the serial number you received in the `hw.serial` line of the file, then save it back to the boot partition.
 
 If you are going to use idun-cartridge on a C64 Ultimate, then you need to install the Ultimate configuration file before trying to use the cartridge. You can grab the file [here](https://raw.githubusercontent.com/idun-project/idun-defaults/refs/heads/main/Idun_c64u_run_first.cfg) and transfer it to your Ultimate by any available means (i.e. network, USB). Then, *run that config file* from the Ultimate menu and *save the new configuration* to Ultimate's Flash.
 
-Your microSD is now ready to use with your idun-cartridge. To expand the file system or setup networking, follow the additional instructions in [setup-rpi.md](doc/setup-rpi.md).
+Your microSD is now ready to use with your idun-cartridge. To expand the file system or setup networking, follow the additional instructions in [setup-rpi.md](https://idun-project.github.io/docs/doc/setup-rpi/).
 
 #### Power
 
@@ -48,9 +49,9 @@ It is recommended that you power the RPi externally from a USB power supply. The
 
 <img align="right" src="doc/cart_mode_sw2.jpg" />
 
-The idun-cartridge has a single "big red button" with dual use. Press and release immediately to Reset everything, including rebooting your Commodore. Press and hold for at least 5 seconds to shutdown your cartridge, which is necessary before powering it down. If you power your cartridge from an external USB power supply, as is recommended, then you will rearely need to perform any shutdown. The cartridge can run for months without requiring any reboot or power-cycle.
+The idun-cartridge has a single "big red button" with dual use. Press and release immediately to Reset everything, including rebooting your Commodore. Press and hold for at least 5 seconds to shutdown your cartridge, which is necessary before powering it down. If you power your cartridge from an external USB power supply, as is recommended, then you will rarely need to perform any shutdown. The cartridge can run for months without requiring any reboot or power-cycle.
 
-As of release v1.2.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (switch position farther from exp. port), the idun-cartridge works on the C128 in its native mode. However, when switched to "Mode", a different software stack is selected as specified by the [mode] settings in the configuration file.
+As of release v1.2.0, the idun-cartridge has two different modes, controlled by the setting of the Mode toggle switch. When the switch is "Off" (switch position farther from exp. port), the idun-cartridge works on the C128 in its native mode. However, when switched to "Mode", a different software stack is selected as specified by the settings in the configuration file.
 
 With the default configuration file, setting the switch to the "Mode" position enables C64 support. This means that the cartridge can be used on a C64 and that it will boot a C128 into its C64 mode. If you are primarily wanting to play C64 games, then you can most easily do so by launching the arcade.app using the command `go "arcade"`.
 
@@ -111,7 +112,7 @@ The idun-cartridge works with many legacy applications. Single-file loaders in p
 
 Idun includes acme 6502 cross-assembler, which can be used to build both the contents of this repo and your own programs on the idun-cartridge. You should first decide whether to build a Tool or an App.
 
-1. Tools load from the idun-shell using $6D00-$BFFF, have access to the [kernel api](doc/apiref.md) and the [toolbox](doc/toolbox.md), and return the user to the idun-shell on exit. They are typically command-line style programs with arguments, but can also take over the screen and run interactively. Many examples can be found in the [cmd](https://github.com/idun-project/idun-cartridge/cbm/cmd/) sub-directory
+1. Tools load from the idun-shell using $6D00-$BFFF, have access to the [kernel api](https://idun-project.github.io/docs/doc/apiref/) and the [toolbox](https://idun-project.github.io/docs/doc/toolbox/), and return the user to the idun-shell on exit. They are typically command-line style programs with arguments, but can also take over the screen and run interactively. Many examples can be found in the [cmd](https://github.com/idun-project/idun-cartridge/cbm/cmd/) sub-directory
 2. An App is launched by the kernel at startup using $6000-$BFFF, has access to the kernel API, but not the toolbox _unless_ `sys/toolbox.asm` is explicitly included, and return to BASIC, or not at all. They typically take over the machine and reconfigure the hardware as needed. Examples are `shell.app` (the Linux shell) and `arcade.app` (the arcade game selector).
 
 It is certainly possible to use other assemblers besides acme; just requiring that the header files `acehead.asm` and `toolhead.asm` be ported over to your environment.
@@ -120,7 +121,7 @@ It is certainly possible to use other assemblers besides acme; just requiring th
 
 The idun software running on the Raspberry Pi embeds a Lua scripting engine. This allows you to create either Tools or Apps in which much, even a majority of the functionality, is implemented in Lua.
 
-Begin by reading [luaref.md](doc/luaref.md). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/samples/), and the [arcade.app](https://github.com/idun-project/idun-cartridge/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
+Begin by reading [luaref.md](https://idun-project.github.io/docs/doc/luaref/). There is sample Lua App code in [samples](https://github.com/idun-project/idun-cartridge/samples/), and the [arcade.app](https://github.com/idun-project/idun-cartridge/cbm/arcade.app.d/main.lua) is Lua. These can serve as a template for creating your own Lua App.
 
  _NOTE: There is a forthcoming tool called `mace` that will generate new Lua Apps automatically, including all the boiler-plate needed._
 
