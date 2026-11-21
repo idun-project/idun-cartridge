@@ -158,6 +158,8 @@ chsSource = syswork+0 ;(2)
 chsCount  = syswork+2 ;(1)
 
 vdcLoadCharset = *  ;( .A=startChar, .X=charCount )
+   php
+   sei
    stx chsCount
    pha
    lda #<vdcCharsetAddr
@@ -166,6 +168,8 @@ vdcLoadCharset = *  ;( .A=startChar, .X=charCount )
    pla
    jmp +
    vdcLoadSpecCharset = *
+   php
+   sei
    jsr vdcAddrWrite16
    lda #0
    ldx #0
@@ -210,6 +214,7 @@ vdcLoadCharset = *  ;( .A=startChar, .X=charCount )
    inc chsSource+1
 +  dec chsCount
    bne charLoop
+   plp
    lda #bkACE
    sta bkSelect
    rts
