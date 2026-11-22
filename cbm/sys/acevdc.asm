@@ -202,10 +202,11 @@ vdcLoadCharset = *  ;( .A=startChar, .X=charCount )
    cpy #8
    bcc --
    lda #$00
-   jsr vdcRamWrite
-   ldx #$1e
-   lda #7
-   jsr vdcWrite
+-  bit vdcStatus
+   bpl -
+   sta vdcData
+   dey
+   bne -
    clc
    lda chsSource+0
    adc #8
